@@ -1,4 +1,4 @@
-# ui_pages.py - UI pages for the Streamlit application
+# ui_pages.py - UI pages for the Streamlit application with service layer integration
 
 import streamlit as st
 import pandas as pd
@@ -6,20 +6,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 import re
-import sqlite3
 
-from db_utils import (authenticate, register_trainer, get_client_details, get_clients,
-                      add_client, get_client_assessments, get_assessment_details,
-                      save_assessment, get_recent_assessments, get_trainer_stats)
-from assessment_scoring import (calculate_pushup_score, calculate_toe_touch_score,
-                                calculate_single_leg_balance_score, calculate_step_test_score,
-                                calculate_category_scores, get_score_description)
-from recommendations import get_improvement_suggestions
-from pdf_generator import create_pdf_report, get_pdf_download_link
+# Import services instead of direct database functions
+from service_layer import (
+    AuthService, ClientService, AssessmentService,
+    DashboardService, AnalyticsService
+)
+
+# Import improved assessment scoring and PDF functions
+from improved_assessment_scoring import get_score_description
+from improved_recommendations import get_improvement_suggestions
+from improved_pdf_generator import create_pdf_report, get_pdf_download_link
 
 
 def login_register_page():
-    """Login and registration page"""
+    """Login and registration page using service layer"""
     tab1, tab2 = st.tabs(["로그인", "회원가입"])
 
     with tab1:
@@ -29,9 +30,11 @@ def login_register_page():
 
         if st.button("로그인", key = "login_button"):
             if username and password:
-                trainer_id = authenticate(username, password)
+                trainer_id = AuthService.authenticate_user(username, password)
                 if trainer_id:
-                    # Get trainer name
+                    # Get trainer name from database
+                    # In a real implementation, this would also be handled by the service layer
+                    import sqlite3
                     conn = sqlite3.connect('fitness_assessment.db')
                     c = conn.cursor()
                     c.execute("SELECT name FROM trainers WHERE id = ?", (trainer_id,))
@@ -42,6 +45,7 @@ def login_register_page():
                     st.session_state.trainer_id = trainer_id
                     st.session_state.trainer_name = trainer_name
                     st.session_state.current_page = "dashboard"
+                    st.session_state.success_message = f"{trainer_name}님 환영합니다!"
                     st.rerun()
                 else:
                     st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
@@ -63,7 +67,7 @@ def login_register_page():
                 elif not re.match(r"[^@]+@[^@]+\.[^@]+", email):
                     st.error("유효하지 않은 이메일 주소입니다.")
                 else:
-                    success = register_trainer(new_username, new_password, name, email)
+                    success = AuthService.register_user(new_username, new_password, name, email)
                     if success:
                         st.success("회원가입이 완료되었습니다! 로그인해주세요.")
                     else:
@@ -73,12 +77,12 @@ def login_register_page():
 
 
 def dashboard_page():
-    """Dashboard page showing recent assessments and stats"""
+    """Dashboard page showing recent assessments and stats using service layer"""
     st.header("대시보드")
 
     # Get trainer stats and recent assessments
-    stats = get_trainer_stats(st.session_state.trainer_id)
-    recent_assessments = get_recent_assessments(st.session_state.trainer_id)
+    stats = DashboardService.get_trainer_statistics(st.session_state.trainer_id)
+    recent_assessments = DashboardService.get_recent_assessments(st.session_state.trainer_id)
 
     # Display stats
     col1, col2 = st.columns(2)
@@ -130,40 +134,19 @@ def dashboard_page_with_search():
     """Dashboard page showing recent assessments and stats with search functionality"""
     st.header("대시보드")
 
-    # Fetch recent assessments
-    conn = sqlite3.connect('fitness_assessment.db')
-    c = conn.cursor()
-
-    # Count total clients and assessments
-    c.execute("SELECT COUNT(*) FROM clients WHERE trainer_id = ?", (st.session_state.trainer_id,))
-    total_clients = c.fetchone()[0]
-
-    c.execute("SELECT COUNT(*) FROM assessments WHERE trainer_id = ?", (st.session_state.trainer_id,))
-    total_assessments = c.fetchone()[0]
-
-    # Fetch all clients for search functionality
-    c.execute("SELECT id, name FROM clients WHERE trainer_id = ? ORDER BY name", (st.session_state.trainer_id,))
-    all_clients = c.fetchall()
-    client_dict = {client[0]: client[1] for client in all_clients}
-
-    # Fetch all assessments for the trainer
-    c.execute("""
-              SELECT a.id, a.client_id, c.name, a.date, a.overall_score
-              FROM assessments a
-                       JOIN clients c ON a.client_id = c.id
-              WHERE a.trainer_id = ?
-              ORDER BY a.date DESC
-              """, (st.session_state.trainer_id,))
-
-    all_assessments = c.fetchall()
-    conn.close()
+    # Get stats
+    stats = DashboardService.get_trainer_statistics(st.session_state.trainer_id)
 
     # Display stats
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("전체 회원", total_clients)
+        st.metric("전체 회원", stats['total_clients'])
     with col2:
-        st.metric("전체 평가", total_assessments)
+        st.metric("전체 평가", stats['total_assessments'])
+
+    # Get all clients for search
+    clients = ClientService.get_trainer_clients(st.session_state.trainer_id)
+    client_dict = {client[0]: client[1] for client in clients}
 
     # Add search functionality
     st.subheader("평가 검색")
@@ -176,6 +159,9 @@ def dashboard_page_with_search():
             options = ["모든 평가", "회원명", "날짜", "점수 범위"]
         )
 
+    # Create search criteria dictionary
+    search_criteria = {}
+
     # Different search inputs based on selected option
     if search_option == "회원명":
         client_names = ["모든 회원"] + list(client_dict.values())
@@ -184,10 +170,7 @@ def dashboard_page_with_search():
         if selected_client_name != "모든 회원":
             # Get the client_id from the name
             selected_client_id = [k for k, v in client_dict.items() if v == selected_client_name][0]
-            # Filter assessments by client_id
-            filtered_assessments = [a for a in all_assessments if a[1] == selected_client_id]
-        else:
-            filtered_assessments = all_assessments
+            search_criteria['client_id'] = selected_client_id
 
     elif search_option == "날짜":
         col1, col2 = st.columns(2)
@@ -197,11 +180,8 @@ def dashboard_page_with_search():
             end_date = st.date_input("종료일", datetime.now())
 
         # Convert to string format for comparison
-        start_date_str = start_date.strftime("%Y-%m-%d")
-        end_date_str = end_date.strftime("%Y-%m-%d")
-
-        # Filter assessments by date range
-        filtered_assessments = [a for a in all_assessments if start_date_str <= a[3] <= end_date_str]
+        search_criteria['date_start'] = start_date.strftime("%Y-%m-%d")
+        search_criteria['date_end'] = end_date.strftime("%Y-%m-%d")
 
     elif search_option == "점수 범위":
         col1, col2 = st.columns(2)
@@ -210,11 +190,17 @@ def dashboard_page_with_search():
         with col2:
             max_score = st.slider("최대 점수", 0, 100, 100)
 
-        # Filter assessments by score range
-        filtered_assessments = [a for a in all_assessments if min_score <= a[4] <= max_score]
+        search_criteria['score_min'] = min_score
+        search_criteria['score_max'] = max_score
 
-    else:  # "모든 평가"
-        filtered_assessments = all_assessments
+    # Search based on criteria
+    if search_option == "모든 평가":
+        filtered_assessments = DashboardService.get_recent_assessments(st.session_state.trainer_id, limit = 100)
+    else:
+        filtered_assessments = DashboardService.search_assessments(
+            st.session_state.trainer_id,
+            search_criteria
+        )
 
     # Display filtered assessments
     st.subheader("평가 결과")
@@ -223,7 +209,7 @@ def dashboard_page_with_search():
         # Convert to DataFrame for easier manipulation
         assessment_df = pd.DataFrame(
             filtered_assessments,
-            columns = ["ID", "Client_ID", "회원 이름", "날짜", "종합 점수"]
+            columns = ["ID", "회원 이름", "날짜", "종합 점수"]
         )
 
         # Add a description column
@@ -236,9 +222,6 @@ def dashboard_page_with_search():
             lambda score: f"{score:.1f}/100"
         )
 
-        # Remove unnecessary columns
-        assessment_df = assessment_df.drop(columns = ["Client_ID"])
-
         st.dataframe(
             assessment_df,
             column_config = {
@@ -248,23 +231,19 @@ def dashboard_page_with_search():
             use_container_width = True
         )
 
-        # Function to view assessment details
-        def view_assessment(assessment_id):
-            st.session_state.selected_assessment = assessment_id
-            st.session_state.current_page = "assessment_detail"
-            st.rerun()
-
         # Get the selected assessment ID from the clicked row
         selected_assessment = st.selectbox(
             "평가 선택",
-            options = [(a[0], f"{a[2]} - {a[3]} ({a[4]:.1f}/100)") for a in filtered_assessments],
+            options = [(a[0], f"{a[1]} - {a[2]} ({a[3]:.1f}/100)") for a in filtered_assessments],
             format_func = lambda x: x[1]
         )
 
         col1, col2 = st.columns(2)
         with col1:
             if st.button("선택한 평가 상세 보기"):
-                view_assessment(selected_assessment[0])
+                st.session_state.selected_assessment = selected_assessment[0]
+                st.session_state.current_page = "assessment_detail"
+                st.rerun()
 
         with col2:
             if st.button("새 평가 실시"):
@@ -279,7 +258,7 @@ def dashboard_page_with_search():
 
 
 def clients_page():
-    """Clients management page"""
+    """Clients management page using service layer"""
     st.header("회원 관리")
 
     # Create tabs for client list and add new client
@@ -287,7 +266,7 @@ def clients_page():
 
     with tab1:
         # Fetch clients for the logged-in trainer
-        clients = get_clients(st.session_state.trainer_id)
+        clients = ClientService.get_trainer_clients(st.session_state.trainer_id)
 
         if clients:
             # Display clients in a table
@@ -295,16 +274,16 @@ def clients_page():
 
             # Get assessment counts for each client
             client_df["평가 수"] = client_df["ID"].apply(
-                lambda client_id: len(get_client_assessments(client_id))
+                lambda client_id: len(AssessmentService.get_client_assessment_history(client_id))
             )
 
             # Get client details for additional information
             client_df["나이"] = client_df["ID"].apply(
-                lambda client_id: get_client_details(client_id)["age"]
+                lambda client_id: ClientService.get_client(client_id)["age"]
             )
 
             client_df["성별"] = client_df["ID"].apply(
-                lambda client_id: get_client_details(client_id)["gender"]
+                lambda client_id: ClientService.get_client(client_id)["gender"]
             )
 
             # Button to view client details
@@ -335,7 +314,10 @@ def clients_page():
         # Form to add a new client
         st.subheader("새 회원 추가")
 
-        with st.form("add_client_form"):
+        # Use a unique form key that includes the session timestamp to prevent resubmission
+        form_key = f"add_client_form_{st.session_state.get('form_timestamp', datetime.now().timestamp())}"
+
+        with st.form(form_key):
             client_name = st.text_input("이름")
 
             col1, col2 = st.columns(2)
@@ -354,36 +336,52 @@ def clients_page():
             submit_button = st.form_submit_button("회원 추가")
 
             if submit_button:
-                if client_name and client_age and client_gender and client_height and client_weight:
-                    # Add client to database
-                    client_id = add_client(
-                        st.session_state.trainer_id,
-                        client_name,
-                        client_age,
-                        client_gender,
-                        client_height,
-                        client_weight,
-                        client_email,
-                        client_phone
-                    )
+                # Use a submission guard to prevent duplicate submissions
+                if 'last_submission_time' not in st.session_state or \
+                        (datetime.now().timestamp() - st.session_state.last_submission_time) > 5:
 
-                    if client_id:
-                        st.success(f"{client_name} 회원이 추가되었습니다!")
-                        # Switch to client list tab
-                        st.session_state.current_page = "clients"
-                        st.rerun()
-                else:
-                    st.warning("필수 항목(이름, 나이, 성별, 키, 체중)을 모두 입력해주세요.")
+                    st.session_state.last_submission_time = datetime.now().timestamp()
+
+                    if client_name and client_age and client_gender and client_height and client_weight:
+                        # Check if client already exists with same name
+                        existing_clients = ClientService.get_trainer_clients(st.session_state.trainer_id)
+                        existing_names = [client[1] for client in existing_clients]
+
+                        if client_name in existing_names:
+                            st.error(f"'{client_name}' 회원이 이미 존재합니다. 다른 이름을 사용해주세요.")
+                        else:
+                            # Add client using service
+                            client_id = ClientService.add_new_client(
+                                st.session_state.trainer_id,
+                                client_name,
+                                client_age,
+                                client_gender,
+                                client_height,
+                                client_weight,
+                                client_email,
+                                client_phone
+                            )
+
+                            if client_id:
+                                # Update form timestamp to force form recreation
+                                st.session_state.form_timestamp = datetime.now().timestamp()
+                                st.success(f"{client_name} 회원이 추가되었습니다!")
+
+                                # Switch to client list tab - using rerun to refresh the page
+                                st.session_state.current_page = "clients"
+                                st.rerun()
+                    else:
+                        st.warning("필수 항목(이름, 나이, 성별, 키, 체중)을 모두 입력해주세요.")
 
 
 def client_detail_page():
-    """Client detail page showing client info and past assessments"""
+    """Client detail page showing client info and past assessments using service layer"""
     if not st.session_state.selected_client:
         st.error("선택된 회원이 없습니다.")
         return
 
-    # Get client details
-    client = get_client_details(st.session_state.selected_client)
+    # Get client details using service
+    client = ClientService.get_client(st.session_state.selected_client)
 
     if not client:
         st.error("회원을 찾을 수 없습니다.")
@@ -400,7 +398,10 @@ def client_detail_page():
         st.write(f"**성별:** {client['gender']}")
         st.write(f"**키:** {client['height']} cm")
         st.write(f"**체중:** {client['weight']} kg")
-        st.write(f"**BMI:** {client['weight'] / ((client['height'] / 100) ** 2):.1f}")
+
+        # Calculate BMI using service
+        bmi = ClientService.calculate_bmi(client)
+        st.write(f"**BMI:** {bmi:.1f}")
 
     with col2:
         st.subheader("연락처 정보")
@@ -412,8 +413,8 @@ def client_detail_page():
     st.divider()
     st.subheader("체력 평가 기록")
 
-    # Get client assessments
-    assessments = get_client_assessments(client['id'])
+    # Get client assessments using service
+    assessments = AssessmentService.get_client_assessment_history(client['id'])
 
     if assessments:
         # Button to start new assessment
@@ -448,387 +449,21 @@ def client_detail_page():
             st.rerun()
 
 
-def new_assessment_page():
-    """Page to conduct a new fitness assessment"""
-    if not st.session_state.selected_client:
-        # If no client is selected, allow selecting one
-        st.header("새 체력 평가")
-        st.subheader("회원 선택")
-
-        clients = get_clients(st.session_state.trainer_id)
-
-        if not clients:
-            st.warning("등록된 회원이 없습니다. 먼저 회원을 추가해주세요.")
-            if st.button("회원 추가"):
-                st.session_state.current_page = "clients"
-                st.rerun()
-            return
-
-        # Create a selection widget for clients
-        client_options = {client[1]: client[0] for client in clients}
-        selected_client_name = st.selectbox("회원 선택", list(client_options.keys()))
-
-        if st.button("계속"):
-            st.session_state.selected_client = client_options[selected_client_name]
-            st.rerun()
-
-        return
-
-    # Get client details
-    client = get_client_details(st.session_state.selected_client)
-
-    if not client:
-        st.error("회원을 찾을 수 없습니다.")
-        return
-
-    st.header(f"{client['name']} 회원 체력 평가")
-    st.write(
-        f"**나이:** {client['age']} | **성별:** {client['gender']} | **키:** {client['height']} cm | **체중:** {client['weight']} kg")
-
-    # Create a form for the assessment
-    with st.form("assessment_form"):
-        st.subheader("1. 오버헤드 스쿼트 (하지 근기능)")
-        overhead_squat_score = st.selectbox(
-            "수행 품질",
-            [
-                (0, "동작 중 통증 발생"),
-                (1, "깊은 스쿼트 수행 불가능"),
-                (2, "보상 동작 관찰됨 (발 뒤꿈치 들림, 무릎 내반 등)"),
-                (3, "완벽한 동작 (상체 수직 유지, 대퇴가 수평 이하, 무릎 정렬)")
-            ],
-            format_func = lambda x: x[1]
-        )[0]
-        overhead_squat_notes = st.text_area("메모 (보상 동작, 제한사항 등)", key = "overhead_squat_notes")
-
-        st.divider()
-        st.subheader("2. 푸시업 (상지 근기능)")
-        push_up_reps = st.number_input("반복 횟수", min_value = 0, max_value = 100, value = 0, step = 1)
-        push_up_notes = st.text_area("메모 (폼 이슈, 제한사항 등)", key = "push_up_notes")
-
-        st.divider()
-        st.subheader("3. 한 발 균형 (균형 및 협응성)")
-        col1, col2 = st.columns(2)
-        with col1:
-            single_leg_balance_right_open = st.number_input("오른쪽 다리, 눈 뜬 상태 (초)", min_value = 0, max_value = 60,
-                                                            value = 0, step = 1)
-            single_leg_balance_right_closed = st.number_input("오른쪽 다리, 눈 감은 상태 (초)", min_value = 0, max_value = 60,
-                                                              value = 0, step = 1)
-        with col2:
-            single_leg_balance_left_open = st.number_input("왼쪽 다리, 눈 뜬 상태 (초)", min_value = 0, max_value = 60,
-                                                           value = 0, step = 1)
-            single_leg_balance_left_closed = st.number_input("왼쪽 다리, 눈 감은 상태 (초)", min_value = 0, max_value = 60,
-                                                             value = 0, step = 1)
-        single_leg_balance_notes = st.text_area("메모 (안정성 문제, 좌우 비대칭 등)", key = "single_leg_balance_notes")
-
-        st.divider()
-        st.subheader("4. 발끝 터치 (하지 유연성)")
-        toe_touch_distance = st.number_input(
-            "바닥에서의 거리 (cm, 음수=바닥 위, 양수=바닥 아래)",
-            min_value = -30.0, max_value = 20.0, value = 0.0, step = 0.5
-        )
-        toe_touch_notes = st.text_area("메모 (제한사항, 보상 동작 등)", key = "toe_touch_notes")
-
-        st.divider()
-        st.subheader("5. FMS 어깨 가동성 (상지 유연성)")
-        col1, col2 = st.columns(2)
-        with col1:
-            shoulder_mobility_right = st.number_input("오른쪽 어깨 측정 (주먹 거리)", min_value = 0.0, max_value = 5.0,
-                                                      value = 1.5, step = 0.5)
-        with col2:
-            shoulder_mobility_left = st.number_input("왼쪽 어깨 측정 (주먹 거리)", min_value = 0.0, max_value = 5.0, value = 1.5,
-                                                     step = 0.5)
-
-        shoulder_mobility_score = st.selectbox(
-            "가동성 점수 (가장 열악한 측면 기준)",
-            [
-                (0, "클리어링 테스트에서 통증 발생"),
-                (1, "주먹 2개 이상 거리"),
-                (2, "주먹 1.5개 거리"),
-                (3, "주먹 1개 이하 거리")
-            ],
-            format_func = lambda x: x[1]
-        )[0]
-        shoulder_mobility_notes = st.text_area("메모 (비대칭, 제한사항 등)", key = "shoulder_mobility_notes")
-
-        st.divider()
-        st.subheader("6. 파머스 캐리 (악력 및 근지구력)")
-        farmers_carry_weight = st.number_input("사용 무게 (kg)", min_value = 0.0, max_value = 100.0, value = 0.0,
-                                               step = 2.5)
-        col1, col2 = st.columns(2)
-        with col1:
-            farmers_carry_distance = st.number_input("이동 거리 (m)", min_value = 0.0, max_value = 100.0, value = 0.0,
-                                                     step = 1.0)
-        with col2:
-            farmers_carry_time = st.number_input("시간 (초)", min_value = 0, max_value = 120, value = 0, step = 1)
-        farmers_carry_score = st.selectbox(
-            "수행 평가",
-            [
-                (1, "저조 - 심각한 자세 문제와 함께 10m 미만 이동"),
-                (2, "보통 - 중간 정도의 자세 문제와 함께 10-20m 이동"),
-                (3, "양호 - 경미한 자세 문제와 함께 20-30m 이동"),
-                (4, "우수 - 완벽한 자세로 30m 이상 이동")
-            ],
-            format_func = lambda x: x[1]
-        )[0]
-        farmers_carry_notes = st.text_area("메모 (자세 문제, 그립 피로 등)", key = "farmers_carry_notes")
-
-        st.divider()
-        st.subheader("7. 하버드 3분 스텝 테스트 (심폐지구력)")
-        step_test_hr1 = st.number_input("회복기 심박수 1 (1:00-1:30 분, bpm)", min_value = 40, max_value = 220, value = 90,
-                                        step = 1)
-        step_test_hr2 = st.number_input("회복기 심박수 2 (2:00-2:30 분, bpm)", min_value = 40, max_value = 220, value = 80,
-                                        step = 1)
-        step_test_hr3 = st.number_input("회복기 심박수 3 (3:00-3:30 분, bpm)", min_value = 40, max_value = 220, value = 70,
-                                        step = 1)
-        step_test_notes = st.text_area("메모 (피로 징후, 제한사항 등)", key = "step_test_notes")
-
-        st.divider()
-        submit = st.form_submit_button("계산 및 평가 저장")
-
-        if submit:
-            # Calculate scores based on inputted data
-            # Prepare push-up score (gender and age dependent)
-            push_up_score = calculate_pushup_score(client['gender'], client['age'], push_up_reps)
-
-            # Calculate toe touch score
-            toe_touch_score = calculate_toe_touch_score(toe_touch_distance)
-
-            # Calculate single leg balance score
-            single_leg_balance_score = calculate_single_leg_balance_score(
-                single_leg_balance_right_open,
-                single_leg_balance_left_open,
-                single_leg_balance_right_closed,
-                single_leg_balance_left_closed
-            )
-
-            # Calculate Harvard Step Test score and PFI
-            step_test_score, pfi = calculate_step_test_score(step_test_hr1, step_test_hr2, step_test_hr3)
-
-            # Collect assessment data
-            assessment_data = {
-                'client_id': client['id'],
-                'trainer_id': st.session_state.trainer_id,
-                'date': datetime.now().strftime("%Y-%m-%d"),
-
-                'overhead_squat_score': overhead_squat_score,
-                'overhead_squat_notes': overhead_squat_notes,
-
-                'push_up_score': push_up_score,
-                'push_up_reps': push_up_reps,
-                'push_up_notes': push_up_notes,
-
-                'single_leg_balance_right_open': single_leg_balance_right_open,
-                'single_leg_balance_left_open': single_leg_balance_left_open,
-                'single_leg_balance_right_closed': single_leg_balance_right_closed,
-                'single_leg_balance_left_closed': single_leg_balance_left_closed,
-                'single_leg_balance_notes': single_leg_balance_notes,
-
-                'toe_touch_score': toe_touch_score,
-                'toe_touch_distance': toe_touch_distance,
-                'toe_touch_notes': toe_touch_notes,
-
-                'shoulder_mobility_right': shoulder_mobility_right,
-                'shoulder_mobility_left': shoulder_mobility_left,
-                'shoulder_mobility_score': shoulder_mobility_score,
-                'shoulder_mobility_notes': shoulder_mobility_notes,
-
-                'farmers_carry_weight': farmers_carry_weight,
-                'farmers_carry_distance': farmers_carry_distance,
-                'farmers_carry_time': farmers_carry_time,
-                'farmers_carry_score': farmers_carry_score,
-                'farmers_carry_notes': farmers_carry_notes,
-
-                'step_test_hr1': step_test_hr1,
-                'step_test_hr2': step_test_hr2,
-                'step_test_hr3': step_test_hr3,
-                'step_test_pfi': pfi,
-                'step_test_score': step_test_score,
-                'step_test_notes': step_test_notes
-            }
-
-            # Calculate category scores
-            category_scores = calculate_category_scores(assessment_data, client)
-
-            # Update assessment data with overall scores
-            assessment_data.update({
-                'overall_score': category_scores['overall_score'],
-                'strength_score': category_scores['strength_score'],
-                'mobility_score': category_scores['mobility_score'],
-                'balance_score': category_scores['balance_score'],
-                'cardio_score': category_scores['cardio_score']
-            })
-
-            # Save assessment to database
-            assessment_id = save_assessment(assessment_data)
-
-            if assessment_id:
-                st.session_state.selected_assessment = assessment_id
-                st.session_state.current_page = "assessment_detail"
-                st.success("평가가 저장되었습니다!")
-                st.rerun()
-            else:
-                st.error("평가 저장 중 오류가 발생했습니다.")
-
-
-def new_assessment_page_simplified():
-    """Page to conduct a new fitness assessment with simplified input options"""
-    import streamlit as st
-
-    if not st.session_state.selected_client:
-        st.header("새 체력 평가")
-        st.subheader("회원 선택")
-        clients = get_clients(st.session_state.trainer_id)
-
-        if not clients:
-            st.warning("등록된 회원이 없습니다. 먼저 회원을 추가해주세요.")
-            if st.button("회원 추가"):
-                st.session_state.current_page = "clients"
-                st.rerun()
-            return
-
-        client_options = {client[1]: client[0] for client in clients}
-        selected_client_name = st.selectbox("회원 선택", list(client_options.keys()))
-
-        if st.button("계속"):
-            st.session_state.selected_client = client_options[selected_client_name]
-            st.rerun()
-        return
-
-    client = get_client_details(st.session_state.selected_client)
-    if not client:
-        st.error("회원을 찾을 수 없습니다.")
-        return
-
-    st.header(f"{client['name']} 회원 체력 평가")
-    st.write(
-        f"**나이:** {client['age']} | **성별:** {client['gender']} | **키:** {client['height']} cm | **체중:** {client['weight']} kg"
-    )
-
-    with st.form("assessment_form"):
-        # 1. 오버헤드 스쿼트 (하지 근기능)
-        st.subheader("1. 오버헤드 스쿼트 (하지 근기능)")
-        overhead_squat_score = st.radio(
-            "수행 품질",
-            [0, 1, 2, 3],
-            format_func=lambda x: {
-                0: "동작 중 통증 발생",
-                1: "깊은 스쿼트 수행 불가능",
-                2: "보상 동작 관찰됨 (발 뒤꿈치 들림, 무릎 내반 등)",
-                3: "완벽한 동작 (상체 수직 유지, 대퇴가 수평 이하, 무릎 정렬)"
-            }[x],
-            horizontal=True
-        )
-        oh_squat_obs1 = st.checkbox("발 뒤꿈치 들림")
-        oh_squat_obs2 = st.checkbox("무릎 내반(Valgus)")
-        oh_squat_obs3 = st.checkbox("과도한 상체 전방 기울임")
-        oh_squat_obs4 = st.checkbox("팔 전방 하강")
-        oh_squat_notes = st.text_input("기타 메모 (선택사항)", key="overhead_squat_notes")
-
-        # 2. 푸시업 테스트 (상지 근기능)
-        st.subheader("2. 푸시업 테스트 (상지 근기능)")
-        push_up_score = st.radio(
-            "수행 횟수에 따른 점수",
-            [0, 1, 2, 3],
-            format_func=lambda x: {
-                0: "5개 미만",
-                1: "5~10개",
-                2: "11~20개",
-                3: "21개 이상"
-            }[x],
-            horizontal=True
-        )
-        pushup_notes = st.text_input("관찰 및 메모 (선택사항)", key="pushup_notes")
-
-        # 3. 싱글 레그 밸런스 (좌/우) (평형성)
-        st.subheader("3. 싱글 레그 밸런스 (좌/우) (평형성)")
-        single_leg_balance_right_open = st.number_input(
-            "오른발-눈 뜸(초)", min_value=0, max_value=120, value=0, step=1)
-        single_leg_balance_left_open = st.number_input(
-            "왼발-눈 뜸(초)", min_value=0, max_value=120, value=0, step=1)
-        single_leg_notes = st.text_input("관찰 및 메모 (선택사항)", key="single_leg_notes")
-
-        # 4. 토 터치 (하지 유연성)
-        st.subheader("4. 토 터치 (하지 유연성)")
-        toe_touch_score = st.radio(
-            "유연성 평가",
-            [0, 1, 2, 3],
-            format_func=lambda x: {
-                0: "손끝이 발에 닿지 않음",
-                1: "손끝이 발에 닿음",
-                2: "손바닥이 발등을 덮음",
-                3: "손바닥이 발에 완전히 닿음"
-            }[x],
-            horizontal=True
-        )
-        toe_touch_notes = st.text_input("관찰 및 메모 (선택사항)", key="toe_touch_notes")
-
-        # 5. FMS 숄더 모빌리티 (상지 유연성)
-        st.subheader("5. FMS 숄더 모빌리티 (상지 유연성)")
-        shoulder_mobility_score = st.radio(
-            "양손 간 거리",
-            [0, 1, 2, 3],
-            format_func=lambda x: {
-                0: "동작 중 통증",
-                1: "손 간 거리가 신장 1.5배 이상",
-                2: "손 간 거리가 신장 1~1.5배",
-                3: "손 간 거리가 신장 1배 미만"
-            }[x],
-            horizontal=True
-        )
-        shoulder_mobility_notes = st.text_input("관찰 및 메모 (선택사항)", key="shoulder_mobility_notes")
-
-        # 6. 파머스 캐리 (악력 및 근지구력)
-        st.subheader("6. 파머스 캐리 (악력 및 근지구력)")
-        farmers_carry_score = st.radio(
-            "평가 점수",
-            [0, 1, 2, 3],
-            format_func=lambda x: {
-                0: "5m 미만 이동",
-                1: "5-10m 이동",
-                2: "11-20m 이동",
-                3: "20m 이상 지속"
-            }[x],
-            horizontal=True
-        )
-        farmers_carry_notes = st.text_input("관찰 및 메모 (선택사항)", key="farmers_carry_notes")
-
-        # 7. 하버드 스텝 테스트 (심폐지구력)
-        st.subheader("7. 하버드 스텝 테스트 (심폐지구력)")
-        step_test_score = st.radio(
-            "점수 등급",
-            [0, 1, 2, 3],
-            format_func=lambda x: {
-                0: "심각히 낮음",
-                1: "평균 이하",
-                2: "평균",
-                3: "우수"
-            }[x],
-            horizontal=True
-        )
-        step_test_notes = st.text_input("관찰 및 메모 (선택사항)", key="step_test_notes")
-
-        # 제출 버튼
-        submit = st.form_submit_button("계산 및 평가 저장")
-
-        if submit:
-            st.success("평가가 저장되었습니다!")
-            # 여기에 저장 및 점수 계산 코드를 추가하세요
-
 def assessment_detail_page():
-    """Page to view assessment results and generate PDF report"""
+    """Page to view assessment results and generate PDF report using service layer"""
     if not st.session_state.selected_assessment:
         st.error("선택된 평가가 없습니다.")
         return
 
-    # Get assessment details
-    assessment = get_assessment_details(st.session_state.selected_assessment)
+    # Get assessment details using service
+    assessment = AssessmentService.get_assessment(st.session_state.selected_assessment)
 
     if not assessment:
         st.error("평가를 찾을 수 없습니다.")
         return
 
-    # Get client details
-    client = get_client_details(assessment['client_id'])
+    # Get client details using service
+    client = ClientService.get_client(assessment['client_id'])
 
     if not client:
         st.error("회원을 찾을 수 없습니다.")
@@ -844,8 +479,14 @@ def assessment_detail_page():
         'pfi': assessment['step_test_pfi']
     }
 
-    # Get improvement suggestions
+    # Get improvement suggestions using improved function
     suggestions = get_improvement_suggestions(assessment, client)
+
+    # Use analytics service to analyze asymmetries
+    asymmetries = AnalyticsService.analyze_asymmetries(assessment)
+
+    # Get priority areas for training focus
+    priorities = AnalyticsService.identify_priority_areas(assessment)
 
     # Display assessment results
     st.header(f"체력 평가 결과: {client['name']}")
@@ -900,7 +541,6 @@ def assessment_detail_page():
 
         st.pyplot(fig)
 
-
     with col2:
         # Display category scores
         st.subheader("카테고리 점수")
@@ -920,6 +560,46 @@ def assessment_detail_page():
         st.markdown(f"**심폐지구력:** {assessment['cardio_score']:.1f}/25")
         cardio_value = float(assessment['cardio_score']) / 25
         st.progress(max(0.0, min(1.0, cardio_value)))
+
+    # Display any significant asymmetries
+    if asymmetries:
+        st.divider()
+        st.subheader("감지된 불균형")
+
+        if 'balance' in asymmetries and asymmetries['balance']['significant']:
+            st.warning(
+                f"**균형 능력의 좌우 불균형 감지:** " +
+                f"눈 뜬 상태 {asymmetries['balance']['open_eyes_difference']}초, " +
+                f"눈 감은 상태 {asymmetries['balance']['closed_eyes_difference']}초 차이. " +
+                f"{asymmetries['balance']['weaker_side'].capitalize()} 쪽 집중 훈련 권장."
+            )
+
+        if 'shoulder' in asymmetries and asymmetries['shoulder']['significant']:
+            st.warning(
+                f"**어깨 가동성의 좌우 불균형 감지:** " +
+                f"{asymmetries['shoulder']['difference']:.1f} 주먹 거리 차이. " +
+                f"{asymmetries['shoulder']['tighter_side'].capitalize()} 쪽 어깨 가동성 개선 권장."
+            )
+
+    # Priority training areas
+    if priorities:
+        st.divider()
+        st.subheader("우선 집중 영역")
+
+        priority_descriptions = {
+            'strength': "**근력 및 근지구력:** 현재 수준이 낮으므로 집중적인 근력 훈련이 필요합니다.",
+            'mobility': "**가동성 및 유연성:** 제한된 가동성이 감지되어 집중적인 개선이 필요합니다.",
+            'balance': "**균형 및 협응성:** 균형 능력 향상을 위한 훈련이 우선적으로 필요합니다.",
+            'cardio': "**심폐지구력:** 심폐 기능 향상을 위한 유산소 훈련이 우선시되어야 합니다.",
+            'balance_asymmetry': "**균형의 좌우 불균형:** 감지된 불균형을 해소하기 위한 대칭성 향상 훈련이 필요합니다.",
+            'shoulder_asymmetry': "**어깨 가동성의 좌우 불균형:** 어깨 가동성의 대칭성을 향상시키는 운동이 필요합니다.",
+            'squat_pain': "**스쿼트 통증:** 통증 원인 파악 및 제거를 위한 접근이 필요합니다. 전문가 상담을 권장합니다.",
+            'shoulder_pain': "**어깨 통증:** 어깨 통증 원인 파악 및 제거를 위한 접근이 필요합니다. 전문가 상담을 권장합니다."
+        }
+
+        for priority in priorities:
+            if priority in priority_descriptions:
+                st.write(priority_descriptions[priority])
 
     # Individual test results
     st.divider()
@@ -1022,6 +702,91 @@ def assessment_detail_page():
             st.markdown("**메모:**")
             st.markdown(f"_{assessment['step_test_notes']}_")
 
+    # Progress tracking section
+    st.divider()
+    st.subheader("진행 상황 추적")
+
+    # Get client's progress data
+    progress_data = AnalyticsService.get_client_progress(client['id'])
+
+    if len(progress_data['dates']) > 1:
+        # Show progress charts if there are multiple assessments
+        progress_tabs = st.tabs(["전체 점수", "카테고리별 점수", "개별 테스트"])
+
+        with progress_tabs[0]:
+            # Create overall score progress chart
+            fig, ax = plt.subplots(figsize = (10, 5))
+            ax.plot(progress_data['dates'], progress_data['overall_scores'], marker = 'o', linestyle = '-',
+                    color = '#ff4b4b')
+            ax.set_title('전체 체력 점수 변화')
+            ax.set_xlabel('평가 날짜')
+            ax.set_ylabel('점수 (100점 만점)')
+            ax.grid(True, alpha = 0.3)
+
+            # Highlight current assessment
+            current_index = progress_data['dates'].index(assessment['date']) if assessment['date'] in progress_data[
+                'dates'] else -1
+            if current_index >= 0:
+                ax.plot([progress_data['dates'][current_index]], [progress_data['overall_scores'][current_index]],
+                        marker = 'o', markersize = 10, color = 'blue')
+
+            st.pyplot(fig)
+
+        with progress_tabs[1]:
+            # Create category scores progress chart
+            fig, ax = plt.subplots(figsize = (10, 5))
+
+            categories = ['strength', 'mobility', 'balance', 'cardio']
+            category_names = {'strength': '근력', 'mobility': '가동성', 'balance': '균형', 'cardio': '심폐지구력'}
+            colors = {'strength': '#ff4b4b', 'mobility': '#4bbf73', 'balance': '#1f9bcf', 'cardio': '#f0ad4e'}
+
+            for category in categories:
+                ax.plot(progress_data['dates'], progress_data['category_scores'][category],
+                        marker = 'o', linestyle = '-', label = category_names[category], color = colors[category])
+
+            ax.set_title('카테고리별 점수 변화')
+            ax.set_xlabel('평가 날짜')
+            ax.set_ylabel('점수 (25점 만점)')
+            ax.grid(True, alpha = 0.3)
+            ax.legend()
+
+            st.pyplot(fig)
+
+        with progress_tabs[2]:
+            # Create individual test scores progress chart
+            test_to_show = st.selectbox(
+                "테스트 선택",
+                options = ["overhead_squat", "push_up", "shoulder_mobility", "farmers_carry", "step_test"],
+                format_func = lambda x: {
+                    "overhead_squat": "오버헤드 스쿼트",
+                    "push_up": "푸시업",
+                    "shoulder_mobility": "어깨 가동성",
+                    "farmers_carry": "파머스 캐리",
+                    "step_test": "하버드 스텝 테스트"
+                }[x]
+            )
+
+            fig, ax = plt.subplots(figsize = (10, 5))
+            ax.plot(progress_data['dates'], progress_data['test_scores'][test_to_show],
+                    marker = 'o', linestyle = '-', color = '#ff4b4b')
+
+            test_names = {
+                "overhead_squat": "오버헤드 스쿼트",
+                "push_up": "푸시업",
+                "shoulder_mobility": "어깨 가동성",
+                "farmers_carry": "파머스 캐리",
+                "step_test": "하버드 스텝 테스트"
+            }
+
+            ax.set_title(f'{test_names[test_to_show]} 점수 변화')
+            ax.set_xlabel('평가 날짜')
+            ax.set_ylabel('점수')
+            ax.grid(True, alpha = 0.3)
+
+            st.pyplot(fig)
+    else:
+        st.info("진행 상황을 추적하려면 최소 두 번 이상의 평가가 필요합니다.")
+
     # Improvement suggestions
     st.divider()
     st.subheader("개선 제안")
@@ -1061,18 +826,22 @@ def assessment_detail_page():
     st.subheader("보고서 생성")
 
     if st.button("PDF 보고서 생성"):
-        # Create PDF report
-        pdf_bytes = create_pdf_report(client, assessment, category_scores, suggestions)
+        try:
+            # Create PDF report using improved function
+            pdf_bytes = create_pdf_report(client, assessment, category_scores, suggestions)
 
-        # Create download link
-        st.markdown(
-            get_pdf_download_link(
-                pdf_bytes,
-                f"fitness_assessment_{client['name']}_{assessment['date']}.pdf",
-                "PDF 보고서 다운로드"
-            ),
-            unsafe_allow_html = True
-        )
+            # Create download link
+            st.markdown(
+                get_pdf_download_link(
+                    pdf_bytes,
+                    f"fitness_assessment_{client['name']}_{assessment['date']}.pdf",
+                    "PDF 보고서 다운로드"
+                ),
+                unsafe_allow_html = True
+            )
+        except Exception as e:
+            st.error(f"PDF 생성 중 오류가 발생했습니다: {str(e)}")
+            st.info("이 오류는 한글 폰트가 설치되지 않은 경우 발생할 수 있습니다.")
 
     # Navigation buttons
     st.divider()
