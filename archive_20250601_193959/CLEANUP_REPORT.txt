@@ -1,0 +1,47 @@
+Directory Cleanup Report
+========================
+
+Date: 2025-06-01 19:39:59
+
+Files Moved to Archive:
+-----------------------
+  • main.py → archive_20250601_193959/deprecated/main.py
+  • service_layer.py → archive_20250601_193959/deprecated/service_layer.py
+  • improved_db_utils.py → archive_20250601_193959/deprecated/improved_db_utils.py
+  • migrate_to_improved.py → archive_20250601_193959/migration/migrate_to_improved.py
+  • simple_migration.py → archive_20250601_193959/migration/simple_migration.py
+  • update_imports.py → archive_20250601_193959/migration/update_imports.py
+  • service_layer_bridge.py → archive_20250601_193959/migration/service_layer_bridge.py
+  • cleanup_directory.py → archive_20250601_193959/migration/cleanup_directory.py
+  • MIGRATION_SUMMARY.md → archive_20250601_193959/docs/MIGRATION_SUMMARY.md (copied)
+  • cleanup_analysis.md → archive_20250601_193959/docs/cleanup_analysis.md (copied)
+  • fitness_assessment.db.backup_20250601_192859 → archive_20250601_193959/backups/fitness_assessment.db.backup_20250601_192859
+
+Files Renamed:
+-------------
+  • main_improved.py → main.py
+
+Total files archived: 11
+Total files renamed: 1
+
+
+Active Files Remaining:
+----------------------
+  • main.py (formerly main_improved.py)
+  • config.py
+  • requirements.txt
+  • ui_pages.py
+  • improved_assessment_page.py
+  • simplified_add_client.py
+  • improved_service_layer.py
+  • improved_assessment_scoring.py
+  • improved_recommendations.py
+  • improved_pdf_generator.py
+  • secure_db_utils.py
+  • session_manager.py
+  • logging_config.py
+  • database_layer.py
+  • cache_manager.py
+  • test_*.py files
+  • NanumGothic*.ttf fonts
+  • fitness_assessment.db

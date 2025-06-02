@@ -1,7 +1,7 @@
 # test_assessment_scoring.py - Unit tests for assessment scoring functions
 
 import unittest
-from improved_assessment_scoring import (
+from scoring import (
     calculate_pushup_score, calculate_single_leg_balance_score,
     calculate_toe_touch_score, calculate_shoulder_mobility_score,
     calculate_farmers_carry_score, calculate_step_test_score,

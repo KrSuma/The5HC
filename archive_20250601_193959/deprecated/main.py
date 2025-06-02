@@ -1,100 +1,86 @@
-# main_improved.py - Main Streamlit application with security improvements
+# app.py - Main Streamlit application with improvements
 
 import streamlit as st
 import matplotlib
 
 matplotlib.use('Agg')  # Required for non-interactive environments
 
-# Import improved modules with security features
-from services import (
+# Import service layer instead of direct database access
+from service_layer import (
     AppInitService, AuthService, ClientService,
     AssessmentService, DashboardService, AnalyticsService
 )
 
-# Import session management
-from auth import (
-    session_manager, auto_logout_check, show_session_timeout_warning,
-    show_session_info, ActivityTracker
-)
-
-# Import configuration
-from config import config
-
-# Import custom logging
-from app_logging import app_logger, error_logger
-
 # Import UI pages
+# Note: In a real implementation, these would be updated to use the service layer
+# For now, we'll reuse the original logic but note where improvements should be made
 from ui_pages import (
     login_register_page, dashboard_page, dashboard_page_with_search,
     clients_page, client_detail_page, assessment_detail_page
 )
 
 # Import our enhanced assessment page
-from assessment_page import new_assessment_page
+from improved_assessment_page import new_assessment_page
 
 # Import simplified add client page for direct client addition
-from add_client import simplified_add_client_page
+from simplified_add_client import simplified_add_client_page
 
 
 def main():
-    """Main application function with security improvements"""
+    """Main application function with improvements"""
 
     # Initialize application
-    try:
-        AppInitService.initialize()
-    except Exception as e:
-        st.error(f"Failed to initialize application: {str(e)}")
-        return
+    AppInitService.initialize_app()
+
+    # Check font availability
+    fonts_available = AppInitService.check_fonts_availability()
 
     st.set_page_config(
-        page_title=config.ui.app_name,
-        page_icon="🏋️",
-        layout="wide"
+        page_title = "더파이브 헬스케어 Fitness Assessment",
+        page_icon = "🏋️",
+        layout = "wide"
     )
 
-    # Add custom CSS with theme colors from config
-    st.markdown(f"""
+    # Add custom CSS
+    st.markdown("""
     <style>
-    .download-button {{
+    .download-button {
         display: inline-block;
         padding: 10px 20px;
-        background-color: {config.ui.primary_color};
+        background-color: #ff4b4b;
         color: white;
         text-decoration: none;
         border-radius: 5px;
         font-weight: bold;
         text-align: center;
         margin: 10px 0;
-    }}
-    .stProgress > div > div > div {{
-        background-color: {config.ui.primary_color};
-    }}
-    .error-message {{
-        color: {config.ui.danger_color};
+    }
+    .stProgress > div > div > div {
+        background-color: #ff4b4b;
+    }
+    .error-message {
+        color: #ff4b4b;
         padding: 10px;
         background-color: #ffeeee;
         border-radius: 5px;
         margin: 10px 0;
-    }}
-    .success-message {{
-        color: {config.ui.success_color};
+    }
+    .success-message {
+        color: #4bb543;
         padding: 10px;
         background-color: #eeffee;
         border-radius: 5px;
         margin: 10px 0;
-    }}
-    .info-message {{
-        color: {config.ui.info_color};
+    }
+    .info-message {
+        color: #3498db;
         padding: 10px;
         background-color: #eef6ff;
         border-radius: 5px;
         margin: 10px 0;
-    }}
+    }
     </style>
-    """, unsafe_allow_html=True)
-
-    # Check for automatic logout
-    auto_logout_check()
+    """, unsafe_allow_html = True)
 
     # Session state initialization with error handling
     for key, default in [
@@ -106,7 +92,7 @@ def main():
         ('selected_assessment', None),
         ('use_simplified_assessment', False),
         ('use_search_dashboard', False),
-        ('use_direct_client_add', True),
+        ('use_direct_client_add', True),  # Use the simplified client adding by default for now
         ('error_message', None),
         ('success_message', None),
         ('info_message', None),
@@ -115,95 +101,82 @@ def main():
             st.session_state[key] = default
 
     # Page header
-    st.title(config.ui.app_name)
+    st.title("더파이브 헬스케어 Fitness Assessment System")
 
-    # Display session timeout warning if needed
-    if st.session_state.logged_in:
-        show_session_timeout_warning()
+    # Display font warning if needed
+    if not all(fonts_available.values()):
+        st.warning(
+            "일부 한글 폰트가 설치되지 않았습니다. PDF 생성에 문제가 있을 수 있습니다. " +
+            "필요한 폰트: " + ", ".join([k for k, v in fonts_available.items() if not v])
+        )
 
     # Display any error messages
     if st.session_state.error_message:
-        st.markdown(f'<div class="error-message">{st.session_state.error_message}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="error-message">{st.session_state.error_message}</div>', unsafe_allow_html = True)
         st.session_state.error_message = None
 
     # Display any success messages
     if st.session_state.success_message:
-        st.markdown(f'<div class="success-message">{st.session_state.success_message}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="success-message">{st.session_state.success_message}</div>', unsafe_allow_html = True)
         st.session_state.success_message = None
 
     # Display any info messages
     if st.session_state.info_message:
-        st.markdown(f'<div class="info-message">{st.session_state.info_message}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="info-message">{st.session_state.info_message}</div>', unsafe_allow_html = True)
         st.session_state.info_message = None
 
     # Login / Registration Page
     if not st.session_state.logged_in:
-        # Check if session is still valid
-        if not session_manager.validate_session():
-            login_register_page()
-        else:
-            # Restore session
-            st.session_state.logged_in = True
-            st.rerun()
+        login_register_page()
     else:
-        # Validate session on each page load
-        if not session_manager.validate_session():
-            st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
-            st.session_state.current_page = "login"
-            st.rerun()
-            return
-
         # Sidebar with navigation
         with st.sidebar:
             st.write(f"로그인: **{st.session_state.trainer_name}**")
-            
-            # Show session info
-            show_session_info()
-            
             st.divider()
 
-            if st.button("대시보드", use_container_width=True):
+            if st.button("대시보드", use_container_width = True):
                 st.session_state.current_page = "dashboard"
                 st.session_state.selected_client = None
                 st.session_state.selected_assessment = None
-                ActivityTracker.log_activity("navigate", {"page": "dashboard"})
 
-            if st.button("회원 관리", use_container_width=True):
+            if st.button("회원 관리", use_container_width = True):
                 st.session_state.current_page = "clients"
                 st.session_state.selected_client = None
                 st.session_state.selected_assessment = None
-                ActivityTracker.log_activity("navigate", {"page": "clients"})
 
-            if st.button("새 회원 추가", use_container_width=True):
+            if st.button("새 회원 추가", use_container_width = True):
                 st.session_state.current_page = "add_client"
                 st.session_state.selected_client = None
                 st.session_state.selected_assessment = None
-                ActivityTracker.log_activity("navigate", {"page": "add_client"})
 
-            if st.button("새 평가", use_container_width=True):
+            if st.button("새 평가", use_container_width = True):
                 st.session_state.current_page = "new_assessment"
                 st.session_state.selected_assessment = None
-                ActivityTracker.log_activity("navigate", {"page": "new_assessment"})
 
             st.divider()
 
             # Options
             st.subheader("옵션")
             st.checkbox("검색 기능이 있는 대시보드 사용",
-                        key="use_search_dashboard",
-                        value=st.session_state.use_search_dashboard)
+                        key = "use_search_dashboard",
+                        value = st.session_state.use_search_dashboard)
 
             st.checkbox("체크박스가 있는 간소화된 평가 폼 사용",
-                        key="use_simplified_assessment",
-                        value=st.session_state.use_simplified_assessment)
+                        key = "use_simplified_assessment",
+                        value = st.session_state.use_simplified_assessment)
 
             st.checkbox("직접 추가 방식으로 회원 추가",
-                        key="use_direct_client_add",
-                        value=st.session_state.use_direct_client_add)
+                        key = "use_direct_client_add",
+                        value = st.session_state.use_direct_client_add)
 
             st.divider()
-            if st.button("로그아웃", use_container_width=True):
-                AuthService.logout()
+            if st.button("로그아웃", use_container_width = True):
+                st.session_state.logged_in = False
+                st.session_state.trainer_id = None
+                st.session_state.trainer_name = None
+                st.session_state.current_page = "login"
+                st.session_state.selected_client = None
+                st.session_state.selected_assessment = None
                 st.session_state.success_message = "로그아웃 되었습니다."
                 st.rerun()
 
@@ -226,10 +199,6 @@ def main():
             elif st.session_state.current_page == "assessment_detail":
                 assessment_detail_page()
         except Exception as e:
-            error_logger.log_error(e, context={
-                'page': st.session_state.current_page,
-                'user_id': st.session_state.trainer_id
-            })
             st.error(f"페이지 로딩 중 오류가 발생했습니다: {str(e)}")
             st.session_state.error_message = "페이지 로딩 중 오류가 발생했습니다. 다시 시도해주세요."
             st.session_state.current_page = "dashboard"

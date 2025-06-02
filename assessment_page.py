@@ -4,14 +4,14 @@ def new_assessment_page():
     from datetime import datetime
 
     # Import needed functions from improved modules
-    from improved_assessment_scoring import (
+    from scoring import (
         calculate_pushup_score, calculate_toe_touch_score, calculate_single_leg_balance_score,
         calculate_step_test_score, calculate_category_scores
     )
-    from improved_recommendations import get_improvement_suggestions
+    from recommendations import get_improvement_suggestions
 
     # Import service layer instead of direct database access
-    from service_layer import ClientService, AssessmentService
+    from services import ClientService, AssessmentService
 
     if not st.session_state.selected_client:
         # If no client is selected, allow selecting one
@@ -39,7 +39,7 @@ def new_assessment_page():
         return
 
     # Get client details using ClientService
-    client = ClientService.get_client(st.session_state.selected_client)
+    client = ClientService.get_client_details(st.session_state.selected_client)
 
     if not client:
         st.error("회원을 찾을 수 없습니다.")
@@ -186,8 +186,8 @@ def new_assessment_page():
                                              key = "slb_right_open")
             slb_right_closed = st.number_input("눈 감은 상태 (초)", min_value = 0, max_value = 60, value = 0, step = 1,
                                                key = "slb_right_closed")
-            assessment_data['single_leg_balance_right_open'] = slb_right_open
-            assessment_data['single_leg_balance_right_closed'] = slb_right_closed
+            assessment_data['single_leg_balance_right_eyes_open'] = slb_right_open
+            assessment_data['single_leg_balance_right_eyes_closed'] = slb_right_closed
 
         with col2:
             st.write("**왼쪽 다리**")
@@ -195,8 +195,8 @@ def new_assessment_page():
                                             key = "slb_left_open")
             slb_left_closed = st.number_input("눈 감은 상태 (초)", min_value = 0, max_value = 60, value = 0, step = 1,
                                               key = "slb_left_closed")
-            assessment_data['single_leg_balance_left_open'] = slb_left_open
-            assessment_data['single_leg_balance_left_closed'] = slb_left_closed
+            assessment_data['single_leg_balance_left_eyes_open'] = slb_left_open
+            assessment_data['single_leg_balance_left_eyes_closed'] = slb_left_closed
 
         # Check for significant asymmetry
         open_asymmetry = abs(slb_right_open - slb_left_open)
@@ -361,9 +361,9 @@ def new_assessment_page():
             farmers_carry_time = st.number_input("시간 (초)", min_value = 0, max_value = 120, value = 0, step = 1,
                                                  key = "fc_time")
 
-        assessment_data['farmers_carry_weight'] = farmers_carry_weight
-        assessment_data['farmers_carry_distance'] = farmers_carry_distance
-        assessment_data['farmers_carry_time'] = farmers_carry_time
+        assessment_data['farmer_carry_weight'] = farmers_carry_weight
+        assessment_data['farmer_carry_distance'] = farmers_carry_distance
+        # farmer_carry_time stored in notes since no DB column exists
 
         farmers_carry_score = st.selectbox(
             "수행 평가",
@@ -377,7 +377,7 @@ def new_assessment_page():
             key = "fc_score"
         )[0]
 
-        assessment_data['farmers_carry_score'] = farmers_carry_score
+        assessment_data['farmer_carry_score'] = farmers_carry_score
 
         # Structured compensation pattern tracking
         st.subheader("관찰된 문제")
@@ -392,14 +392,19 @@ def new_assessment_page():
         fc_issues_noted = ", ".join([k for k, v in carry_issues.items() if v])
         additional_fc_notes = st.text_area("추가 메모", key = "fc_additional_notes")
 
+        # Include time in notes since no DB column exists
+        time_info = f"수행 시간: {farmers_carry_time}초"
+        
         if fc_issues_noted:
-            farmers_carry_notes = f"관찰된 문제: {fc_issues_noted}"
+            farmers_carry_notes = f"{time_info}\n관찰된 문제: {fc_issues_noted}"
             if additional_fc_notes:
                 farmers_carry_notes += f"\n추가 메모: {additional_fc_notes}"
         else:
-            farmers_carry_notes = additional_fc_notes
+            farmers_carry_notes = time_info
+            if additional_fc_notes:
+                farmers_carry_notes += f"\n추가 메모: {additional_fc_notes}"
 
-        assessment_data['farmers_carry_notes'] = farmers_carry_notes
+        assessment_data['farmer_carry_notes'] = farmers_carry_notes
 
     # 7. Harvard 3-min Step Test tab
     with tabs[6]:
@@ -412,21 +417,35 @@ def new_assessment_page():
         step_test_hr3 = st.number_input("회복기 심박수 3 (3:00-3:30 분, bpm)", min_value = 40, max_value = 220, value = 70,
                                         step = 1, key = "hr3")
 
-        assessment_data['step_test_hr1'] = step_test_hr1
-        assessment_data['step_test_hr2'] = step_test_hr2
-        assessment_data['step_test_hr3'] = step_test_hr3
+        # Map to database schema - store average heart rate and duration
+        avg_heart_rate = (step_test_hr1 + step_test_hr2 + step_test_hr3) / 3
+        assessment_data['harvard_step_test_heart_rate'] = int(avg_heart_rate)
+        assessment_data['harvard_step_test_duration'] = 180.0  # 3 minutes
 
         # Calculate Harvard Step Test score and PFI
         step_test_score, pfi = calculate_step_test_score(step_test_hr1, step_test_hr2, step_test_hr3)
-        assessment_data['step_test_score'] = step_test_score
-        assessment_data['step_test_pfi'] = pfi
+        # Store additional data in notes as JSON
+        import json
+        step_test_data = {
+            'hr1': step_test_hr1,
+            'hr2': step_test_hr2, 
+            'hr3': step_test_hr3,
+            'pfi': pfi,
+            'score': step_test_score
+        }
 
         # Show calculated PFI
         st.info(f"체력 지수 (PFI): {pfi:.1f} - 점수: {step_test_score}/4 - {['낮음', '보통', '좋음', '우수'][step_test_score - 1]}")
 
         # Observations
         step_test_notes = st.text_area("관찰 및 메모 (피로 징후, 호흡 패턴, 제한사항 등)", key = "st_notes")
-        assessment_data['step_test_notes'] = step_test_notes
+        
+        # Combine user notes with step test data
+        complete_notes = f"HR1: {step_test_hr1}, HR2: {step_test_hr2}, HR3: {step_test_hr3}, PFI: {pfi:.1f}, Score: {step_test_score}/4"
+        if step_test_notes:
+            complete_notes += f"\nNotes: {step_test_notes}"
+        
+        assessment_data['harvard_step_test_notes'] = complete_notes
 
     # Submit button outside of tabs
     st.divider()
@@ -440,17 +459,30 @@ def new_assessment_page():
             'strength_score': category_scores['strength_score'],
             'mobility_score': category_scores['mobility_score'],
             'balance_score': category_scores['balance_score'],
-            'cardio_score': category_scores['cardio_score']
+            'cardio_score': category_scores['cardio_score'],
+            'shoulder_mobility_score': assessment_data.get('shoulder_mobility_score', 0),
+            'farmer_carry_score': assessment_data.get('farmer_carry_score', 0)
         })
 
-        # Save assessment using AssessmentService
-        assessment_id = AssessmentService.save_new_assessment(assessment_data)
+        # Save assessment directly to bypass service layer issues
+        try:
+            from database import save_assessment as db_save_assessment
+            assessment_id = db_save_assessment(assessment_data)
+            if assessment_id:
+                success = True
+                message = "평가가 저장되었습니다!"
+            else:
+                success = False
+                message = "평가 저장에 실패했습니다."
+        except Exception as e:
+            success = False
+            message = f"평가 저장 중 오류가 발생했습니다: {str(e)}"
+            print(f"DEBUG: Assessment save error: {e}")
 
-        if assessment_id:
-            st.session_state.selected_assessment = assessment_id
-            st.session_state.current_page = "assessment_detail"
-            st.session_state.success_message = "평가가 성공적으로 저장되었습니다!"
+        if success:
+            st.session_state.success_message = message
+            st.session_state.current_page = "dashboard"
             st.rerun()
         else:
-            st.error("평가 저장 중 오류가 발생했습니다. 다시 시도해주세요.")
-            st.session_state.error_message = "평가 저장 중 오류가 발생했습니다."
+            st.error(message)
+            st.session_state.error_message = message

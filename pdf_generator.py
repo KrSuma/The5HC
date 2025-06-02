@@ -8,8 +8,8 @@ from fpdf import FPDF
 import base64
 from typing import Dict, List, Any, Optional, Tuple, BinaryIO
 
-from improved_assessment_scoring import get_score_description
-from improved_recommendations import get_recommended_schedule, get_intensity_recommendations
+from scoring import get_score_description
+from recommendations import get_recommended_schedule, get_intensity_recommendations
 
 
 class FitnessPDF(FPDF):

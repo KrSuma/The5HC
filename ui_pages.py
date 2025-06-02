@@ -8,15 +8,15 @@ from datetime import datetime
 import re
 
 # Import services instead of direct database functions
-from service_layer import (
+from services import (
     AuthService, ClientService, AssessmentService,
     DashboardService, AnalyticsService
 )
 
 # Import improved assessment scoring and PDF functions
-from improved_assessment_scoring import get_score_description
-from improved_recommendations import get_improvement_suggestions
-from improved_pdf_generator import create_pdf_report, get_pdf_download_link
+from scoring import get_score_description
+from recommendations import get_improvement_suggestions
+from pdf_generator import create_pdf_report, get_pdf_download_link
 
 
 def login_register_page():
@@ -30,25 +30,14 @@ def login_register_page():
 
         if st.button("로그인", key = "login_button"):
             if username and password:
-                trainer_id = AuthService.authenticate_user(username, password)
-                if trainer_id:
-                    # Get trainer name from database
-                    # In a real implementation, this would also be handled by the service layer
-                    import sqlite3
-                    conn = sqlite3.connect('fitness_assessment.db')
-                    c = conn.cursor()
-                    c.execute("SELECT name FROM trainers WHERE id = ?", (trainer_id,))
-                    trainer_name = c.fetchone()[0]
-                    conn.close()
-
-                    st.session_state.logged_in = True
-                    st.session_state.trainer_id = trainer_id
-                    st.session_state.trainer_name = trainer_name
+                success, message = AuthService.login(username, password)
+                trainer_id = st.session_state.get('trainer_id') if success else None
+                if success:
                     st.session_state.current_page = "dashboard"
-                    st.session_state.success_message = f"{trainer_name}님 환영합니다!"
+                    st.session_state.success_message = message
                     st.rerun()
                 else:
-                    st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
+                    st.error(message)
             else:
                 st.warning("아이디와 비밀번호를 모두 입력해주세요.")
 
@@ -67,11 +56,11 @@ def login_register_page():
                 elif not re.match(r"[^@]+@[^@]+\.[^@]+", email):
                     st.error("유효하지 않은 이메일 주소입니다.")
                 else:
-                    success = AuthService.register_user(new_username, new_password, name, email)
+                    success, message = AuthService.register(new_username, new_password, name, email)
                     if success:
-                        st.success("회원가입이 완료되었습니다! 로그인해주세요.")
+                        st.success(message)
                     else:
-                        st.error("이미 사용 중인 아이디 또는 이메일입니다.")
+                        st.error(message)
             else:
                 st.warning("모든 항목을 입력해주세요.")
 
@@ -81,7 +70,7 @@ def dashboard_page():
     st.header("대시보드")
 
     # Get trainer stats and recent assessments
-    stats = DashboardService.get_trainer_statistics(st.session_state.trainer_id)
+    stats = DashboardService.get_trainer_stats(st.session_state.trainer_id)
     recent_assessments = DashboardService.get_recent_assessments(st.session_state.trainer_id)
 
     # Display stats
@@ -135,7 +124,7 @@ def dashboard_page_with_search():
     st.header("대시보드")
 
     # Get stats
-    stats = DashboardService.get_trainer_statistics(st.session_state.trainer_id)
+    stats = DashboardService.get_trainer_stats(st.session_state.trainer_id)
 
     # Display stats
     col1, col2 = st.columns(2)
@@ -274,16 +263,16 @@ def clients_page():
 
             # Get assessment counts for each client
             client_df["평가 수"] = client_df["ID"].apply(
-                lambda client_id: len(AssessmentService.get_client_assessment_history(client_id))
+                lambda client_id: len(AssessmentService.get_client_assessments(client_id))
             )
 
             # Get client details for additional information
             client_df["나이"] = client_df["ID"].apply(
-                lambda client_id: ClientService.get_client(client_id)["age"]
+                lambda client_id: ClientService.get_client_details(client_id)["age"]
             )
 
             client_df["성별"] = client_df["ID"].apply(
-                lambda client_id: ClientService.get_client(client_id)["gender"]
+                lambda client_id: ClientService.get_client_details(client_id)["gender"]
             )
 
             # Button to view client details
@@ -334,42 +323,45 @@ def clients_page():
                 client_phone = st.text_input("연락처")
 
             submit_button = st.form_submit_button("회원 추가")
-
+            
+            print(f"DEBUG: Form submitted: {submit_button}")
             if submit_button:
+                print(f"DEBUG: Inside submit_button block")
+                print(f"DEBUG: Session state trainer_id: {st.session_state.get('trainer_id', 'NOT FOUND')}")
                 # Use a submission guard to prevent duplicate submissions
                 if 'last_submission_time' not in st.session_state or \
                         (datetime.now().timestamp() - st.session_state.last_submission_time) > 5:
 
+                    print(f"DEBUG: Passed submission guard")
                     st.session_state.last_submission_time = datetime.now().timestamp()
 
                     if client_name and client_age and client_gender and client_height and client_weight:
-                        # Check if client already exists with same name
-                        existing_clients = ClientService.get_trainer_clients(st.session_state.trainer_id)
-                        existing_names = [client[1] for client in existing_clients]
+                        # Simplified - directly add client without checking existing names for now
+                        print(f"DEBUG: About to add client {client_name} for trainer {st.session_state.trainer_id}")
+                        # Add client using direct method for testing
+                        from add_client import add_client_direct
+                        success, result = add_client_direct(
+                            st.session_state.trainer_id,
+                            client_name,
+                            client_age,
+                            client_gender,
+                            client_height,
+                            client_weight,
+                            client_email,
+                            client_phone
+                        )
+                        message = f"{client_name} 회원이 추가되었습니다!" if success else str(result)
 
-                        if client_name in existing_names:
-                            st.error(f"'{client_name}' 회원이 이미 존재합니다. 다른 이름을 사용해주세요.")
+                        if success:
+                            # Update form timestamp to force form recreation
+                            st.session_state.form_timestamp = datetime.now().timestamp()
+                            st.success(message)
+
+                            # Switch to client list tab - using rerun to refresh the page
+                            st.session_state.current_page = "clients"
+                            st.rerun()
                         else:
-                            # Add client using service
-                            client_id = ClientService.add_new_client(
-                                st.session_state.trainer_id,
-                                client_name,
-                                client_age,
-                                client_gender,
-                                client_height,
-                                client_weight,
-                                client_email,
-                                client_phone
-                            )
-
-                            if client_id:
-                                # Update form timestamp to force form recreation
-                                st.session_state.form_timestamp = datetime.now().timestamp()
-                                st.success(f"{client_name} 회원이 추가되었습니다!")
-
-                                # Switch to client list tab - using rerun to refresh the page
-                                st.session_state.current_page = "clients"
-                                st.rerun()
+                            st.error(f"회원 추가 실패: {message}")
                     else:
                         st.warning("필수 항목(이름, 나이, 성별, 키, 체중)을 모두 입력해주세요.")
 
@@ -381,7 +373,7 @@ def client_detail_page():
         return
 
     # Get client details using service
-    client = ClientService.get_client(st.session_state.selected_client)
+    client = ClientService.get_client_details(st.session_state.selected_client)
 
     if not client:
         st.error("회원을 찾을 수 없습니다.")
@@ -407,14 +399,14 @@ def client_detail_page():
         st.subheader("연락처 정보")
         st.write(f"**이메일:** {client['email'] or '미입력'}")
         st.write(f"**연락처:** {client['phone'] or '미입력'}")
-        st.write(f"**등록일:** {client['registration_date']}")
+        st.write(f"**등록일:** {client['created_at']}")
 
     # Assessments section
     st.divider()
     st.subheader("체력 평가 기록")
 
     # Get client assessments using service
-    assessments = AssessmentService.get_client_assessment_history(client['id'])
+    assessments = AssessmentService.get_client_assessments(client['id'])
 
     if assessments:
         # Button to start new assessment
@@ -456,14 +448,14 @@ def assessment_detail_page():
         return
 
     # Get assessment details using service
-    assessment = AssessmentService.get_assessment(st.session_state.selected_assessment)
+    assessment = AssessmentService.get_assessment_details(st.session_state.selected_assessment)
 
     if not assessment:
         st.error("평가를 찾을 수 없습니다.")
         return
 
     # Get client details using service
-    client = ClientService.get_client(assessment['client_id'])
+    client = ClientService.get_client_details(assessment['client_id'])
 
     if not client:
         st.error("회원을 찾을 수 없습니다.")

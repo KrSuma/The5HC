@@ -8,11 +8,13 @@ from datetime import datetime
 def add_client_direct(trainer_id, name, age, gender, height, weight, email = "", phone = ""):
     """Add a client directly to the database with minimal dependencies"""
     try:
+        print(f"DEBUG: add_client_direct called with trainer_id={trainer_id}, name={name}")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Adding client: {name} for trainer {trainer_id}")
         # Connect directly to the database
         conn = sqlite3.connect('fitness_assessment.db')
         c = conn.cursor()
-
-        registration_date = datetime.now().strftime("%Y-%m-%d")
 
         # Check if the client already exists
         c.execute("SELECT COUNT(*) FROM clients WHERE trainer_id = ? AND name = ?",
@@ -23,10 +25,10 @@ def add_client_direct(trainer_id, name, age, gender, height, weight, email = "",
             conn.close()
             return False, "해당 이름의 회원이 이미 존재합니다."
 
-        # Insert the new client
+        # Insert the new client (removed registration_date since it doesn't exist in schema)
         c.execute(
-            "INSERT INTO clients (trainer_id, name, age, gender, height, weight, email, phone, registration_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (trainer_id, name, age, gender, height, weight, email, phone, registration_date)
+            "INSERT INTO clients (trainer_id, name, age, gender, height, weight, email, phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (trainer_id, name, age, gender, height, weight, email, phone)
         )
 
         client_id = c.lastrowid
