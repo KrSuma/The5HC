@@ -16,7 +16,7 @@ from src.services.service_layer import (
 # Import improved assessment scoring and report functions
 from src.core.scoring import get_score_description
 from src.core.recommendations import get_improvement_suggestions
-from src.utils.pdf_generator import get_pdf_download_link
+from src.utils.pdf_utils import get_pdf_download_link
 from src.utils.html_report_generator import create_html_report, get_html_download_link
 from src.utils.weasyprint_pdf_generator import create_weasyprint_pdf
 
