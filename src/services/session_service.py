@@ -15,6 +15,18 @@ from src.data.database_config import IS_PRODUCTION
 logger = logging.getLogger(__name__)
 
 
+def execute_db_query(cursor, query: str, params: tuple = None):
+    """Execute query with proper placeholder conversion for PostgreSQL"""
+    if IS_PRODUCTION and params:
+        # Convert SQLite ? placeholders to PostgreSQL %s
+        query = query.replace('?', '%s')
+    
+    if params:
+        cursor.execute(query, params)
+    else:
+        cursor.execute(query)
+
+
 @dataclass
 class SessionPackage:
     """Data class for session packages"""
@@ -96,7 +108,7 @@ class SessionService:
                 
                 if IS_PRODUCTION:
                     # PostgreSQL - use RETURNING clause
-                    cursor.execute('''
+                    execute_db_query(cursor, '''
                         INSERT INTO session_packages 
                         (client_id, trainer_id, total_amount, session_price, 
                          total_sessions, remaining_credits, remaining_sessions,
@@ -110,7 +122,7 @@ class SessionService:
                     package_id = result['id'] if isinstance(result, dict) else result[0]
                 else:
                     # SQLite - use lastrowid
-                    cursor.execute('''
+                    execute_db_query(cursor, '''
                         INSERT INTO session_packages 
                         (client_id, trainer_id, total_amount, session_price, 
                          total_sessions, remaining_credits, remaining_sessions,
@@ -165,7 +177,7 @@ class SessionService:
                 
                 query += ' ORDER BY created_at DESC'
                 
-                cursor.execute(query, params)
+                execute_db_query(cursor, query, params)
                 rows = cursor.fetchall()
                 
                 packages = []
@@ -208,7 +220,7 @@ class SessionService:
                 cursor = conn.cursor()
                 
                 # Get package info
-                cursor.execute('''
+                execute_db_query(cursor, '''
                     SELECT session_price, remaining_sessions, remaining_credits
                     FROM session_packages 
                     WHERE id = ? AND client_id = ? AND trainer_id = ? AND is_active = 1
@@ -226,8 +238,8 @@ class SessionService:
                 # Create the session
                 if IS_PRODUCTION:
                     # PostgreSQL - use RETURNING clause
-                    cursor.execute('''
-                        INSERT INTO training_sessions 
+                    execute_db_query(cursor, '''
+                        INSERT INTO sessions 
                         (client_id, trainer_id, package_id, session_date, session_time,
                          session_duration, session_cost, status, notes)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, 'scheduled', %s)
@@ -238,8 +250,8 @@ class SessionService:
                     session_id = result['id'] if isinstance(result, dict) else result[0]
                 else:
                     # SQLite - use lastrowid
-                    cursor.execute('''
-                        INSERT INTO training_sessions 
+                    execute_db_query(cursor, '''
+                        INSERT INTO sessions 
                         (client_id, trainer_id, package_id, session_date, session_time,
                          session_duration, session_cost, status, notes)
                         VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled', ?)
@@ -273,9 +285,9 @@ class SessionService:
                 cursor = conn.cursor()
                 
                 # Get session info
-                cursor.execute('''
+                execute_db_query(cursor, '''
                     SELECT package_id, session_cost, status, client_id
-                    FROM training_sessions 
+                    FROM sessions 
                     WHERE id = ? AND trainer_id = ?
                 ''', (session_id, trainer_id))
                 
@@ -289,14 +301,14 @@ class SessionService:
                     raise ValueError("Session already completed")
                 
                 # Update session status
-                cursor.execute('''
-                    UPDATE training_sessions 
+                execute_db_query(cursor, '''
+                    UPDATE sessions 
                     SET status = 'completed', completed_at = CURRENT_TIMESTAMP, notes = ?
                     WHERE id = ?
                 ''', (notes, session_id))
                 
                 # Update package credits and sessions
-                cursor.execute('''
+                execute_db_query(cursor, '''
                     UPDATE session_packages 
                     SET remaining_credits = remaining_credits - ?,
                         remaining_sessions = remaining_sessions - 1,
@@ -331,8 +343,8 @@ class SessionService:
                 cursor = conn.cursor()
                 
                 # Update session status
-                cursor.execute('''
-                    UPDATE training_sessions 
+                execute_db_query(cursor, '''
+                    UPDATE sessions 
                     SET status = 'cancelled', notes = ?
                     WHERE id = ? AND trainer_id = ? AND status = 'scheduled'
                 ''', (reason, session_id, trainer_id))
@@ -370,7 +382,7 @@ class SessionService:
                     SELECT id, client_id, trainer_id, package_id, session_date,
                            session_time, session_duration, session_cost, status,
                            notes, created_at, completed_at
-                    FROM training_sessions 
+                    FROM sessions 
                     WHERE client_id = ? AND trainer_id = ?
                 '''
                 params = [client_id, trainer_id]
@@ -381,7 +393,7 @@ class SessionService:
                 
                 query += ' ORDER BY session_date DESC, session_time DESC'
                 
-                cursor.execute(query, params)
+                execute_db_query(cursor, query, params)
                 rows = cursor.fetchall()
                 
                 sessions = []
@@ -415,7 +427,7 @@ class SessionService:
                 cursor = conn.cursor()
                 
                 # Get package details
-                cursor.execute('''
+                execute_db_query(cursor, '''
                     SELECT sp.*, c.name as client_name
                     FROM session_packages sp
                     JOIN clients c ON sp.client_id = c.id
@@ -427,9 +439,9 @@ class SessionService:
                     raise ValueError("Package not found or access denied")
                 
                 # Get session history
-                cursor.execute('''
+                execute_db_query(cursor, '''
                     SELECT id, session_date, session_time, session_cost, status, notes
-                    FROM training_sessions 
+                    FROM sessions 
                     WHERE package_id = ? AND trainer_id = ?
                     ORDER BY session_date DESC
                 ''', (package_id, trainer_id))
@@ -493,7 +505,7 @@ class SessionService:
                 cursor = conn.cursor()
                 
                 # Get the most recent active package
-                cursor.execute('''
+                execute_db_query(cursor, '''
                     SELECT id, session_price
                     FROM session_packages 
                     WHERE client_id = ? AND trainer_id = ? AND is_active = 1
@@ -509,7 +521,7 @@ class SessionService:
                 additional_sessions = amount // session_price
                 
                 # Update package credits
-                cursor.execute('''
+                execute_db_query(cursor, '''
                     UPDATE session_packages 
                     SET remaining_credits = remaining_credits + ?,
                         remaining_sessions = remaining_sessions + ?,
@@ -539,16 +551,16 @@ class SessionService:
                        description: Optional[str] = None):
         """Helper method to record payment"""
         if IS_PRODUCTION:
-            cursor.execute('''
-                INSERT INTO payment_records 
+            execute_db_query(cursor, '''
+                INSERT INTO payments 
                 (client_id, trainer_id, package_id, amount, payment_method, 
                  payment_date, description)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             ''', (client_id, trainer_id, package_id, amount, payment_method,
                   payment_date, description))
         else:
-            cursor.execute('''
-                INSERT INTO payment_records 
+            execute_db_query(cursor, '''
+                INSERT INTO payments 
                 (client_id, trainer_id, package_id, amount, payment_method, 
                  payment_date, description)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -570,10 +582,10 @@ class SessionService:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
                 
-                cursor.execute('''
+                execute_db_query(cursor, '''
                     SELECT id, client_id, trainer_id, package_id, amount,
                            payment_method, payment_date, description, created_at
-                    FROM payment_records 
+                    FROM payments 
                     WHERE client_id = ? AND trainer_id = ?
                     ORDER BY payment_date DESC
                 ''', (client_id, trainer_id))

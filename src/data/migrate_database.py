@@ -539,6 +539,121 @@ def add_missing_assessment_columns():
         return False
 
 
+def add_trainer_id_to_session_tables():
+    """Add trainer_id column to session-related tables if it doesn't exist"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Add updated_at column to session_packages first
+            if IS_PRODUCTION:
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'session_packages' 
+                    AND column_name = 'updated_at'
+                """)
+                result = cursor.fetchone()
+                updated_at_exists = bool(result)
+            else:
+                cursor.execute("PRAGMA table_info(session_packages)")
+                columns_info = cursor.fetchall()
+                updated_at_exists = any(col[1] == 'updated_at' for col in columns_info)
+            
+            if not updated_at_exists:
+                alter_query = adapt_query_for_db(
+                    sqlite_query="ALTER TABLE session_packages ADD COLUMN updated_at DATETIME",
+                    postgresql_query="ALTER TABLE session_packages ADD COLUMN updated_at TIMESTAMP"
+                )
+                execute_query(alter_query, fetch_all=False)
+                logger.info("Added updated_at column to session_packages table")
+            
+            # Tables to update with trainer_id
+            tables_to_update = ['session_packages', 'sessions', 'payments']
+            
+            for table_name in tables_to_update:
+                # Check if column already exists
+                if IS_PRODUCTION:
+                    # PostgreSQL check
+                    cursor.execute("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = %s 
+                        AND column_name = 'trainer_id'
+                    """, (table_name,))
+                    result = cursor.fetchone()
+                    column_exists = bool(result)
+                else:
+                    # SQLite check
+                    cursor.execute(f"PRAGMA table_info({table_name})")
+                    columns_info = cursor.fetchall()
+                    column_exists = any(col[1] == 'trainer_id' for col in columns_info)
+                
+                if not column_exists:
+                    # Add trainer_id column
+                    alter_query = adapt_query_for_db(
+                        sqlite_query=f"ALTER TABLE {table_name} ADD COLUMN trainer_id INTEGER",
+                        postgresql_query=f"ALTER TABLE {table_name} ADD COLUMN trainer_id INTEGER"
+                    )
+                    execute_query(alter_query, fetch_all=False)
+                    logger.info(f"Added trainer_id column to {table_name} table")
+                    
+                    # For existing records, set trainer_id based on client's trainer
+                    if table_name in ['session_packages', 'sessions']:
+                        update_query = adapt_query_for_db(
+                            sqlite_query=f"""
+                                UPDATE {table_name} 
+                                SET trainer_id = (
+                                    SELECT trainer_id 
+                                    FROM clients 
+                                    WHERE clients.id = {table_name}.client_id
+                                )
+                                WHERE trainer_id IS NULL
+                            """,
+                            postgresql_query=f"""
+                                UPDATE {table_name} 
+                                SET trainer_id = clients.trainer_id
+                                FROM clients 
+                                WHERE clients.id = {table_name}.client_id
+                                AND {table_name}.trainer_id IS NULL
+                            """
+                        )
+                        execute_query(update_query, fetch_all=False)
+                        logger.info(f"Updated existing {table_name} records with trainer_id")
+                    elif table_name == 'payments':
+                        # For payments, get trainer_id through session_packages
+                        update_query = adapt_query_for_db(
+                            sqlite_query="""
+                                UPDATE payments 
+                                SET trainer_id = (
+                                    SELECT trainer_id 
+                                    FROM clients 
+                                    WHERE clients.id = payments.client_id
+                                )
+                                WHERE trainer_id IS NULL AND package_id IS NOT NULL
+                            """,
+                            postgresql_query="""
+                                UPDATE payments 
+                                SET trainer_id = clients.trainer_id
+                                FROM clients 
+                                WHERE clients.id = payments.client_id
+                                AND payments.trainer_id IS NULL 
+                                AND payments.package_id IS NOT NULL
+                            """
+                        )
+                        execute_query(update_query, fetch_all=False)
+                        logger.info(f"Updated existing {table_name} records with trainer_id")
+                else:
+                    logger.info(f"trainer_id column already exists in {table_name} table")
+                    
+            conn.commit()
+            return True
+                
+    except Exception as e:
+        logger.error(f"Error adding trainer_id column to session tables: {e}")
+        return False
+
+
 def run_migration():
     """Run the complete database migration"""
     logger.info("Starting database migration...")
@@ -553,6 +668,10 @@ def run_migration():
         # Add any missing columns
         if add_missing_assessment_columns():
             logger.info("Missing assessment columns added successfully")
+        
+        # Add trainer_id to session tables
+        if add_trainer_id_to_session_tables():
+            logger.info("trainer_id columns added to session tables successfully")
         
         logger.info("Database migration completed successfully!")
         return True
