@@ -103,7 +103,10 @@ def create_tables():
             shoulder_mobility_notes TEXT,
             farmer_carry_weight REAL,
             farmer_carry_distance REAL,
+            farmer_carry_score INTEGER,
             farmer_carry_notes TEXT,
+            harvard_step_test_heart_rate INTEGER,
+            harvard_step_test_duration REAL,
             harvard_step_test_notes TEXT,
             overall_score REAL,
             strength_score REAL,
@@ -140,7 +143,10 @@ def create_tables():
             shoulder_mobility_notes TEXT,
             farmer_carry_weight FLOAT,
             farmer_carry_distance FLOAT,
+            farmer_carry_score INTEGER,
             farmer_carry_notes TEXT,
+            harvard_step_test_heart_rate INTEGER,
+            harvard_step_test_duration FLOAT,
             harvard_step_test_notes TEXT,
             overall_score FLOAT,
             strength_score FLOAT,
@@ -286,6 +292,10 @@ def create_tables():
         if add_trainer_id_to_assessments():
             logger.info("trainer_id column verified/added to assessments table")
         
+        # Add missing assessment columns if needed
+        if add_missing_assessment_columns():
+            logger.info("Missing assessment columns verified/added successfully")
+        
         return True
         
     except Exception as e:
@@ -354,6 +364,56 @@ def add_rate_limit_columns():
         return False
 
 
+def add_missing_assessment_columns():
+    """Add missing score columns to assessments table if they don't exist"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Define columns to check and add
+            columns_to_add = [
+                ('farmer_carry_score', 'INTEGER', 'INTEGER'),
+                ('harvard_step_test_heart_rate', 'INTEGER', 'INTEGER'), 
+                ('harvard_step_test_duration', 'REAL', 'FLOAT')
+            ]
+            
+            for column_name, sqlite_type, pg_type in columns_to_add:
+                # Check if column already exists
+                if IS_PRODUCTION:
+                    # PostgreSQL check
+                    cursor.execute("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'assessments' 
+                        AND column_name = %s
+                    """, (column_name,))
+                    result = cursor.fetchone()
+                    column_exists = bool(result)
+                else:
+                    # SQLite check
+                    cursor.execute("PRAGMA table_info(assessments)")
+                    columns_info = cursor.fetchall()
+                    column_exists = any(col[1] == column_name for col in columns_info)
+                
+                if not column_exists:
+                    # Add column
+                    alter_query = adapt_query_for_db(
+                        sqlite_query=f"ALTER TABLE assessments ADD COLUMN {column_name} {sqlite_type}",
+                        postgresql_query=f"ALTER TABLE assessments ADD COLUMN {column_name} {pg_type}"
+                    )
+                    execute_query(alter_query, fetch_all=False)
+                    logger.info(f"Added {column_name} column to assessments table")
+                else:
+                    logger.info(f"{column_name} column already exists in assessments table")
+                    
+            conn.commit()
+            return True
+                
+    except Exception as e:
+        logger.error(f"Error adding missing assessment columns: {e}")
+        return False
+
+
 def add_trainer_id_to_assessments():
     """Add trainer_id column to assessments table if it doesn't exist"""
     try:
@@ -419,6 +479,66 @@ def add_trainer_id_to_assessments():
         return False
 
 
+def add_missing_assessment_columns():
+    """Add missing columns to assessments table"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Check which columns exist
+            if IS_PRODUCTION:
+                # PostgreSQL check
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'assessments' 
+                    AND column_name IN ('farmer_carry_score', 'harvard_step_test_heart_rate', 'harvard_step_test_duration')
+                """)
+                rows = cursor.fetchall()
+                # Handle RealDictCursor results
+                if rows and isinstance(rows[0], dict):
+                    existing_columns = [row['column_name'] for row in rows]
+                else:
+                    existing_columns = [row[0] for row in rows] if rows else []
+            else:
+                # SQLite check
+                cursor.execute("PRAGMA table_info(assessments)")
+                columns_info = cursor.fetchall()
+                existing_columns = [col[1] for col in columns_info]
+            
+            # Add missing columns
+            if 'farmer_carry_score' not in existing_columns:
+                alter_query = adapt_query_for_db(
+                    sqlite_query="ALTER TABLE assessments ADD COLUMN farmer_carry_score INTEGER",
+                    postgresql_query="ALTER TABLE assessments ADD COLUMN farmer_carry_score INTEGER"
+                )
+                execute_query(alter_query, fetch_all=False)
+                logger.info("Added farmer_carry_score column to assessments table")
+            
+            if 'harvard_step_test_heart_rate' not in existing_columns:
+                alter_query = adapt_query_for_db(
+                    sqlite_query="ALTER TABLE assessments ADD COLUMN harvard_step_test_heart_rate INTEGER",
+                    postgresql_query="ALTER TABLE assessments ADD COLUMN harvard_step_test_heart_rate INTEGER"
+                )
+                execute_query(alter_query, fetch_all=False)
+                logger.info("Added harvard_step_test_heart_rate column to assessments table")
+            
+            if 'harvard_step_test_duration' not in existing_columns:
+                alter_query = adapt_query_for_db(
+                    sqlite_query="ALTER TABLE assessments ADD COLUMN harvard_step_test_duration REAL",
+                    postgresql_query="ALTER TABLE assessments ADD COLUMN harvard_step_test_duration FLOAT"
+                )
+                execute_query(alter_query, fetch_all=False)
+                logger.info("Added harvard_step_test_duration column to assessments table")
+                
+            conn.commit()
+            return True
+            
+    except Exception as e:
+        logger.error(f"Error adding missing assessment columns: {e}")
+        return False
+
+
 def run_migration():
     """Run the complete database migration"""
     logger.info("Starting database migration...")
@@ -430,6 +550,10 @@ def run_migration():
     
     # Create tables
     if create_tables():
+        # Add any missing columns
+        if add_missing_assessment_columns():
+            logger.info("Missing assessment columns added successfully")
+        
         logger.info("Database migration completed successfully!")
         return True
     else:
