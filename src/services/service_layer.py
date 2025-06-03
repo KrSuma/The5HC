@@ -651,9 +651,14 @@ class RecommendationService:
 class AppInitService:
     """Application initialization service"""
     
+    _initialized = False
+    
     @staticmethod
     def initialize():
-        """Initialize application"""
+        """Initialize application (only runs once)"""
+        if AppInitService._initialized:
+            return
+            
         try:
             # Initialize database
             from src.data.database import init_db
@@ -664,6 +669,9 @@ class AppInitService:
             
             # Log initialization
             app_logger.info("Application initialized successfully")
+            
+            # Mark as initialized
+            AppInitService._initialized = True
             
         except Exception as e:
             error_logger.log_critical("Application initialization failed", error=e)

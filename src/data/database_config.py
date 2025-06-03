@@ -62,7 +62,7 @@ def get_db_connection():
     try:
         if IS_PRODUCTION:
             # PostgreSQL connection
-            logger.info(f"Connecting to PostgreSQL: host={DB_CONFIG['host']}, db={DB_CONFIG['database']}")
+            logger.debug(f"Connecting to PostgreSQL: host={DB_CONFIG['host']}, db={DB_CONFIG['database']}")
             conn = psycopg2.connect(
                 host=DB_CONFIG['host'],
                 port=DB_CONFIG['port'],
