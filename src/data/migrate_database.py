@@ -260,11 +260,11 @@ def create_tables():
     
     try:
         for table_name, query in tables:
-            logger.info(f"Creating table: {table_name}")
-            logger.info(f"Using {'PostgreSQL' if IS_PRODUCTION else 'SQLite'} mode")
+            logger.info(f"Ensuring table exists: {table_name}")
+            logger.debug(f"Using {'PostgreSQL' if IS_PRODUCTION else 'SQLite'} mode")
             logger.debug(f"Query for {table_name}: {query[:100]}...")  # Log first 100 chars of query
             execute_query(query, fetch_all=False)
-            logger.info(f"Successfully created table: {table_name}")
+            logger.debug(f"Table ready: {table_name}")
             
         logger.info("All tables created successfully!")
         return True
