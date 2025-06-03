@@ -99,6 +99,11 @@ def execute_query(query: str, params: tuple = None, fetch_one: bool = False, fet
         Query results or None
     """
     try:
+        # Convert SQLite-style placeholders to PostgreSQL-style if needed
+        if IS_PRODUCTION and params:
+            # Replace ? with %s for PostgreSQL
+            query = query.replace('?', '%s')
+        
         with get_db_connection() as conn:
             cursor = conn.cursor()
             

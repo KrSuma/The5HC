@@ -11,6 +11,18 @@ import re
 # Import database configuration
 from src.data.database_config import get_db_connection, DatabaseError, execute_query, adapt_query_for_db, IS_PRODUCTION
 
+
+def execute_db_query(cursor, query: str, params: tuple = None):
+    """Execute query with proper placeholder conversion for PostgreSQL"""
+    if IS_PRODUCTION and params:
+        # Convert SQLite ? placeholders to PostgreSQL %s
+        query = query.replace('?', '%s')
+    
+    if params:
+        cursor.execute(query, params)
+    else:
+        cursor.execute(query)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -97,7 +109,7 @@ class AuthRateLimiter:
         try:
             with get_db_connection() as conn:
                 c = conn.cursor()
-                c.execute("""
+                execute_db_query(c, """
                     SELECT failed_login_attempts, locked_until 
                     FROM trainers 
                     WHERE username = ?
@@ -116,7 +128,7 @@ class AuthRateLimiter:
                         return False, locked_time
                     else:
                         # Reset lock
-                        c.execute("""
+                        execute_db_query(c, """
                             UPDATE trainers 
                             SET failed_login_attempts = 0, locked_until = NULL 
                             WHERE username = ?
@@ -136,14 +148,14 @@ class AuthRateLimiter:
                 c = conn.cursor()
                 
                 # Increment failed attempts
-                c.execute("""
+                execute_db_query(c, """
                     UPDATE trainers 
                     SET failed_login_attempts = failed_login_attempts + 1 
                     WHERE username = ?
                 """, (username,))
                 
                 # Check if we need to lock the account
-                c.execute("""
+                execute_db_query(c, """
                     SELECT failed_login_attempts 
                     FROM trainers 
                     WHERE username = ?
@@ -152,7 +164,7 @@ class AuthRateLimiter:
                 result = c.fetchone()
                 if result and result[0] >= self.max_attempts:
                     lock_until = datetime.now() + timedelta(minutes=self.window_minutes)
-                    c.execute("""
+                    execute_db_query(c, """
                         UPDATE trainers 
                         SET locked_until = ? 
                         WHERE username = ?
@@ -168,7 +180,7 @@ class AuthRateLimiter:
         try:
             with get_db_connection() as conn:
                 c = conn.cursor()
-                c.execute("""
+                execute_db_query(c, """
                     UPDATE trainers 
                     SET failed_login_attempts = 0, 
                         locked_until = NULL,
@@ -204,7 +216,7 @@ def register_trainer(username: str, password: str, name: str, email: str) -> boo
         
         with get_db_connection() as conn:
             c = conn.cursor()
-            c.execute("""
+            execute_db_query(c, """
                 INSERT INTO trainers (username, password_hash, name, email) 
                 VALUES (?, ?, ?, ?)
             """, (username, password_hash, name, email))
@@ -233,7 +245,7 @@ def authenticate(username: str, password: str) -> Optional[int]:
         
         with get_db_connection() as conn:
             c = conn.cursor()
-            c.execute("""
+            execute_db_query(c, """
                 SELECT id, password_hash 
                 FROM trainers 
                 WHERE username = ?
@@ -288,7 +300,7 @@ def add_client(trainer_id: int, name: str, age: int, gender: str,
         
         with get_db_connection() as conn:
             c = conn.cursor()
-            c.execute("""
+            execute_db_query(c, """
                 INSERT INTO clients 
                 (trainer_id, name, age, gender, height, weight, email, phone) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -309,7 +321,7 @@ def get_clients(trainer_id: int) -> List[Tuple[int, str]]:
     try:
         with get_db_connection() as conn:
             c = conn.cursor()
-            c.execute("""
+            execute_db_query(c, """
                 SELECT id, name 
                 FROM clients 
                 WHERE trainer_id = ? 
@@ -328,7 +340,7 @@ def get_client_details(client_id: int) -> Optional[Dict[str, Any]]:
     try:
         with get_db_connection() as conn:
             c = conn.cursor()
-            c.execute("SELECT * FROM clients WHERE id = ?", (client_id,))
+            execute_db_query(c, "SELECT * FROM clients WHERE id = ?", (client_id,))
             row = c.fetchone()
             
             if row:
@@ -361,7 +373,7 @@ def save_assessment(assessment_data: Dict[str, Any]) -> Optional[int]:
                 INSERT INTO assessments ({', '.join(columns)}) 
                 VALUES ({', '.join(placeholders)})
             """
-            c.execute(query, values)
+            execute_db_query(c, query, values)
             conn.commit()
             
             assessment_id = c.lastrowid
@@ -378,7 +390,7 @@ def get_assessments(client_id: int) -> List[Dict[str, Any]]:
     try:
         with get_db_connection() as conn:
             c = conn.cursor()
-            c.execute("""
+            execute_db_query(c, """
                 SELECT id, date, overall_score 
                 FROM assessments 
                 WHERE client_id = ? 
@@ -397,7 +409,7 @@ def get_assessment_details(assessment_id: int) -> Optional[Dict[str, Any]]:
     try:
         with get_db_connection() as conn:
             c = conn.cursor()
-            c.execute("SELECT * FROM assessments WHERE id = ?", (assessment_id,))
+            execute_db_query(c, "SELECT * FROM assessments WHERE id = ?", (assessment_id,))
             row = c.fetchone()
             
             if row:
@@ -417,7 +429,7 @@ def get_trainer_stats(trainer_id: int) -> Dict[str, Any]:
             c = conn.cursor()
             
             # Single query with CTEs for better performance
-            c.execute("""
+            execute_db_query(c, """
                 WITH stats AS (
                     SELECT 
                         COUNT(DISTINCT c.id) as total_clients,
@@ -466,12 +478,12 @@ def migrate_to_bcrypt():
             c = conn.cursor()
             
             # Check if we have the old schema
-            c.execute("PRAGMA table_info(trainers)")
+            execute_db_query(c, "PRAGMA table_info(trainers)")
             columns = [col[1] for col in c.fetchall()]
             
             if 'password_hash' not in columns:
                 # Add new column
-                c.execute("ALTER TABLE trainers ADD COLUMN password_hash TEXT")
+                execute_db_query(c, "ALTER TABLE trainers ADD COLUMN password_hash TEXT")
                 
                 # Note: Existing passwords would need to be reset since we can't 
                 # convert from HMAC-SHA256 to bcrypt without the original password
