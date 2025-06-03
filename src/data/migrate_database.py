@@ -301,7 +301,12 @@ def add_rate_limit_columns():
                     WHERE table_name = 'trainers' 
                     AND column_name IN ('failed_login_attempts', 'locked_until', 'last_login')
                 """)
-                existing_columns = [row[0] for row in cursor.fetchall()]
+                rows = cursor.fetchall()
+                # Handle RealDictCursor results
+                if rows and isinstance(rows[0], dict):
+                    existing_columns = [row['column_name'] for row in rows]
+                else:
+                    existing_columns = [row[0] for row in rows] if rows else []
             else:
                 # SQLite check
                 cursor.execute("PRAGMA table_info(trainers)")
