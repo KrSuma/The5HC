@@ -10,9 +10,22 @@ from ..core.models import BaseEntity, Trainer, Client, Assessment
 from ..utils.logging import audit_logger, perf_logger, error_logger
 # TODO: Import log_database_operation once logging is properly organized
 from .database import get_db_connection, DatabaseError
+from .database_config import IS_PRODUCTION
 
 
 T = TypeVar('T')
+
+
+def execute_db_query(cursor, query: str, params: tuple = None):
+    """Execute query with proper placeholder conversion for PostgreSQL"""
+    if IS_PRODUCTION and params:
+        # Convert SQLite ? placeholders to PostgreSQL %s
+        query = query.replace('?', '%s')
+    
+    if params:
+        cursor.execute(query, params)
+    else:
+        cursor.execute(query)
 
 
 class IRepository(ABC, Generic[T]):
@@ -55,7 +68,7 @@ class BaseRepository(IRepository[T]):
         """Get entity by ID"""
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(f"SELECT * FROM {self.table_name} WHERE id = ?", (id,))
+            execute_db_query(cursor, f"SELECT * FROM {self.table_name} WHERE id = ?", (id,))
             row = cursor.fetchone()
             
             if row:
@@ -79,14 +92,19 @@ class BaseRepository(IRepository[T]):
             if where_clauses:
                 query += " WHERE " + " AND ".join(where_clauses)
             
-            cursor.execute(query, params)
+            execute_db_query(cursor, query, params)
             rows = cursor.fetchall()
             
             return [self._row_to_entity(row) for row in rows]
     
-    def _row_to_entity(self, row: sqlite3.Row) -> T:
+    def _row_to_entity(self, row) -> T:
         """Convert database row to entity"""
-        data = dict(row)
+        if isinstance(row, dict):
+            # PostgreSQL with RealDictCursor returns dictionaries
+            data = row
+        else:
+            # SQLite returns Row objects
+            data = dict(row)
         return self.entity_class(**data)
     
     def _entity_to_dict(self, entity: T, exclude_id: bool = False) -> Dict[str, Any]:
@@ -111,7 +129,7 @@ class TrainerRepository(BaseRepository[Trainer]):
         """Get trainer by username"""
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
+            execute_db_query(cursor,
                 "SELECT * FROM trainers WHERE username = ?", 
                 (username,)
             )
@@ -132,15 +150,26 @@ class TrainerRepository(BaseRepository[Trainer]):
                 columns = list(data.keys())
                 placeholders = ['?' for _ in columns]
                 
-                query = f"""
-                    INSERT INTO {self.table_name} ({', '.join(columns)})
-                    VALUES ({', '.join(placeholders)})
-                """
+                if IS_PRODUCTION:
+                    # PostgreSQL - use RETURNING clause
+                    query = f"""
+                        INSERT INTO {self.table_name} ({', '.join(columns)})
+                        VALUES ({', '.join(placeholders)})
+                        RETURNING id
+                    """
+                    execute_db_query(cursor, query, list(data.values()))
+                    result = cursor.fetchone()
+                    trainer_id = result['id'] if isinstance(result, dict) else result[0]
+                else:
+                    # SQLite - use lastrowid
+                    query = f"""
+                        INSERT INTO {self.table_name} ({', '.join(columns)})
+                        VALUES ({', '.join(placeholders)})
+                    """
+                    execute_db_query(cursor, query, list(data.values()))
+                    trainer_id = cursor.lastrowid
                 
-                cursor.execute(query, list(data.values()))
                 conn.commit()
-                
-                trainer_id = cursor.lastrowid
                 audit_logger.log_data_modification(
                     trainer_id, 'trainer', trainer_id, {'action': 'create'}
                 )
@@ -169,7 +198,7 @@ class TrainerRepository(BaseRepository[Trainer]):
                     WHERE id = ?
                 """
                 
-                cursor.execute(query, list(data.values()) + [entity.id])
+                execute_db_query(cursor, query, list(data.values()) + [entity.id])
                 conn.commit()
                 
                 if cursor.rowcount > 0:
@@ -218,7 +247,7 @@ class ClientRepository(BaseRepository[Client]):
             """
             
             search_pattern = f"%{search_term}%"
-            cursor.execute(query, (trainer_id, search_pattern, search_pattern))
+            execute_db_query(cursor, query, (trainer_id, search_pattern, search_pattern))
             
             return [self._row_to_entity(row) for row in cursor.fetchall()]
     
@@ -233,15 +262,26 @@ class ClientRepository(BaseRepository[Client]):
                 columns = list(data.keys())
                 placeholders = ['?' for _ in columns]
                 
-                query = f"""
-                    INSERT INTO {self.table_name} ({', '.join(columns)})
-                    VALUES ({', '.join(placeholders)})
-                """
+                if IS_PRODUCTION:
+                    # PostgreSQL - use RETURNING clause
+                    query = f"""
+                        INSERT INTO {self.table_name} ({', '.join(columns)})
+                        VALUES ({', '.join(placeholders)})
+                        RETURNING id
+                    """
+                    execute_db_query(cursor, query, list(data.values()))
+                    result = cursor.fetchone()
+                    client_id = result['id'] if isinstance(result, dict) else result[0]
+                else:
+                    # SQLite - use lastrowid
+                    query = f"""
+                        INSERT INTO {self.table_name} ({', '.join(columns)})
+                        VALUES ({', '.join(placeholders)})
+                    """
+                    execute_db_query(cursor, query, list(data.values()))
+                    client_id = cursor.lastrowid
                 
-                cursor.execute(query, list(data.values()))
                 conn.commit()
-                
-                client_id = cursor.lastrowid
                 audit_logger.log_data_modification(
                     entity.trainer_id, 'client', client_id, {'action': 'create'}
                 )
@@ -269,7 +309,7 @@ class ClientRepository(BaseRepository[Client]):
                     WHERE id = ?
                 """
                 
-                cursor.execute(query, list(data.values()) + [entity.id])
+                execute_db_query(cursor, query, list(data.values()) + [entity.id])
                 conn.commit()
                 
                 if cursor.rowcount > 0:
@@ -301,7 +341,7 @@ class AssessmentRepository(BaseRepository[Assessment]):
         """Get all assessments for a client"""
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
+            execute_db_query(cursor,
                 "SELECT * FROM assessments WHERE client_id = ? ORDER BY date DESC",
                 (client_id,)
             )
@@ -317,7 +357,7 @@ class AssessmentRepository(BaseRepository[Assessment]):
         """Get latest assessment for a client"""
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
+            execute_db_query(cursor,
                 """SELECT * FROM assessments 
                    WHERE client_id = ? 
                    ORDER BY date DESC 
@@ -335,7 +375,7 @@ class AssessmentRepository(BaseRepository[Assessment]):
         """Get assessment progress data"""
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
+            execute_db_query(cursor,
                 """SELECT date, overall_score, strength_score, 
                           mobility_score, balance_score, cardio_score
                    FROM assessments 
@@ -358,15 +398,26 @@ class AssessmentRepository(BaseRepository[Assessment]):
                 columns = list(data.keys())
                 placeholders = ['?' for _ in columns]
                 
-                query = f"""
-                    INSERT INTO {self.table_name} ({', '.join(columns)})
-                    VALUES ({', '.join(placeholders)})
-                """
+                if IS_PRODUCTION:
+                    # PostgreSQL - use RETURNING clause
+                    query = f"""
+                        INSERT INTO {self.table_name} ({', '.join(columns)})
+                        VALUES ({', '.join(placeholders)})
+                        RETURNING id
+                    """
+                    execute_db_query(cursor, query, list(data.values()))
+                    result = cursor.fetchone()
+                    assessment_id = result['id'] if isinstance(result, dict) else result[0]
+                else:
+                    # SQLite - use lastrowid
+                    query = f"""
+                        INSERT INTO {self.table_name} ({', '.join(columns)})
+                        VALUES ({', '.join(placeholders)})
+                    """
+                    execute_db_query(cursor, query, list(data.values()))
+                    assessment_id = cursor.lastrowid
                 
-                cursor.execute(query, list(data.values()))
                 conn.commit()
-                
-                assessment_id = cursor.lastrowid
                 audit_logger.log_data_modification(
                     entity.trainer_id, 'assessment', assessment_id, {'action': 'create'}
                 )
