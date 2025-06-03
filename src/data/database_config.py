@@ -135,14 +135,20 @@ def adapt_query_for_db(sqlite_query: str, postgresql_query: str = None) -> str:
     Returns:
         Appropriate query for current database
     """
-    if IS_PRODUCTION and postgresql_query:
-        return postgresql_query
-    elif IS_PRODUCTION:
-        # Basic SQLite to PostgreSQL conversions
-        query = sqlite_query
-        query = query.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
-        query = query.replace("DATETIME", "TIMESTAMP")
-        query = query.replace("REAL", "FLOAT")
-        return query
+    if IS_PRODUCTION:
+        if postgresql_query:
+            return postgresql_query
+        else:
+            # Basic SQLite to PostgreSQL conversions
+            query = sqlite_query
+            # Handle AUTOINCREMENT properly - must replace the entire phrase
+            query = query.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+            query = query.replace("DATETIME", "TIMESTAMP")
+            query = query.replace("REAL", "FLOAT")
+            query = query.replace("TEXT", "VARCHAR(255)")
+            query = query.replace("BOOLEAN", "BOOLEAN")
+            # Ensure no standalone AUTOINCREMENT remains
+            query = query.replace("AUTOINCREMENT", "")
+            return query
     else:
         return sqlite_query

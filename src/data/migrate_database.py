@@ -261,6 +261,8 @@ def create_tables():
     try:
         for table_name, query in tables:
             logger.info(f"Creating table: {table_name}")
+            logger.info(f"Using {'PostgreSQL' if IS_PRODUCTION else 'SQLite'} mode")
+            logger.debug(f"Query for {table_name}: {query[:100]}...")  # Log first 100 chars of query
             execute_query(query, fetch_all=False)
             logger.info(f"Successfully created table: {table_name}")
             
@@ -269,6 +271,7 @@ def create_tables():
         
     except Exception as e:
         logger.error(f"Error creating tables: {e}")
+        logger.error(f"Failed query might be: {query[:200]}..." if 'query' in locals() else "Query not available")
         return False
 
 
