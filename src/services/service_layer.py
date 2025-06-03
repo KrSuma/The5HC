@@ -16,8 +16,10 @@ from src.data.database import (
     get_assessments as db_get_assessments,
     get_assessment_details as db_get_assessment_details,
     get_trainer_stats as db_get_trainer_stats,
-    rate_limiter
+    rate_limiter,
+    get_db_connection
 )
+from src.data.database_config import IS_PRODUCTION
 
 # Models are now handled directly by the database layer
 
@@ -345,30 +347,35 @@ class DashboardService:
     def get_recent_assessments(trainer_id: int, limit: int = 10) -> List[Tuple[int, str, str, float]]:
         """Get recent assessments for the given trainer"""
         try:
-            # Get all clients for this trainer
-            client_repo = RepositoryFactory.get_client_repository()
-            trainer_clients = client_repo.get_by_trainer(trainer_id)
-            
-            if not trainer_clients:
+            # Direct query for assessments by trainer_id
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Query to get assessments with client names
+                query = """
+                    SELECT a.id, c.name, a.date, a.overall_score
+                    FROM assessments a
+                    JOIN clients c ON a.client_id = c.id
+                    WHERE a.trainer_id = ?
+                    ORDER BY a.date DESC
+                    LIMIT ?
+                """
+                
+                # Convert placeholders for PostgreSQL if needed
+                if IS_PRODUCTION:
+                    query = query.replace('?', '%s')
+                
+                cursor.execute(query, (trainer_id, limit))
+                rows = cursor.fetchall()
+                
+                # Handle both dict (PostgreSQL) and tuple/Row (SQLite) results
+                if rows:
+                    if isinstance(rows[0], dict):
+                        return [(row['id'], row['name'], row['date'], row['overall_score'] or 0.0) for row in rows]
+                    else:
+                        return [(row[0], row[1], row[2], row[3] or 0.0) for row in rows]
+                
                 return []
-            
-            # Get assessments for all clients
-            assessment_repo = RepositoryFactory.get_assessment_repository()
-            all_assessments = []
-            
-            for client in trainer_clients:
-                assessments = assessment_repo.find_by_client(client.id)
-                for assessment in assessments:
-                    all_assessments.append((
-                        assessment.id,
-                        client.name,
-                        assessment.date,
-                        assessment.overall_score
-                    ))
-            
-            # Sort by date (most recent first) and limit results
-            all_assessments.sort(key=lambda x: x[2], reverse=True)
-            return all_assessments[:limit]
             
         except Exception as e:
             error_logger.log_error(e, context={'action': 'get_recent_assessments'})
