@@ -334,19 +334,17 @@ def clients_page():
                     st.session_state.last_submission_time = datetime.now().timestamp()
 
                     if client_name and client_age and client_gender and client_height and client_weight:
-                        # Add client using direct method
-                        from src.services.add_client import add_client_direct
-                        success, result = add_client_direct(
-                            st.session_state.trainer_id,
-                            client_name,
-                            client_age,
-                            client_gender,
-                            client_height,
-                            client_weight,
-                            client_email,
-                            client_phone
+                        # Add client using service
+                        success, message = ClientService.add_client(
+                            trainer_id=st.session_state.trainer_id,
+                            name=client_name,
+                            age=client_age,
+                            gender=client_gender,
+                            height=client_height,
+                            weight=client_weight,
+                            email=client_email,
+                            phone=client_phone
                         )
-                        message = f"{client_name} 회원이 추가되었습니다!" if success else str(result)
 
                         if success:
                             # Update form timestamp to force form recreation

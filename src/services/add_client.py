@@ -31,17 +31,22 @@ def simplified_add_client_page():
                 st.error("필수 항목(*)을 모두 입력해주세요.")
             else:
                 try:
-                    client_data = {
-                        'name': name,
-                        'age': age,
-                        'gender': gender,
-                        'height': height,
-                        'weight': weight,
-                        'email': email if email else None,
-                        'phone': phone if phone else None
-                    }
+                    # Get trainer_id from session state
+                    trainer_id = st.session_state.get('trainer_id')
+                    if not trainer_id:
+                        st.error("로그인이 필요합니다.")
+                        return
                     
-                    success, message = ClientService.add_client(client_data)
+                    success, message = ClientService.add_client(
+                        trainer_id=trainer_id,
+                        name=name,
+                        age=age,
+                        gender=gender,
+                        height=height,
+                        weight=weight,
+                        email=email if email else "",
+                        phone=phone if phone else ""
+                    )
                     
                     if success:
                         st.success(f"회원이 성공적으로 추가되었습니다: {name}")
