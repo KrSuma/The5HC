@@ -14,10 +14,18 @@ logger = logging.getLogger(__name__)
 DATABASE_URL = os.environ.get('DATABASE_URL')
 IS_PRODUCTION = bool(DATABASE_URL)
 
+# Log configuration for debugging
+logger.info(f"Database config: DATABASE_URL exists={bool(DATABASE_URL)}, IS_PRODUCTION={IS_PRODUCTION}")
+
 if IS_PRODUCTION:
-    import psycopg2
-    from psycopg2.extras import RealDictCursor
-    import urllib.parse
+    try:
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+        import urllib.parse
+        logger.info("PostgreSQL driver imported successfully")
+    except ImportError as e:
+        logger.error(f"Failed to import psycopg2: {e}")
+        raise
 
     # Heroku DATABASE_URL starts with postgres:// but psycopg2 needs postgresql://
     if DATABASE_URL.startswith('postgres://'):
@@ -33,6 +41,7 @@ if IS_PRODUCTION:
         'password': parsed_url.password,
         'sslmode': 'require'
     }
+    logger.info(f"PostgreSQL config parsed: host={DB_CONFIG['host']}, db={DB_CONFIG['database']}")
 else:
     # Development SQLite configuration
     DB_CONFIG = {
@@ -83,8 +92,11 @@ def get_db_connection():
     except Exception as e:
         if conn:
             conn.rollback()
-        logger.error(f"Database error: {e}")
-        raise DatabaseError(f"Database operation failed: {e}")
+        logger.error(f"Database error: {type(e).__name__}: {str(e)}")
+        logger.error(f"Database config: IS_PRODUCTION={IS_PRODUCTION}, DB_URL exists={bool(DATABASE_URL)}")
+        if IS_PRODUCTION:
+            logger.error(f"PostgreSQL config: host={DB_CONFIG.get('host')}, db={DB_CONFIG.get('database')}")
+        raise DatabaseError(f"Database operation failed: {type(e).__name__}: {str(e)}")
     finally:
         if conn:
             conn.close()
