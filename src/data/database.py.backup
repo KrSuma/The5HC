@@ -33,6 +33,150 @@ def init_db():
             logger.info("Database initialized successfully using migration script")
         else:
             raise DatabaseError("Failed to create tables")
+                             (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                              trainer_id INTEGER NOT NULL,
+                              name TEXT NOT NULL,
+                              age INTEGER NOT NULL,
+                              gender TEXT NOT NULL,
+                              height REAL NOT NULL,
+                              weight REAL NOT NULL,
+                              email TEXT,
+                              phone TEXT,
+                              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                              FOREIGN KEY (trainer_id) REFERENCES trainers (id))''',
+                postgresql_query='''CREATE TABLE IF NOT EXISTS clients
+                             (id SERIAL PRIMARY KEY,
+                              trainer_id INTEGER NOT NULL,
+                              name VARCHAR(255) NOT NULL,
+                              age INTEGER NOT NULL,
+                              gender VARCHAR(255) NOT NULL,
+                              height FLOAT NOT NULL,
+                              weight FLOAT NOT NULL,
+                              email VARCHAR(255),
+                              phone VARCHAR(255),
+                              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                              FOREIGN KEY (trainer_id) REFERENCES trainers (id))'''
+            )
+            c.execute(clients_query)
+            
+            # Create assessments table
+            assessments_query = adapt_query_for_db(
+                sqlite_query='''CREATE TABLE IF NOT EXISTS assessments
+                             (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                          client_id INTEGER NOT NULL,
+                          trainer_id INTEGER NOT NULL,
+                          date TEXT NOT NULL,
+                          overhead_squat_score INTEGER,
+                          overhead_squat_notes TEXT,
+                          overhead_squat_compensations TEXT,
+                          push_up_score INTEGER,
+                          push_up_reps INTEGER,
+                          push_up_notes TEXT,
+                          push_up_compensations TEXT,
+                          single_leg_balance_left_eyes_open REAL,
+                          single_leg_balance_right_eyes_open REAL,
+                          single_leg_balance_left_eyes_closed REAL,
+                          single_leg_balance_right_eyes_closed REAL,
+                          single_leg_balance_notes TEXT,
+                          toe_touch_score INTEGER,
+                          toe_touch_distance REAL,
+                          toe_touch_notes TEXT,
+                          toe_touch_compensations TEXT,
+                          shoulder_mobility_left REAL,
+                          shoulder_mobility_right REAL,
+                          shoulder_mobility_notes TEXT,
+                          shoulder_mobility_compensations TEXT,
+                          farmer_carry_weight REAL,
+                          farmer_carry_distance REAL,
+                          farmer_carry_notes TEXT,
+                          farmer_carry_compensations TEXT,
+                          harvard_step_test_heart_rate INTEGER,
+                          harvard_step_test_duration REAL,
+                          harvard_step_test_notes TEXT,
+                          overall_score REAL,
+                          strength_score REAL,
+                          mobility_score REAL,
+                          balance_score REAL,
+                          cardio_score REAL,
+                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                          FOREIGN KEY (client_id) REFERENCES clients (id),
+                          FOREIGN KEY (trainer_id) REFERENCES trainers (id))''')
+            
+            # Create session packages table
+            c.execute('''CREATE TABLE IF NOT EXISTS session_packages
+                         (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                          client_id INTEGER NOT NULL,
+                          trainer_id INTEGER NOT NULL,
+                          total_amount INTEGER NOT NULL,
+                          session_price INTEGER NOT NULL,
+                          total_sessions INTEGER NOT NULL,
+                          remaining_credits INTEGER NOT NULL,
+                          remaining_sessions INTEGER NOT NULL,
+                          package_name TEXT,
+                          notes TEXT,
+                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                          is_active BOOLEAN DEFAULT 1,
+                          FOREIGN KEY (client_id) REFERENCES clients (id),
+                          FOREIGN KEY (trainer_id) REFERENCES trainers (id))''')
+            
+            # Create training sessions table
+            c.execute('''CREATE TABLE IF NOT EXISTS training_sessions
+                         (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                          client_id INTEGER NOT NULL,
+                          trainer_id INTEGER NOT NULL,
+                          package_id INTEGER NOT NULL,
+                          session_date TEXT NOT NULL,
+                          session_time TEXT,
+                          session_duration INTEGER DEFAULT 60,
+                          session_cost INTEGER NOT NULL,
+                          status TEXT DEFAULT 'scheduled',
+                          notes TEXT,
+                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                          completed_at TIMESTAMP,
+                          FOREIGN KEY (client_id) REFERENCES clients (id),
+                          FOREIGN KEY (trainer_id) REFERENCES trainers (id),
+                          FOREIGN KEY (package_id) REFERENCES session_packages (id))''')
+            
+            # Create payment records table
+            c.execute('''CREATE TABLE IF NOT EXISTS payment_records
+                         (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                          client_id INTEGER NOT NULL,
+                          trainer_id INTEGER NOT NULL,
+                          package_id INTEGER,
+                          amount INTEGER NOT NULL,
+                          payment_method TEXT,
+                          payment_date TEXT NOT NULL,
+                          description TEXT,
+                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                          FOREIGN KEY (client_id) REFERENCES clients (id),
+                          FOREIGN KEY (trainer_id) REFERENCES trainers (id),
+                          FOREIGN KEY (package_id) REFERENCES session_packages (id))''')
+            
+            # Create indexes for better performance
+            indexes = [
+                "CREATE INDEX IF NOT EXISTS idx_clients_trainer ON clients(trainer_id)",
+                "CREATE INDEX IF NOT EXISTS idx_assessments_trainer ON assessments(trainer_id)",
+                "CREATE INDEX IF NOT EXISTS idx_assessments_client ON assessments(client_id)",
+                "CREATE INDEX IF NOT EXISTS idx_assessments_date ON assessments(date DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_trainers_username ON trainers(username)",
+                "CREATE INDEX IF NOT EXISTS idx_session_packages_client ON session_packages(client_id)",
+                "CREATE INDEX IF NOT EXISTS idx_session_packages_trainer ON session_packages(trainer_id)",
+                "CREATE INDEX IF NOT EXISTS idx_training_sessions_client ON training_sessions(client_id)",
+                "CREATE INDEX IF NOT EXISTS idx_training_sessions_trainer ON training_sessions(trainer_id)",
+                "CREATE INDEX IF NOT EXISTS idx_training_sessions_package ON training_sessions(package_id)",
+                "CREATE INDEX IF NOT EXISTS idx_training_sessions_date ON training_sessions(session_date)",
+                "CREATE INDEX IF NOT EXISTS idx_payment_records_client ON payment_records(client_id)",
+                "CREATE INDEX IF NOT EXISTS idx_payment_records_trainer ON payment_records(trainer_id)",
+            ]
+            
+            for index in indexes:
+                c.execute(index)
+            
+            conn.commit()
+            logger.info("Database initialized successfully")
             
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
@@ -213,13 +357,12 @@ def register_trainer(username: str, password: str, name: str, email: str) -> boo
         logger.info(f"Trainer registered successfully: {username}")
         return True
         
+    except sqlite3.IntegrityError:
+        logger.warning(f"Registration failed - username already exists: {username}")
+        return False
     except Exception as e:
-        if "duplicate key value" in str(e).lower() or "unique constraint" in str(e).lower():
-            logger.warning(f"Registration failed - username already exists: {username}")
-            return False
-        else:
-            logger.error(f"Registration failed: {e}")
-            return False
+        logger.error(f"Registration failed: {e}")
+        return False
 
 
 def authenticate(username: str, password: str) -> Optional[int]:
