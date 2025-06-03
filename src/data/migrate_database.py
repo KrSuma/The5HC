@@ -282,6 +282,10 @@ def create_tables():
         if add_rate_limit_columns():
             logger.info("Rate limit columns verified/added successfully")
         
+        # Add trainer_id column to assessments if needed
+        if add_trainer_id_to_assessments():
+            logger.info("trainer_id column verified/added to assessments table")
+        
         return True
         
     except Exception as e:
@@ -347,6 +351,71 @@ def add_rate_limit_columns():
             
     except Exception as e:
         logger.error(f"Error adding rate limit columns: {e}")
+        return False
+
+
+def add_trainer_id_to_assessments():
+    """Add trainer_id column to assessments table if it doesn't exist"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Check if column already exists
+            if IS_PRODUCTION:
+                # PostgreSQL check
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'assessments' 
+                    AND column_name = 'trainer_id'
+                """)
+                result = cursor.fetchone()
+                column_exists = bool(result)
+            else:
+                # SQLite check
+                cursor.execute("PRAGMA table_info(assessments)")
+                columns_info = cursor.fetchall()
+                column_exists = any(col[1] == 'trainer_id' for col in columns_info)
+            
+            if not column_exists:
+                # Add trainer_id column
+                alter_query = adapt_query_for_db(
+                    sqlite_query="ALTER TABLE assessments ADD COLUMN trainer_id INTEGER",
+                    postgresql_query="ALTER TABLE assessments ADD COLUMN trainer_id INTEGER"
+                )
+                execute_query(alter_query, fetch_all=False)
+                logger.info("Added trainer_id column to assessments table")
+                
+                # Update existing records to set trainer_id based on client's trainer
+                update_query = adapt_query_for_db(
+                    sqlite_query="""
+                        UPDATE assessments 
+                        SET trainer_id = (
+                            SELECT trainer_id 
+                            FROM clients 
+                            WHERE clients.id = assessments.client_id
+                        )
+                        WHERE trainer_id IS NULL
+                    """,
+                    postgresql_query="""
+                        UPDATE assessments 
+                        SET trainer_id = clients.trainer_id
+                        FROM clients 
+                        WHERE clients.id = assessments.client_id
+                        AND assessments.trainer_id IS NULL
+                    """
+                )
+                execute_query(update_query, fetch_all=False)
+                logger.info("Updated existing assessments with trainer_id")
+                
+                conn.commit()
+                return True
+            else:
+                logger.info("trainer_id column already exists in assessments table")
+                return True
+                
+    except Exception as e:
+        logger.error(f"Error adding trainer_id column to assessments: {e}")
         return False
 
 
