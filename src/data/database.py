@@ -186,12 +186,12 @@ class AuthRateLimiter:
                         attempts = result['failed_login_attempts'] if hasattr(result, '__getitem__') else result[0]
                     
                     if attempts >= self.max_attempts:
-                    lock_until = datetime.now() + timedelta(minutes=self.window_minutes)
-                    execute_db_query(c, """
-                        UPDATE trainers 
-                        SET locked_until = ? 
-                        WHERE username = ?
-                    """, (lock_until.isoformat(), username))
+                        lock_until = datetime.now() + timedelta(minutes=self.window_minutes)
+                        execute_db_query(c, """
+                            UPDATE trainers 
+                            SET locked_until = ? 
+                            WHERE username = ?
+                        """, (lock_until.isoformat(), username))
                 
                 conn.commit()
                 
