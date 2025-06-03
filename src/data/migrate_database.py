@@ -21,7 +21,10 @@ def create_tables():
             password_hash TEXT NOT NULL,
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            failed_login_attempts INTEGER DEFAULT 0,
+            locked_until DATETIME,
+            last_login DATETIME
         )
         """,
         postgresql_query="""
@@ -31,7 +34,10 @@ def create_tables():
             password_hash VARCHAR(255) NOT NULL,
             name VARCHAR(200) NOT NULL,
             email VARCHAR(200) UNIQUE NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            failed_login_attempts INTEGER DEFAULT 0,
+            locked_until TIMESTAMP,
+            last_login TIMESTAMP
         )
         """
     )
@@ -267,11 +273,71 @@ def create_tables():
             logger.debug(f"Table ready: {table_name}")
             
         logger.info("All tables created successfully!")
+        
+        # Add rate limit columns if needed
+        if add_rate_limit_columns():
+            logger.info("Rate limit columns verified/added successfully")
+        
         return True
         
     except Exception as e:
         logger.error(f"Error creating tables: {e}")
         logger.error(f"Failed query might be: {query[:200]}..." if 'query' in locals() else "Query not available")
+        return False
+
+
+def add_rate_limit_columns():
+    """Add rate limiting columns to trainers table if they don't exist"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Check if columns already exist
+            if IS_PRODUCTION:
+                # PostgreSQL check
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'trainers' 
+                    AND column_name IN ('failed_login_attempts', 'locked_until', 'last_login')
+                """)
+                existing_columns = [row[0] for row in cursor.fetchall()]
+            else:
+                # SQLite check
+                cursor.execute("PRAGMA table_info(trainers)")
+                columns_info = cursor.fetchall()
+                existing_columns = [col[1] for col in columns_info]
+            
+            # Add missing columns
+            if 'failed_login_attempts' not in existing_columns:
+                alter_query = adapt_query_for_db(
+                    sqlite_query="ALTER TABLE trainers ADD COLUMN failed_login_attempts INTEGER DEFAULT 0",
+                    postgresql_query="ALTER TABLE trainers ADD COLUMN failed_login_attempts INTEGER DEFAULT 0"
+                )
+                execute_query(alter_query, fetch_all=False)
+                logger.info("Added failed_login_attempts column to trainers table")
+            
+            if 'locked_until' not in existing_columns:
+                alter_query = adapt_query_for_db(
+                    sqlite_query="ALTER TABLE trainers ADD COLUMN locked_until DATETIME",
+                    postgresql_query="ALTER TABLE trainers ADD COLUMN locked_until TIMESTAMP"
+                )
+                execute_query(alter_query, fetch_all=False)
+                logger.info("Added locked_until column to trainers table")
+            
+            if 'last_login' not in existing_columns:
+                alter_query = adapt_query_for_db(
+                    sqlite_query="ALTER TABLE trainers ADD COLUMN last_login DATETIME",
+                    postgresql_query="ALTER TABLE trainers ADD COLUMN last_login TIMESTAMP"
+                )
+                execute_query(alter_query, fetch_all=False)
+                logger.info("Added last_login column to trainers table")
+                
+            conn.commit()
+            return True
+            
+    except Exception as e:
+        logger.error(f"Error adding rate limit columns: {e}")
         return False
 
 
