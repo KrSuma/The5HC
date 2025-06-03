@@ -38,39 +38,12 @@ logger = logging.getLogger(__name__)
 def init_db():
     """Initialize the database with all necessary tables and indexes"""
     try:
-        # Check if tables already exist
-        with get_db_connection() as conn:
-            c = conn.cursor()
-            
-            # Check for trainers table as indicator that DB is initialized
-            if IS_PRODUCTION:
-                # PostgreSQL check
-                execute_db_query(c, """
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_name = 'trainers'
-                    )
-                """)
-            else:
-                # SQLite check
-                execute_db_query(c, """
-                    SELECT name FROM sqlite_master 
-                    WHERE type='table' AND name='trainers'
-                """)
-            
-            result = c.fetchone()
-            tables_exist = bool(result and result[0])
-            
-            if tables_exist:
-                logger.debug("Database tables already exist, skipping initialization")
-                return
-        
-        # Tables don't exist, create them
-        logger.info("Database tables not found, creating...")
+        # For now, always run create_tables since it uses CREATE TABLE IF NOT EXISTS
+        # This is safer and handles all edge cases
         from src.data.migrate_database import create_tables
         
         if create_tables():
-            logger.info("Database initialized successfully using migration script")
+            logger.info("Database initialized successfully")
         else:
             raise DatabaseError("Failed to create tables")
             

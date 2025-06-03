@@ -19,11 +19,15 @@ if IS_PRODUCTION:
     from psycopg2.extras import RealDictCursor
     import urllib.parse
 
+    # Heroku DATABASE_URL starts with postgres:// but psycopg2 needs postgresql://
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    
     # Parse Heroku database URL
     parsed_url = urllib.parse.urlparse(DATABASE_URL)
     DB_CONFIG = {
         'host': parsed_url.hostname,
-        'port': parsed_url.port,
+        'port': parsed_url.port or 5432,
         'database': parsed_url.path[1:],  # Remove leading slash
         'user': parsed_url.username,
         'password': parsed_url.password,
@@ -49,6 +53,7 @@ def get_db_connection():
     try:
         if IS_PRODUCTION:
             # PostgreSQL connection
+            logger.info(f"Connecting to PostgreSQL: host={DB_CONFIG['host']}, db={DB_CONFIG['database']}")
             conn = psycopg2.connect(
                 host=DB_CONFIG['host'],
                 port=DB_CONFIG['port'],
