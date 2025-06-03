@@ -38,14 +38,13 @@ logger = logging.getLogger(__name__)
 def init_db():
     """Initialize the database with all necessary tables and indexes"""
     try:
-        # For now, always run create_tables since it uses CREATE TABLE IF NOT EXISTS
-        # This is safer and handles all edge cases
-        from src.data.migrate_database import create_tables
+        # Run the full migration which includes create_tables and all column additions
+        from src.data.migrate_database import run_migration
         
-        if create_tables():
+        if run_migration():
             logger.info("Database initialized successfully")
         else:
-            raise DatabaseError("Failed to create tables")
+            raise DatabaseError("Failed to initialize database")
             
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
