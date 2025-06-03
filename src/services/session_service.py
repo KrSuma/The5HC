@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 # Import database connection utilities
 from src.data.database import get_db_connection, DatabaseError
+from src.data.database_config import IS_PRODUCTION
 
 logger = logging.getLogger(__name__)
 
@@ -93,17 +94,32 @@ class SessionService:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
                 
-                cursor.execute('''
-                    INSERT INTO session_packages 
-                    (client_id, trainer_id, total_amount, session_price, 
-                     total_sessions, remaining_credits, remaining_sessions,
-                     package_name, notes, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                ''', (client_id, trainer_id, total_amount, session_price,
-                      total_sessions, total_amount, total_sessions,
-                      package_name, notes))
-                
-                package_id = cursor.lastrowid
+                if IS_PRODUCTION:
+                    # PostgreSQL - use RETURNING clause
+                    cursor.execute('''
+                        INSERT INTO session_packages 
+                        (client_id, trainer_id, total_amount, session_price, 
+                         total_sessions, remaining_credits, remaining_sessions,
+                         package_name, notes, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                        RETURNING id
+                    ''', (client_id, trainer_id, total_amount, session_price,
+                          total_sessions, total_amount, total_sessions,
+                          package_name, notes))
+                    result = cursor.fetchone()
+                    package_id = result['id'] if isinstance(result, dict) else result[0]
+                else:
+                    # SQLite - use lastrowid
+                    cursor.execute('''
+                        INSERT INTO session_packages 
+                        (client_id, trainer_id, total_amount, session_price, 
+                         total_sessions, remaining_credits, remaining_sessions,
+                         package_name, notes, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ''', (client_id, trainer_id, total_amount, session_price,
+                          total_sessions, total_amount, total_sessions,
+                          package_name, notes))
+                    package_id = cursor.lastrowid
                 
                 # Record the payment
                 self._record_payment(cursor, client_id, trainer_id, package_id,
@@ -208,15 +224,28 @@ class SessionService:
                     raise ValueError("Not enough sessions or credits remaining")
                 
                 # Create the session
-                cursor.execute('''
-                    INSERT INTO training_sessions 
-                    (client_id, trainer_id, package_id, session_date, session_time,
-                     session_duration, session_cost, status, notes)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled', ?)
-                ''', (client_id, trainer_id, package_id, session_date, session_time,
-                      session_duration, session_price, notes))
-                
-                session_id = cursor.lastrowid
+                if IS_PRODUCTION:
+                    # PostgreSQL - use RETURNING clause
+                    cursor.execute('''
+                        INSERT INTO training_sessions 
+                        (client_id, trainer_id, package_id, session_date, session_time,
+                         session_duration, session_cost, status, notes)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, 'scheduled', %s)
+                        RETURNING id
+                    ''', (client_id, trainer_id, package_id, session_date, session_time,
+                          session_duration, session_price, notes))
+                    result = cursor.fetchone()
+                    session_id = result['id'] if isinstance(result, dict) else result[0]
+                else:
+                    # SQLite - use lastrowid
+                    cursor.execute('''
+                        INSERT INTO training_sessions 
+                        (client_id, trainer_id, package_id, session_date, session_time,
+                         session_duration, session_cost, status, notes)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled', ?)
+                    ''', (client_id, trainer_id, package_id, session_date, session_time,
+                          session_duration, session_price, notes))
+                    session_id = cursor.lastrowid
                 conn.commit()
                 
                 self.logger.info(f"Scheduled session {session_id} for client {client_id}")
@@ -509,13 +538,22 @@ class SessionService:
                        payment_method: str, payment_date: str,
                        description: Optional[str] = None):
         """Helper method to record payment"""
-        cursor.execute('''
-            INSERT INTO payment_records 
-            (client_id, trainer_id, package_id, amount, payment_method, 
-             payment_date, description)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (client_id, trainer_id, package_id, amount, payment_method,
-              payment_date, description))
+        if IS_PRODUCTION:
+            cursor.execute('''
+                INSERT INTO payment_records 
+                (client_id, trainer_id, package_id, amount, payment_method, 
+                 payment_date, description)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ''', (client_id, trainer_id, package_id, amount, payment_method,
+                  payment_date, description))
+        else:
+            cursor.execute('''
+                INSERT INTO payment_records 
+                (client_id, trainer_id, package_id, amount, payment_method, 
+                 payment_date, description)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (client_id, trainer_id, package_id, amount, payment_method,
+                  payment_date, description))
     
     def get_payment_history(self, client_id: int, trainer_id: int) -> List[PaymentRecord]:
         """

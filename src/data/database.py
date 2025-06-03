@@ -329,14 +329,27 @@ def add_client(trainer_id: int, name: str, age: int, gender: str,
         
         with get_db_connection() as conn:
             c = conn.cursor()
-            execute_db_query(c, """
-                INSERT INTO clients 
-                (trainer_id, name, age, gender, height, weight, email, phone) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (trainer_id, name, age, gender, height, weight, email, phone))
-            conn.commit()
             
-            client_id = c.lastrowid
+            if IS_PRODUCTION:
+                # PostgreSQL - use RETURNING clause
+                execute_db_query(c, """
+                    INSERT INTO clients 
+                    (trainer_id, name, age, gender, height, weight, email, phone) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    RETURNING id
+                """, (trainer_id, name, age, gender, height, weight, email, phone))
+                result = c.fetchone()
+                client_id = result['id'] if isinstance(result, dict) else result[0]
+            else:
+                # SQLite - use lastrowid
+                execute_db_query(c, """
+                    INSERT INTO clients 
+                    (trainer_id, name, age, gender, height, weight, email, phone) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (trainer_id, name, age, gender, height, weight, email, phone))
+                client_id = c.lastrowid
+            
+            conn.commit()
             logger.info(f"Client added successfully: {client_id}")
             return client_id
             
@@ -409,14 +422,27 @@ def save_assessment(assessment_data: Dict[str, Any]) -> Optional[int]:
         
         with get_db_connection() as conn:
             c = conn.cursor()
-            query = f"""
-                INSERT INTO assessments ({', '.join(columns)}) 
-                VALUES ({', '.join(placeholders)})
-            """
-            execute_db_query(c, query, values)
-            conn.commit()
             
-            assessment_id = c.lastrowid
+            if IS_PRODUCTION:
+                # PostgreSQL - use RETURNING clause
+                query = f"""
+                    INSERT INTO assessments ({', '.join(columns)}) 
+                    VALUES ({', '.join(placeholders)})
+                    RETURNING id
+                """
+                execute_db_query(c, query, values)
+                result = c.fetchone()
+                assessment_id = result['id'] if isinstance(result, dict) else result[0]
+            else:
+                # SQLite - use lastrowid
+                query = f"""
+                    INSERT INTO assessments ({', '.join(columns)}) 
+                    VALUES ({', '.join(placeholders)})
+                """
+                execute_db_query(c, query, values)
+                assessment_id = c.lastrowid
+                
+            conn.commit()
             logger.info(f"Assessment saved successfully: {assessment_id}")
             return assessment_id
             
