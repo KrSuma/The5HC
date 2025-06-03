@@ -173,7 +173,10 @@ class SessionService:
                 params = [client_id, trainer_id]
                 
                 if active_only:
-                    query += ' AND is_active = 1'
+                    if IS_PRODUCTION:
+                        query += ' AND is_active = true'
+                    else:
+                        query += ' AND is_active = 1'
                 
                 query += ' ORDER BY created_at DESC'
                 
@@ -182,14 +185,25 @@ class SessionService:
                 
                 packages = []
                 for row in rows:
-                    packages.append(SessionPackage(
-                        id=row[0], client_id=row[1], trainer_id=row[2],
-                        total_amount=row[3], session_price=row[4],
-                        total_sessions=row[5], remaining_credits=row[6],
-                        remaining_sessions=row[7], package_name=row[8],
-                        notes=row[9], created_at=row[10], updated_at=row[11],
-                        is_active=bool(row[12])
-                    ))
+                    # Handle both dict (PostgreSQL) and tuple/Row (SQLite) results
+                    if isinstance(row, dict):
+                        packages.append(SessionPackage(
+                            id=row['id'], client_id=row['client_id'], trainer_id=row['trainer_id'],
+                            total_amount=row['total_amount'], session_price=row['session_price'],
+                            total_sessions=row['total_sessions'], remaining_credits=row['remaining_credits'],
+                            remaining_sessions=row['remaining_sessions'], package_name=row['package_name'],
+                            notes=row['notes'], created_at=row['created_at'], updated_at=row['updated_at'],
+                            is_active=bool(row['is_active'])
+                        ))
+                    else:
+                        packages.append(SessionPackage(
+                            id=row[0], client_id=row[1], trainer_id=row[2],
+                            total_amount=row[3], session_price=row[4],
+                            total_sessions=row[5], remaining_credits=row[6],
+                            remaining_sessions=row[7], package_name=row[8],
+                            notes=row[9], created_at=row[10], updated_at=row[11],
+                            is_active=bool(row[12])
+                        ))
                 
                 return packages
                 
@@ -220,17 +234,30 @@ class SessionService:
                 cursor = conn.cursor()
                 
                 # Get package info
-                execute_db_query(cursor, '''
-                    SELECT session_price, remaining_sessions, remaining_credits
-                    FROM session_packages 
-                    WHERE id = ? AND client_id = ? AND trainer_id = ? AND is_active = 1
-                ''', (package_id, client_id, trainer_id))
+                if IS_PRODUCTION:
+                    execute_db_query(cursor, '''
+                        SELECT session_price, remaining_sessions, remaining_credits
+                        FROM session_packages 
+                        WHERE id = ? AND client_id = ? AND trainer_id = ? AND is_active = true
+                    ''', (package_id, client_id, trainer_id))
+                else:
+                    execute_db_query(cursor, '''
+                        SELECT session_price, remaining_sessions, remaining_credits
+                        FROM session_packages 
+                        WHERE id = ? AND client_id = ? AND trainer_id = ? AND is_active = 1
+                    ''', (package_id, client_id, trainer_id))
                 
                 package_info = cursor.fetchone()
                 if not package_info:
                     raise ValueError("Invalid package or package not active")
                 
-                session_price, remaining_sessions, remaining_credits = package_info
+                # Handle both dict (PostgreSQL) and tuple/Row (SQLite) results
+                if isinstance(package_info, dict):
+                    session_price = package_info['session_price']
+                    remaining_sessions = package_info['remaining_sessions']
+                    remaining_credits = package_info['remaining_credits']
+                else:
+                    session_price, remaining_sessions, remaining_credits = package_info
                 
                 if remaining_sessions <= 0 or remaining_credits < session_price:
                     raise ValueError("Not enough sessions or credits remaining")
@@ -295,7 +322,14 @@ class SessionService:
                 if not session_info:
                     raise ValueError("Session not found or access denied")
                 
-                package_id, session_cost, status, client_id = session_info
+                # Handle both dict (PostgreSQL) and tuple/Row (SQLite) results
+                if isinstance(session_info, dict):
+                    package_id = session_info['package_id']
+                    session_cost = session_info['session_cost']
+                    status = session_info['status']
+                    client_id = session_info['client_id']
+                else:
+                    package_id, session_cost, status, client_id = session_info
                 
                 if status == 'completed':
                     raise ValueError("Session already completed")
@@ -398,12 +432,23 @@ class SessionService:
                 
                 sessions = []
                 for row in rows:
-                    sessions.append(TrainingSession(
-                        id=row[0], client_id=row[1], trainer_id=row[2],
-                        package_id=row[3], session_date=row[4], session_time=row[5],
-                        session_duration=row[6], session_cost=row[7], status=row[8],
-                        notes=row[9], created_at=row[10], completed_at=row[11]
-                    ))
+                    # Handle both dict (PostgreSQL) and tuple/Row (SQLite) results
+                    if isinstance(row, dict):
+                        sessions.append(TrainingSession(
+                            id=row['id'], client_id=row['client_id'], trainer_id=row['trainer_id'],
+                            package_id=row['package_id'], session_date=row['session_date'], 
+                            session_time=row['session_time'], session_duration=row['session_duration'], 
+                            session_cost=row['session_cost'], status=row['status'],
+                            notes=row['notes'], created_at=row['created_at'], 
+                            completed_at=row['completed_at']
+                        ))
+                    else:
+                        sessions.append(TrainingSession(
+                            id=row[0], client_id=row[1], trainer_id=row[2],
+                            package_id=row[3], session_date=row[4], session_time=row[5],
+                            session_duration=row[6], session_cost=row[7], status=row[8],
+                            notes=row[9], created_at=row[10], completed_at=row[11]
+                        ))
                 
                 return sessions
                 
@@ -438,23 +483,23 @@ class SessionService:
                 if not package_row:
                     raise ValueError("Package not found or access denied")
                 
-                # Get session history
-                execute_db_query(cursor, '''
-                    SELECT id, session_date, session_time, session_cost, status, notes
-                    FROM sessions 
-                    WHERE package_id = ? AND trainer_id = ?
-                    ORDER BY session_date DESC
-                ''', (package_id, trainer_id))
-                
-                sessions = cursor.fetchall()
-                
-                # Calculate statistics
-                completed_sessions = len([s for s in sessions if s[4] == 'completed'])
-                scheduled_sessions = len([s for s in sessions if s[4] == 'scheduled'])
-                total_spent = sum(s[3] for s in sessions if s[4] == 'completed')
-                
-                return {
-                    'package': {
+                # Parse package data based on result type
+                if isinstance(package_row, dict):
+                    package_data = {
+                        'id': package_row['id'],
+                        'client_name': package_row['client_name'],
+                        'total_amount': package_row['total_amount'],
+                        'session_price': package_row['session_price'],
+                        'total_sessions': package_row['total_sessions'],
+                        'remaining_credits': package_row['remaining_credits'],
+                        'remaining_sessions': package_row['remaining_sessions'],
+                        'package_name': package_row['package_name'],
+                        'created_at': package_row['created_at'],
+                        'is_active': bool(package_row['is_active'])
+                    }
+                else:
+                    # Assuming column order from SELECT sp.*, c.name as client_name
+                    package_data = {
                         'id': package_row[0],
                         'client_name': package_row[-1],
                         'total_amount': package_row[3],
@@ -465,18 +510,58 @@ class SessionService:
                         'package_name': package_row[8],
                         'created_at': package_row[10],
                         'is_active': bool(package_row[12])
-                    },
-                    'sessions': [
-                        {
+                    }
+                
+                # Get session history
+                execute_db_query(cursor, '''
+                    SELECT id, session_date, session_time, session_cost, status, notes
+                    FROM sessions 
+                    WHERE package_id = ? AND trainer_id = ?
+                    ORDER BY session_date DESC
+                ''', (package_id, trainer_id))
+                
+                sessions = cursor.fetchall()
+                
+                # Parse sessions and calculate statistics
+                session_list = []
+                completed_count = 0
+                scheduled_count = 0
+                total_spent = 0
+                
+                for s in sessions:
+                    if isinstance(s, dict):
+                        session_data = {
+                            'id': s['id'], 'date': s['session_date'], 'time': s['session_time'],
+                            'cost': s['session_cost'], 'status': s['status'], 'notes': s['notes']
+                        }
+                        if s['status'] == 'completed':
+                            completed_count += 1
+                            total_spent += s['session_cost']
+                        elif s['status'] == 'scheduled':
+                            scheduled_count += 1
+                    else:
+                        session_data = {
                             'id': s[0], 'date': s[1], 'time': s[2],
                             'cost': s[3], 'status': s[4], 'notes': s[5]
-                        } for s in sessions
-                    ],
+                        }
+                        if s[4] == 'completed':
+                            completed_count += 1
+                            total_spent += s[3]
+                        elif s[4] == 'scheduled':
+                            scheduled_count += 1
+                    
+                    session_list.append(session_data)
+                
+                total_sessions = package_data['total_sessions']
+                
+                return {
+                    'package': package_data,
+                    'sessions': session_list,
                     'statistics': {
-                        'completed_sessions': completed_sessions,
-                        'scheduled_sessions': scheduled_sessions,
+                        'completed_sessions': completed_count,
+                        'scheduled_sessions': scheduled_count,
                         'total_spent': total_spent,
-                        'utilization_rate': (completed_sessions / package_row[5] * 100) if package_row[5] > 0 else 0
+                        'utilization_rate': (completed_count / total_sessions * 100) if total_sessions > 0 else 0
                     }
                 }
                 
@@ -505,19 +590,33 @@ class SessionService:
                 cursor = conn.cursor()
                 
                 # Get the most recent active package
-                execute_db_query(cursor, '''
-                    SELECT id, session_price
-                    FROM session_packages 
-                    WHERE client_id = ? AND trainer_id = ? AND is_active = 1
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                ''', (client_id, trainer_id))
+                if IS_PRODUCTION:
+                    execute_db_query(cursor, '''
+                        SELECT id, session_price
+                        FROM session_packages 
+                        WHERE client_id = ? AND trainer_id = ? AND is_active = true
+                        ORDER BY created_at DESC
+                        LIMIT 1
+                    ''', (client_id, trainer_id))
+                else:
+                    execute_db_query(cursor, '''
+                        SELECT id, session_price
+                        FROM session_packages 
+                        WHERE client_id = ? AND trainer_id = ? AND is_active = 1
+                        ORDER BY created_at DESC
+                        LIMIT 1
+                    ''', (client_id, trainer_id))
                 
                 package_info = cursor.fetchone()
                 if not package_info:
                     raise ValueError("No active package found for client")
                 
-                package_id, session_price = package_info
+                # Handle both dict (PostgreSQL) and tuple/Row (SQLite) results
+                if isinstance(package_info, dict):
+                    package_id = package_info['id']
+                    session_price = package_info['session_price']
+                else:
+                    package_id, session_price = package_info
                 additional_sessions = amount // session_price
                 
                 # Update package credits
@@ -550,22 +649,13 @@ class SessionService:
                        payment_method: str, payment_date: str,
                        description: Optional[str] = None):
         """Helper method to record payment"""
-        if IS_PRODUCTION:
-            execute_db_query(cursor, '''
-                INSERT INTO payments 
-                (client_id, trainer_id, package_id, amount, payment_method, 
-                 payment_date, description)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ''', (client_id, trainer_id, package_id, amount, payment_method,
-                  payment_date, description))
-        else:
-            execute_db_query(cursor, '''
-                INSERT INTO payments 
-                (client_id, trainer_id, package_id, amount, payment_method, 
-                 payment_date, description)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (client_id, trainer_id, package_id, amount, payment_method,
-                  payment_date, description))
+        execute_db_query(cursor, '''
+            INSERT INTO payments 
+            (client_id, trainer_id, package_id, amount, payment_method, 
+             payment_date, description)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (client_id, trainer_id, package_id, amount, payment_method,
+              payment_date, description))
     
     def get_payment_history(self, client_id: int, trainer_id: int) -> List[PaymentRecord]:
         """
@@ -594,11 +684,20 @@ class SessionService:
                 
                 payments = []
                 for row in rows:
-                    payments.append(PaymentRecord(
-                        id=row[0], client_id=row[1], trainer_id=row[2],
-                        package_id=row[3], amount=row[4], payment_method=row[5],
-                        payment_date=row[6], description=row[7], created_at=row[8]
-                    ))
+                    # Handle both dict (PostgreSQL) and tuple/Row (SQLite) results
+                    if isinstance(row, dict):
+                        payments.append(PaymentRecord(
+                            id=row['id'], client_id=row['client_id'], trainer_id=row['trainer_id'],
+                            package_id=row['package_id'], amount=row['amount'], 
+                            payment_method=row['payment_method'], payment_date=row['payment_date'], 
+                            description=row['description'], created_at=row['created_at']
+                        ))
+                    else:
+                        payments.append(PaymentRecord(
+                            id=row[0], client_id=row[1], trainer_id=row[2],
+                            package_id=row[3], amount=row[4], payment_method=row[5],
+                            payment_date=row[6], description=row[7], created_at=row[8]
+                        ))
                 
                 return payments
                 
