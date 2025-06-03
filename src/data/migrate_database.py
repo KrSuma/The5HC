@@ -82,6 +82,7 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS assessments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             client_id INTEGER NOT NULL,
+            trainer_id INTEGER NOT NULL,
             date DATETIME NOT NULL,
             overhead_squat_score INTEGER,
             overhead_squat_notes TEXT,
@@ -110,13 +111,15 @@ def create_tables():
             balance_score REAL,
             cardio_score REAL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (client_id) REFERENCES clients (id)
+            FOREIGN KEY (client_id) REFERENCES clients (id),
+            FOREIGN KEY (trainer_id) REFERENCES trainers (id)
         )
         """,
         postgresql_query="""
         CREATE TABLE IF NOT EXISTS assessments (
             id SERIAL PRIMARY KEY,
             client_id INTEGER NOT NULL,
+            trainer_id INTEGER NOT NULL,
             date TIMESTAMP NOT NULL,
             overhead_squat_score INTEGER,
             overhead_squat_notes TEXT,
@@ -145,7 +148,8 @@ def create_tables():
             balance_score FLOAT,
             cardio_score FLOAT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (client_id) REFERENCES clients (id)
+            FOREIGN KEY (client_id) REFERENCES clients (id),
+            FOREIGN KEY (trainer_id) REFERENCES trainers (id)
         )
         """
     )

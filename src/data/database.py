@@ -68,12 +68,21 @@ def hash_password(password: str) -> str:
 def verify_password(stored_hash: str, provided_password: str) -> bool:
     """Verify password using bcrypt"""
     try:
-        return bcrypt.checkpw(
-            provided_password.encode('utf-8'), 
-            stored_hash.encode('utf-8')
-        )
+        if not stored_hash or not provided_password:
+            return False
+            
+        # Ensure stored_hash is properly formatted
+        if isinstance(stored_hash, str) and stored_hash.startswith('$2b$'):
+            return bcrypt.checkpw(
+                provided_password.encode('utf-8'), 
+                stored_hash.encode('utf-8')
+            )
+        else:
+            logger.error(f"Invalid password hash format: {stored_hash[:10] if stored_hash else 'None'}...")
+            return False
     except Exception as e:
         logger.error(f"Password verification failed: {e}")
+        logger.error(f"Hash format check: starts with $2b$: {stored_hash.startswith('$2b$') if stored_hash else 'N/A'}")
         return False
 
 
@@ -120,7 +129,13 @@ class AuthRateLimiter:
                 if not result:
                     return True, None
                 
-                attempts, locked_until = result
+                # Handle both dict (PostgreSQL) and tuple/Row (SQLite) results
+                if isinstance(result, dict):
+                    attempts = result.get('failed_login_attempts', 0)
+                    locked_until = result.get('locked_until')
+                else:
+                    attempts = result['failed_login_attempts'] if hasattr(result, '__getitem__') else result[0]
+                    locked_until = result['locked_until'] if hasattr(result, '__getitem__') else result[1]
                 
                 # Check if account is locked
                 if locked_until:
@@ -163,7 +178,14 @@ class AuthRateLimiter:
                 """, (username,))
                 
                 result = c.fetchone()
-                if result and result[0] >= self.max_attempts:
+                if result:
+                    # Handle both dict (PostgreSQL) and tuple/Row (SQLite) results
+                    if isinstance(result, dict):
+                        attempts = result.get('failed_login_attempts', 0)
+                    else:
+                        attempts = result['failed_login_attempts'] if hasattr(result, '__getitem__') else result[0]
+                    
+                    if attempts >= self.max_attempts:
                     lock_until = datetime.now() + timedelta(minutes=self.window_minutes)
                     execute_db_query(c, """
                         UPDATE trainers 
@@ -254,9 +276,15 @@ def authenticate(username: str, password: str) -> Optional[int]:
             
             result = c.fetchone()
             if result:
-                trainer_id, stored_hash = result
+                # Handle both dict (PostgreSQL) and tuple/Row (SQLite) results
+                if isinstance(result, dict):
+                    trainer_id = result.get('id')
+                    stored_hash = result.get('password_hash')
+                else:
+                    trainer_id = result['id'] if hasattr(result, '__getitem__') else result[0]
+                    stored_hash = result['password_hash'] if hasattr(result, '__getitem__') else result[1]
                 
-                if verify_password(stored_hash, password):
+                if stored_hash and verify_password(stored_hash, password):
                     rate_limiter.reset_attempts(username)
                     logger.info(f"Successful login: {username}")
                     return trainer_id
@@ -329,7 +357,14 @@ def get_clients(trainer_id: int) -> List[Tuple[int, str]]:
                 ORDER BY name
             """, (trainer_id,))
             
-            return c.fetchall()
+            rows = c.fetchall()
+            if rows:
+                # Handle both dict (PostgreSQL) and Row (SQLite) results
+                if isinstance(rows[0], dict):
+                    return [(row['id'], row['name']) for row in rows]
+                else:
+                    return [(row[0], row[1]) for row in rows]
+            return []
             
     except Exception as e:
         logger.error(f"Failed to get clients: {e}")
@@ -345,7 +380,11 @@ def get_client_details(client_id: int) -> Optional[Dict[str, Any]]:
             row = c.fetchone()
             
             if row:
-                return dict(row)
+                # Handle both dict (PostgreSQL) and Row (SQLite) results
+                if isinstance(row, dict):
+                    return row
+                else:
+                    return dict(row)
             return None
             
     except Exception as e:
@@ -398,7 +437,14 @@ def get_assessments(client_id: int) -> List[Dict[str, Any]]:
                 ORDER BY date DESC
             """, (client_id,))
             
-            return [dict(row) for row in c.fetchall()]
+            rows = c.fetchall()
+            if rows:
+                # Handle both dict (PostgreSQL) and Row (SQLite) results
+                if isinstance(rows[0], dict):
+                    return rows
+                else:
+                    return [dict(row) for row in rows]
+            return []
             
     except Exception as e:
         logger.error(f"Failed to get assessments: {e}")
@@ -414,7 +460,11 @@ def get_assessment_details(assessment_id: int) -> Optional[Dict[str, Any]]:
             row = c.fetchone()
             
             if row:
-                return dict(row)
+                # Handle both dict (PostgreSQL) and Row (SQLite) results
+                if isinstance(row, dict):
+                    return row
+                else:
+                    return dict(row)
             return None
             
     except Exception as e:
@@ -447,7 +497,11 @@ def get_trainer_stats(trainer_id: int) -> Dict[str, Any]:
             
             result = c.fetchone()
             if result:
-                stats = dict(result)
+                # Handle both dict (PostgreSQL) and Row (SQLite) results
+                if isinstance(result, dict):
+                    stats = result
+                else:
+                    stats = dict(result)
                 # Handle NULL values
                 stats['total_clients'] = stats['total_clients'] or 0
                 stats['total_assessments'] = stats['total_assessments'] or 0
