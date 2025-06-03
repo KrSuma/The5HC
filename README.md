@@ -1,4 +1,4 @@
-# 더파이브 헬스케어 Fitness Assessment System (Improved Version)
+# The 5HC Fitness Assessment System
 
 A comprehensive fitness assessment application for trainers to evaluate, track, and manage their clients' fitness levels. The system features standardized tests, automated scoring, personalized recommendations, and professional PDF reports.
 

@@ -6,34 +6,33 @@ import matplotlib
 matplotlib.use('Agg')  # Required for non-interactive environments
 
 # Import improved modules with security features
-from services import (
+from src.services.service_layer import (
     AppInitService, AuthService, ClientService,
     AssessmentService, DashboardService, AnalyticsService
 )
 
 # Import session management
-from auth import (
-    session_manager, auto_logout_check, show_session_timeout_warning,
-    show_session_info, ActivityTracker
+from src.services.auth import (
+    session_manager, ActivityTracker
 )
 
 # Import configuration
-from config import config
+from config.settings import config
 
 # Import custom logging
-from app_logging import app_logger, error_logger
+from src.utils.app_logging import app_logger, error_logger
 
 # Import UI pages
-from ui_pages import (
+from src.ui.pages.ui_pages import (
     login_register_page, dashboard_page, dashboard_page_with_search,
-    clients_page, client_detail_page, assessment_detail_page
+    clients_page, client_detail_page, assessment_detail_page, session_management_page
 )
 
 # Import our enhanced assessment page
-from assessment_page import new_assessment_page
+from src.ui.pages.assessment_page import new_assessment_page
 
 # Import simplified add client page for direct client addition
-from add_client import simplified_add_client_page
+from src.services.add_client import simplified_add_client_page
 
 
 def main():
@@ -47,18 +46,19 @@ def main():
         return
 
     st.set_page_config(
-        page_title=config.ui.app_name,
-        page_icon="🏋️",
-        layout="wide"
+        page_title = config.app['app_name'],
+        page_icon = "🏋️",
+        layout = "wide"
     )
 
     # Add custom CSS with theme colors from config
+    theme = config.streamlit['theme']
     st.markdown(f"""
     <style>
     .download-button {{
         display: inline-block;
         padding: 10px 20px;
-        background-color: {config.ui.primary_color};
+        background-color: {theme['primary_color']};
         color: white;
         text-decoration: none;
         border-radius: 5px;
@@ -67,34 +67,33 @@ def main():
         margin: 10px 0;
     }}
     .stProgress > div > div > div {{
-        background-color: {config.ui.primary_color};
+        background-color: {theme['primary_color']};
     }}
     .error-message {{
-        color: {config.ui.danger_color};
+        color: #d32f2f;
         padding: 10px;
         background-color: #ffeeee;
         border-radius: 5px;
         margin: 10px 0;
     }}
     .success-message {{
-        color: {config.ui.success_color};
+        color: #388e3c;
         padding: 10px;
         background-color: #eeffee;
         border-radius: 5px;
         margin: 10px 0;
     }}
     .info-message {{
-        color: {config.ui.info_color};
+        color: #1976d2;
         padding: 10px;
         background-color: #eef6ff;
         border-radius: 5px;
         margin: 10px 0;
     }}
     </style>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow_html = True)
 
-    # Check for automatic logout
-    auto_logout_check()
+    # Removed auto-logout check - sessions no longer expire
 
     # Session state initialization with error handling
     for key, default in [
@@ -104,9 +103,6 @@ def main():
         ('current_page', "login"),
         ('selected_client', None),
         ('selected_assessment', None),
-        ('use_simplified_assessment', False),
-        ('use_search_dashboard', False),
-        ('use_direct_client_add', True),
         ('error_message', None),
         ('success_message', None),
         ('info_message', None),
@@ -115,25 +111,23 @@ def main():
             st.session_state[key] = default
 
     # Page header
-    st.title(config.ui.app_name)
+    st.title(config.app['app_name'])
 
-    # Display session timeout warning if needed
-    if st.session_state.logged_in:
-        show_session_timeout_warning()
+    # Removed session timeout warning - sessions no longer expire
 
     # Display any error messages
     if st.session_state.error_message:
-        st.markdown(f'<div class="error-message">{st.session_state.error_message}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="error-message">{st.session_state.error_message}</div>', unsafe_allow_html = True)
         st.session_state.error_message = None
 
     # Display any success messages
     if st.session_state.success_message:
-        st.markdown(f'<div class="success-message">{st.session_state.success_message}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="success-message">{st.session_state.success_message}</div>', unsafe_allow_html = True)
         st.session_state.success_message = None
 
     # Display any info messages
     if st.session_state.info_message:
-        st.markdown(f'<div class="info-message">{st.session_state.info_message}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="info-message">{st.session_state.info_message}</div>', unsafe_allow_html = True)
         st.session_state.info_message = None
 
     # Login / Registration Page
@@ -148,7 +142,7 @@ def main():
     else:
         # Validate session on each page load
         if not session_manager.validate_session():
-            st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
+            st.error("로그인이 필요합니다.")
             st.session_state.current_page = "login"
             st.rerun()
             return
@@ -156,53 +150,35 @@ def main():
         # Sidebar with navigation
         with st.sidebar:
             st.write(f"로그인: **{st.session_state.trainer_name}**")
-            
-            # Show session info
-            show_session_info()
-            
+
             st.divider()
 
-            if st.button("대시보드", use_container_width=True):
+            if st.button("대시보드", use_container_width = True):
                 st.session_state.current_page = "dashboard"
                 st.session_state.selected_client = None
                 st.session_state.selected_assessment = None
                 ActivityTracker.log_activity("navigate", {"page": "dashboard"})
 
-            if st.button("회원 관리", use_container_width=True):
+            if st.button("회원 관리", use_container_width = True):
                 st.session_state.current_page = "clients"
                 st.session_state.selected_client = None
                 st.session_state.selected_assessment = None
                 ActivityTracker.log_activity("navigate", {"page": "clients"})
 
-            if st.button("새 회원 추가", use_container_width=True):
+            if st.button("새 회원 추가", use_container_width = True):
                 st.session_state.current_page = "add_client"
                 st.session_state.selected_client = None
                 st.session_state.selected_assessment = None
                 ActivityTracker.log_activity("navigate", {"page": "add_client"})
 
-            if st.button("새 평가", use_container_width=True):
+            if st.button("새 평가", use_container_width = True):
                 st.session_state.current_page = "new_assessment"
                 st.session_state.selected_assessment = None
                 ActivityTracker.log_activity("navigate", {"page": "new_assessment"})
 
             st.divider()
 
-            # Options
-            st.subheader("옵션")
-            st.checkbox("검색 기능이 있는 대시보드 사용",
-                        key="use_search_dashboard",
-                        value=st.session_state.use_search_dashboard)
-
-            st.checkbox("체크박스가 있는 간소화된 평가 폼 사용",
-                        key="use_simplified_assessment",
-                        value=st.session_state.use_simplified_assessment)
-
-            st.checkbox("직접 추가 방식으로 회원 추가",
-                        key="use_direct_client_add",
-                        value=st.session_state.use_direct_client_add)
-
-            st.divider()
-            if st.button("로그아웃", use_container_width=True):
+            if st.button("로그아웃", use_container_width = True):
                 AuthService.logout()
                 st.session_state.success_message = "로그아웃 되었습니다."
                 st.rerun()
@@ -210,10 +186,7 @@ def main():
         # Main content area with error handling
         try:
             if st.session_state.current_page == "dashboard":
-                if st.session_state.use_search_dashboard:
-                    dashboard_page_with_search()
-                else:
-                    dashboard_page()
+                dashboard_page_with_search()
             elif st.session_state.current_page == "clients":
                 clients_page()
             elif st.session_state.current_page == "add_client":
@@ -225,8 +198,10 @@ def main():
                 new_assessment_page()
             elif st.session_state.current_page == "assessment_detail":
                 assessment_detail_page()
+            elif st.session_state.current_page == "session_management":
+                session_management_page()
         except Exception as e:
-            error_logger.log_error(e, context={
+            error_logger.log_error(e, context = {
                 'page': st.session_state.current_page,
                 'user_id': st.session_state.trainer_id
             })

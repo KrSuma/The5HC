@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>더파이브 헬스케어 체력 평가 보고서</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            line-height: 1.2;
+            color: #333;
+            background: white;
+            font-size: 10px;
+        }
+
+        .page {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            padding: 10mm;
+            background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .header p {
+            font-size: 11px;
+            opacity: 0.9;
+        }
+
+        .top-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 120px;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .client-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            font-size: 9px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: #6c757d;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #343a40;
+        }
+
+        .overall-score {
+            text-align: center;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 15px 8px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .score-number {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .score-rating {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .category-scores {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .category-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 9px;
+        }
+
+        .category-name {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .category-value {
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+        }
+
+        .test-images {
+            margin-bottom: 10px;
+        }
+
+        .image-placeholder {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 6px;
+            padding: 30px;
+            text-align: center;
+            color: #6c757d;
+            height: 200px;
+        }
+
+        .placeholder-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 15px;
+            height: 100%;
+            align-items: center;
+        }
+
+        .placeholder-item {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 8px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+            color: #495057;
+            font-weight: 500;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .exercise-illustration {
+            width: 60px;
+            height: 70px;
+            margin-bottom: 5px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Overhead Squat */
+        .overhead-squat {
+            background: linear-gradient(to bottom, #667eea 0%, #764ba2 100%);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            position: relative;
+        }
+
+        .overhead-squat::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+        }
+
+        .overhead-squat::after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            height: 3px;
+            background: #fff;
+            border-radius: 2px;
+        }
+
+        /* Push Up */
+        .pushup {
+            background: linear-gradient(to right, #ff6b6b 0%, #ee5a52 100%);
+            border-radius: 10px;
+            position: relative;
+            transform: perspective(50px) rotateX(10deg);
+        }
+
+        .pushup::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: #fff;
+            border-radius: 50%;
+        }
+
+        .pushup::after {
+            content: '';
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+        }
+
+        /* Single Leg Balance */
+        .balance {
+            background: linear-gradient(to bottom, #4ecdc4 0%, #44a08d 100%);
+            border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
+            position: relative;
+        }
+
+        .balance::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: #fff;
+            border-radius: 50%;
+        }
+
+        .balance::after {
+            content: '';
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 3px;
+            height: 25px;
+            background: #fff;
+            border-radius: 2px;
+        }
+
+        /* Toe Touch */
+        .toe-touch {
+            background: linear-gradient(to bottom, #f093fb 0%, #f5576c 100%);
+            border-radius: 50% 50% 30% 70%;
+            position: relative;
+            transform: perspective(40px) rotateX(20deg);
+        }
+
+        .toe-touch::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: #fff;
+            border-radius: 50%;
+        }
+
+        .toe-touch::after {
+            content: '';
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 2px;
+            background: #fff;
+            border-radius: 1px;
+        }
+
+        /* Shoulder Mobility */
+        .shoulder-mobility {
+            background: linear-gradient(to bottom, #a8edea 0%, #fed6e3 100%);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            position: relative;
+        }
+
+        .shoulder-mobility::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: #333;
+            border-radius: 50%;
+        }
+
+        .shoulder-mobility::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 20%;
+            right: 20%;
+            height: 3px;
+            background: #333;
+            border-radius: 2px;
+            transform: rotate(-15deg);
+        }
+
+        /* Farmers Carry */
+        .farmers-carry {
+            background: linear-gradient(to bottom, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
+            position: relative;
+        }
+
+        .farmers-carry::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: #333;
+            border-radius: 50%;
+        }
+
+        .farmers-carry::after {
+            content: '';
+            position: absolute;
+            top: 25px;
+            left: 15px;
+            width: 8px;
+            height: 20px;
+            background: #333;
+            border-radius: 2px;
+            box-shadow: 22px 0 0 #333;
+        }
+
+        /* Harvard Step */
+        .harvard-step {
+            background: linear-gradient(to bottom, #89f7fe 0%, #66a6ff 100%);
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .harvard-step::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: #fff;
+            border-radius: 50%;
+        }
+
+        .harvard-step::after {
+            content: '';
+            position: absolute;
+            bottom: 10px;
+            left: 20%;
+            right: 20%;
+            height: 12px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 2px;
+        }
+
+        .test-results {
+            margin-bottom: 10px;
+        }
+
+        .test-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            font-size: 8px;
+        }
+
+        .test-table th {
+            background: #667eea;
+            color: white;
+            padding: 6px 4px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 9px;
+        }
+
+        .test-table td {
+            padding: 4px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: top;
+        }
+
+        .test-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .grade-excellent { color: #28a745; font-weight: 600; }
+        .grade-good { color: #17a2b8; font-weight: 600; }
+        .grade-average { color: #ffc107; font-weight: 600; }
+        .grade-needs-improvement { color: #dc3545; font-weight: 600; }
+
+        .bottom-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .suggestion-box {
+            background: white;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 2px solid #667eea;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .suggestion-box h3 {
+            color: #667eea;
+            margin-bottom: 5px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .suggestion-box ul {
+            list-style: none;
+            padding: 0;
+            font-size: 8px;
+        }
+
+        .suggestion-box li {
+            padding: 1px 0;
+            position: relative;
+            padding-left: 10px;
+            line-height: 1.2;
+        }
+
+        .suggestion-box li:before {
+            content: "•";
+            color: #667eea;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .training-program {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .training-program h2 {
+            color: white;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .program-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .program-box {
+            background: rgba(255,255,255,0.1);
+            padding: 8px;
+            border-radius: 4px;
+            backdrop-filter: blur(10px);
+        }
+
+        .program-box h3 {
+            margin-bottom: 5px;
+            font-size: 9px;
+        }
+
+        .program-box ul {
+            list-style: none;
+            padding: 0;
+            font-size: 8px;
+        }
+
+        .program-box li {
+            padding: 1px 0;
+            padding-left: 8px;
+            position: relative;
+            line-height: 1.1;
+        }
+
+        .program-box li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            font-size: 7px;
+        }
+
+        .radar-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .radar-chart {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border: 2px solid #667eea;
+            margin-bottom: 8px;
+        }
+
+        .chart-center {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 7px;
+            text-align: center;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 8mm;
+            left: 10mm;
+            right: 10mm;
+            background: #343a40;
+            color: white;
+            text-align: center;
+            padding: 5px;
+            font-size: 7px;
+            border-radius: 3px;
+        }
+
+        @media print {
+            body { background: white; }
+            .page { box-shadow: none; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <h1>더파이브 헬스케어</h1>
+            <p>체력 평가 보고서</p>
+        </div>
+
+        <div class="top-section">
+            <div class="section">
+                <h2>회원 정보</h2>
+                <div class="client-info">
+                    <div class="info-item">
+                        <span class="info-label">이름:</span>
+                        <span class="info-value">김건강</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">나이:</span>
+                        <span class="info-value">32세</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">성별:</span>
+                        <span class="info-value">남성</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">키:</span>
+                        <span class="info-value">175cm</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">체중:</span>
+                        <span class="info-value">72kg</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">BMI:</span>
+                        <span class="info-value">23.5</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">평가일:</span>
+                        <span class="info-value">2025-05-25</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">트레이너:</span>
+                        <span class="info-value">박코치</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>카테고리별 점수</h2>
+                <div class="category-scores">
+                    <div class="category-item">
+                        <div class="category-header">
+                            <span class="category-name">근력/근지구력</span>
+                            <span class="category-value">18.5/25</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 74%"></div>
+                        </div>
+                    </div>
+
+                    <div class="category-item">
+                        <div class="category-header">
+                            <span class="category-name">가동성/유연성</span>
+                            <span class="category-value">16.2/25</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 65%"></div>
+                        </div>
+                    </div>
+
+                    <div class="category-item">
+                        <div class="category-header">
+                            <span class="category-name">균형/협응성</span>
+                            <span class="category-value">20.1/25</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 80%"></div>
+                        </div>
+                    </div>
+
+                    <div class="category-item">
+                        <div class="category-header">
+                            <span class="category-name">심폐지구력</span>
+                            <span class="category-value">17.8/25</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 71%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="radar-section">
+                <div class="overall-score">
+                    <div class="score-number">72.6</div>
+                    <div class="score-rating">보통</div>
+                </div>
+                <div class="radar-chart">
+                    <div class="chart-center">체력<br>균형</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-images">
+            <div class="section">
+                <h2>테스트 이미지</h2>
+                <div class="image-placeholder">
+                    <div class="placeholder-grid">
+                        <div class="placeholder-item">오버헤드 스쿼트</div>
+                        <div class="placeholder-item">푸시업</div>
+                        <div class="placeholder-item">한발 균형</div>
+                        <div class="placeholder-item">발끝 터치</div>
+                        <div class="placeholder-item">어깨 가동성</div>
+                        <div class="placeholder-item">파머스 캐리</div>
+                        <div class="placeholder-item">하버드 스텝</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-results">
+            <div class="section">
+                <h2>테스트 결과</h2>
+                <table class="test-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%">테스트</th>
+                            <th style="width: 25%">결과</th>
+                            <th style="width: 12%">등급</th>
+                            <th style="width: 43%">비고</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>오버헤드 스쿼트</td>
+                            <td>2점/3점</td>
+                            <td><span class="grade-average">보통</span></td>
+                            <td>무릎 내반, 발뒤꿈치 들림 관찰</td>
+                        </tr>
+                        <tr>
+                            <td>푸시업</td>
+                            <td>28회</td>
+                            <td><span class="grade-good">좋음</span></td>
+                            <td>표준 자세로 수행, 상체 근력 양호</td>
+                        </tr>
+                        <tr>
+                            <td>한발 균형</td>
+                            <td>눈뜸: 35초<br>눈감음: 18초</td>
+                            <td><span class="grade-good">좋음</span></td>
+                            <td>안정적 균형 유지, 고유감각 양호</td>
+                        </tr>
+                        <tr>
+                            <td>발끝 터치</td>
+                            <td>-8cm (발목수준)</td>
+                            <td><span class="grade-average">보통</span></td>
+                            <td>햄스트링 유연성 제한, 개선 필요</td>
+                        </tr>
+                        <tr>
+                            <td>어깨 가동성</td>
+                            <td>우1.5, 좌1.8 주먹거리</td>
+                            <td><span class="grade-average">보통</span></td>
+                            <td>좌측 어깨 제한 더 심함, 비대칭</td>
+                        </tr>
+                        <tr>
+                            <td>파머스 캐리</td>
+                            <td>35kg, 25m, 45초</td>
+                            <td><span class="grade-good">좋음</span></td>
+                            <td>안정적 자세 유지, 그립 강도 양호</td>
+                        </tr>
+                        <tr>
+                            <td>하버드 스텝</td>
+                            <td>PFI: 78.5</td>
+                            <td><span class="grade-average">보통</span></td>
+                            <td>심폐지구력 개선 필요, 회복력 보통</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bottom-section">
+            <div class="section">
+                <h2>개선 제안</h2>
+                <div class="suggestions-grid">
+                    <div class="suggestion-box">
+                        <h3>근력</h3>
+                        <ul>
+                            <li>현재 수준 유지</li>
+                            <li>전신 근력 훈련 지속</li>
+                            <li>복합 운동 중심</li>
+                        </ul>
+                    </div>
+
+                    <div class="suggestion-box">
+                        <h3>가동성</h3>
+                        <ul>
+                            <li>햄스트링 일일 스트레칭</li>
+                            <li>어깨 가동성 운동</li>
+                            <li>힙 힌지 패턴 연습</li>
+                        </ul>
+                    </div>
+
+                    <div class="suggestion-box">
+                        <h3>균형</h3>
+                        <ul>
+                            <li>스쿼트 메커니즘 개선</li>
+                            <li>고유감각 훈련</li>
+                            <li>발목 가동성 강화</li>
+                        </ul>
+                    </div>
+
+                    <div class="suggestion-box">
+                        <h3>심폐</h3>
+                        <ul>
+                            <li>유산소 훈련 증가</li>
+                            <li>간격 훈련 포함</li>
+                            <li>목표 심박수 훈련</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="training-program">
+                <h2>권장 트레이닝 프로그램</h2>
+                <div class="program-grid">
+                    <div class="program-box">
+                        <h3>주간 스케줄</h3>
+                        <ul>
+                            <li>월: 상체근력 + 코어</li>
+                            <li>화: 심폐훈련 + 가동성</li>
+                            <li>목: 하체근력 + 균형</li>
+                            <li>금: 전신운동 + 유연성</li>
+                        </ul>
+                    </div>
+
+                    <div class="program-box">
+                        <h3>운동 강도</h3>
+                        <ul>
+                            <li>근력: 8-12회 × 3세트</li>
+                            <li>유연성: 20-30초 홀드</li>
+                            <li>균형: 30-45초 홀드</li>
+                            <li>심폐: 70-80% 최대심박</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            더파이브 헬스케어 | 다음 평가: 2025-08-25 | 중간점검: 2025-07-10 | 문의: 02-1234-5678
+        </div>
+    </div>
+</body>
+</html>
