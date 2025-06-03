@@ -50,8 +50,8 @@ class AuthService:
                 return False, "올바른 이메일 형식이 아닙니다."
             
             # Validate password strength
-            if len(password) < config.security.min_password_length:
-                return False, f"비밀번호는 최소 {config.security.min_password_length}자 이상이어야 합니다."
+            if len(password) < config.security['password_min_length']:
+                return False, f"비밀번호는 최소 {config.security['password_min_length']}자 이상이어야 합니다."
             
             # Register trainer
             success = db_register_trainer(username, password, name, email)
@@ -94,8 +94,9 @@ class AuthService:
                     ActivityTracker.log_activity("login", {"username": username})
                     
                     # Warm up cache
-                    if config.cache.enable_cache_warming:
-                        ClientService._warm_cache(trainer_id)
+                    # Note: cache warming not available in current config
+                    # if config.cache.get('enable_cache_warming', False):
+                    #     ClientService._warm_cache(trainer_id)
                     
                     return True, "로그인 성공!"
             
