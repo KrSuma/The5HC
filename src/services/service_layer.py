@@ -62,7 +62,9 @@ class AuthService:
                 app_logger.info(f"Trainer registered: {username}")
                 return True, "등록이 완료되었습니다!"
             else:
-                return False, "사용자명이 이미 존재합니다."
+                # Check logs to determine the actual error
+                # Since db_register_trainer logs the specific error, we can provide a more general message
+                return False, "사용자명 또는 이메일이 이미 존재합니다."
                 
         except Exception as e:
             error_logger.log_error(e, context={'action': 'register', 'username': username})

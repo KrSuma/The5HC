@@ -248,8 +248,15 @@ def register_trainer(username: str, password: str, name: str, email: str) -> boo
         return True
         
     except Exception as e:
-        if "duplicate key value" in str(e).lower() or "unique constraint" in str(e).lower():
-            logger.warning(f"Registration failed - username already exists: {username}")
+        error_str = str(e).lower()
+        if "duplicate key value" in error_str or "unique constraint" in error_str:
+            # Determine which field caused the duplicate error
+            if "trainers_email_key" in error_str or "email" in error_str:
+                logger.warning(f"Registration failed - email already exists: {email}")
+            elif "trainers_username_key" in error_str or "username" in error_str:
+                logger.warning(f"Registration failed - username already exists: {username}")
+            else:
+                logger.warning(f"Registration failed - duplicate value: {username}")
             return False
         else:
             logger.error(f"Registration failed: {e}")
