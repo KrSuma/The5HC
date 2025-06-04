@@ -1063,7 +1063,13 @@ def session_management_page():
                                 status_text = "활성" if package.is_active else "비활성"
                                 
                                 st.markdown(f"**{package_title}** :{status_color}[{status_text}]")
-                                st.caption(f"생성일: {package.created_at[:10]}")
+                                # Handle both string and datetime objects for created_at
+                                if isinstance(package.created_at, str):
+                                    created_date = package.created_at[:10]
+                                else:
+                                    # Assume it's a datetime object
+                                    created_date = package.created_at.strftime("%Y-%m-%d")
+                                st.caption(f"생성일: {created_date}")
                             
                             with col2:
                                 st.metric(
