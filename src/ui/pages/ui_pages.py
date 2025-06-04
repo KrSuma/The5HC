@@ -282,10 +282,16 @@ def clients_page():
                 st.session_state.selected_client = client_id
                 st.session_state.current_page = "client_detail"
                 st.rerun()
+            
+            # Button to go to session management
+            def manage_sessions(client_id):
+                st.session_state.selected_client_id = client_id
+                st.session_state.current_page = "session_management"
+                st.rerun()
 
-            # Display the client list with a button to view details
+            # Display the client list with buttons
             for _, row in client_df.iterrows():
-                col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 2, 2])
+                col1, col2, col3, col4, col5, col6 = st.columns([3, 1, 1, 1.5, 1.5, 1.5])
                 with col1:
                     st.write(f"**{row['이름']}**")
                 with col2:
@@ -293,10 +299,13 @@ def clients_page():
                 with col3:
                     st.write(f"성별: {row['성별']}")
                 with col4:
-                    st.write(f"평가 수: {row['평가 수']}")
+                    st.write(f"평가: {row['평가 수']}")
                 with col5:
                     if st.button("상세 보기", key = f"view_{row['ID']}"):
                         view_client(row['ID'])
+                with col6:
+                    if st.button("세션 관리", key = f"session_{row['ID']}"):
+                        manage_sessions(row['ID'])
                 st.divider()
         else:
             st.info("등록된 회원이 없습니다. '새 회원 추가' 탭에서 첫 회원을 등록하세요.")
