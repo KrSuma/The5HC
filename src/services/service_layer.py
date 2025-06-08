@@ -705,8 +705,8 @@ class SessionManagementService:
     """Service for managing training sessions and credits"""
     
     def __init__(self):
-        from src.services.session_service import SessionService
-        self.session_service = SessionService()
+        from src.services.enhanced_session_service import EnhancedSessionService
+        self.session_service = EnhancedSessionService()
     
     @login_required
     def create_package(self, client_id: int, total_amount: int, session_price: int,
@@ -716,6 +716,19 @@ class SessionManagementService:
         return self.session_service.create_session_package(
             client_id, trainer_id, total_amount, session_price, package_name, notes
         )
+    
+    @login_required
+    def create_package_with_fees(self, client_id: int, gross_amount: int, session_price: int,
+                                package_name: Optional[str] = None, notes: Optional[str] = None) -> int:
+        """Create a new session package with VAT and fee calculations"""
+        trainer_id = st.session_state.trainer_id
+        result = self.session_service.create_session_package_with_fees(
+            client_id, trainer_id, gross_amount, session_price, package_name, notes
+        )
+        
+        # Clear relevant caches after creating package
+        cache_manager.get_cache('clients').invalidate()
+        return result
     
     @login_required
     @cached(ClientCache, ttl=300)
@@ -766,6 +779,13 @@ class SessionManagementService:
         return self.session_service.get_package_summary(package_id, trainer_id)
     
     @login_required
+    @cached(ClientCache, ttl=300)
+    def get_enhanced_package_summary(self, package_id: int):
+        """Get comprehensive package summary with fee breakdown"""
+        trainer_id = st.session_state.trainer_id
+        return self.session_service.get_enhanced_package_summary(package_id, trainer_id)
+    
+    @login_required
     def add_credits(self, client_id: int, amount: int, payment_method: Optional[str] = None,
                    description: Optional[str] = None) -> bool:
         """Add credits to client's most recent package"""
@@ -777,8 +797,29 @@ class SessionManagementService:
         return result
     
     @login_required
+    def add_credits_with_fees(self, client_id: int, gross_amount: int, 
+                             payment_method: Optional[str] = None,
+                             description: Optional[str] = None) -> bool:
+        """Add credits to client's most recent package with fee calculations"""
+        trainer_id = st.session_state.trainer_id
+        result = self.session_service.add_credits_with_fees(
+            client_id, trainer_id, gross_amount, payment_method, description
+        )
+        
+        # Clear relevant caches
+        cache_manager.get_cache('clients').invalidate()
+        return result
+    
+    @login_required
     @cached(ClientCache, ttl=300)
     def get_payment_history(self, client_id: int):
         """Get payment history for a client"""
         trainer_id = st.session_state.trainer_id
         return self.session_service.get_payment_history(client_id, trainer_id)
+    
+    @login_required
+    @cached(ClientCache, ttl=300)
+    def get_enhanced_payment_history(self, client_id: int):
+        """Get payment history with fee breakdown"""
+        trainer_id = st.session_state.trainer_id
+        return self.session_service.get_enhanced_payment_history(client_id, trainer_id)

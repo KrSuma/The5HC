@@ -39,7 +39,7 @@ The5HC/
 │   │   ├── client_service.py # Client management
 │   │   ├── assessment_service.py # Assessment logic
 │   │   ├── report_service.py # Report generation
-│   │   ├── session_service.py # Session management
+│   │   ├── session_service.py # Session management with VAT/fee calculation
 │   │   └── add_client.py  # Client addition helpers
 │   │
 │   ├── ui/                # User interface
@@ -85,8 +85,8 @@ The5HC/
 ### 1. **Modular Architecture**
 - **Core**: Business logic separated from infrastructure
 - **Data**: Database operations isolated in data layer
-- **Services**: Business services handle complex operations
-- **UI**: Clean separation of presentation logic
+- **Services**: Business services handle complex operations including VAT/fee calculations
+- **UI**: Clean separation of presentation logic with financial transparency features
 - **Utils**: Reusable utilities and helpers
 
 ### 2. **Deployment Ready**
@@ -102,9 +102,10 @@ The5HC/
 
 ### 4. **Scalability**
 - Repository pattern for data access
-- Service layer for business logic
+- Service layer for business logic including financial calculations
 - Caching layer for performance
 - Modular structure for easy extension
+- Fee calculation engine with audit trail support
 
 ## Import Structure
 

@@ -27,6 +27,8 @@ from src.ui.pages.ui_pages import (
     login_register_page, dashboard_page, dashboard_page_with_search,
     clients_page, client_detail_page, assessment_detail_page, session_management_page
 )
+# Import enhanced session management
+from src.ui.pages.enhanced_session_management import enhanced_session_management_page
 
 # Import our enhanced assessment page
 from src.ui.pages.assessment_page import new_assessment_page
@@ -199,7 +201,7 @@ def main():
             elif st.session_state.current_page == "assessment_detail":
                 assessment_detail_page()
             elif st.session_state.current_page == "session_management":
-                session_management_page()
+                enhanced_session_management_page()
         except Exception as e:
             error_logger.log_error(e, context = {
                 'page': st.session_state.current_page,

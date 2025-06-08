@@ -15,6 +15,8 @@ A comprehensive fitness assessment application for trainers to evaluate, track, 
 - 📱 **Improved UI**: Enhanced user interface with tabs and appropriate feedback
 - 🧪 **Unit Tests**: Added unit tests for critical assessment scoring functions
 - 📝 **Enhanced PDF Reports**: Better font handling and more personalized content
+- 💰 **VAT and Fee Calculation**: Automatic calculation and display of 10% VAT and 3.5% card processing fees
+- 📊 **Financial Transparency**: Detailed breakdown of gross amount, fees, and net credits in package management
 
 ## Features
 
@@ -33,6 +35,9 @@ A comprehensive fitness assessment application for trainers to evaluate, track, 
 - **Personalized Recommendations**: Tailored improvement suggestions based on assessment results
 - **PDF Report Generation**: Professional-looking assessment reports
 - **Data Dashboard**: Overview of client and assessment statistics
+- **Session Package Management**: Create and manage training packages with credit system
+- **Financial Management**: Automatic VAT (10%) and card processing fee (3.5%) calculations
+- **Payment Tracking**: Comprehensive payment history with fee breakdowns
 
 ## Project Structure
 
