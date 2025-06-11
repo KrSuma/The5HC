@@ -8,6 +8,8 @@ Load @docs/project/django-test.md
 
 The5HC is a comprehensive fitness assessment system built with Django 5.0.1, designed for Korean fitness trainers to manage clients, conduct assessments, and track sessions. The application features a modern web stack with HTMX and Alpine.js for dynamic UI, a complete RESTful API, and supports both SQLite (development) and PostgreSQL (production) databases.
 
+**Production URL**: https://the5hc.herokuapp.com/
+
 ## Documentation Structure
 
 This knowledge base is organized into focused sections:
@@ -61,7 +63,7 @@ python run_api_tests.py
 - ✅ Phase 3: Forms and UI implementation - COMPLETE
 - ✅ Phase 4: PDF generation and data migration - COMPLETE
 - ✅ Phase 5: API development and testing - COMPLETE
-- 🔲 Phase 6: Production deployment - PENDING
+- ✅ Phase 6: Production deployment - COMPLETE (2025-01-11)
 
 ### Important Files
 
@@ -70,7 +72,9 @@ python run_api_tests.py
 - `apps/` - Django applications (7 apps)
 - `requirements.txt` - Python dependencies
 - `Procfile` - Heroku deployment configuration
-- `runtime.txt` - Python version specification
+- `runtime.txt` - Python version specification (python-3.12.1)
+- `Aptfile` - System dependencies for WeasyPrint on Heroku
+- `.env.example` - Environment variable template
 
 ## Complete Project File Structure
 
@@ -153,9 +157,9 @@ The5HC/
 ├── .gitignore                     # Git configuration
 ├── Procfile                       # Heroku deployment
 ├── runtime.txt                    # Python version
+├── Aptfile                        # Heroku system dependencies
 ├── README.md                      # Project documentation
-├── CLAUDE.md                      # This knowledge base
-└── cleanup_streamlit.sh           # Cleanup script (can be removed)
+└── CLAUDE.md                      # This knowledge base
 
 Total Project Structure:
 - Django Application: 100+ files across 7 apps

@@ -144,8 +144,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 LANGUAGE_CODE = 'en-us'  # Temporarily use English to avoid translation errors
 TIME_ZONE = 'Asia/Seoul'
-USE_I18N = False  # Temporarily disable to avoid translation errors
-USE_L10N = True
+USE_I18N = True  # Enable internationalization for l10n template tags
+USE_L10N = False  # Disable automatic localization to prevent comma formatting in numbers
 USE_TZ = True
 
 # Languages and locale paths

@@ -190,12 +190,16 @@ def dashboard_view(request):
         package__trainer=request.user,
         payment_date__gte=this_month_start
     ).aggregate(total=Sum('amount'))['total'] or 0
+    # Convert Decimal to int for JavaScript
+    revenue_this_month = int(revenue_this_month)
     
     revenue_last_month = Payment.objects.filter(
         package__trainer=request.user,
         payment_date__gte=last_month_start,
         payment_date__lt=this_month_start
     ).aggregate(total=Sum('amount'))['total'] or 0
+    # Convert Decimal to int for JavaScript
+    revenue_last_month = int(revenue_last_month)
     
     # Client growth statistics
     new_clients_this_month = request.user.clients.filter(
@@ -245,12 +249,25 @@ def dashboard_view(request):
     # Monthly revenue data for chart (last 6 months)
     monthly_revenue = []
     for i in range(6):
-        month_start = (this_month_start - timedelta(days=1) * i).replace(day=1)
+        # Calculate the month start date by going back i months
+        year = this_month_start.year
+        month = this_month_start.month - i
+        if month <= 0:
+            year -= 1
+            month += 12
+        month_start = this_month_start.replace(year=year, month=month, day=1)
+        
+        # Calculate month end
         if i == 0:
             month_end = today
         else:
-            next_month = month_start.replace(month=month_start.month + 1) if month_start.month < 12 else month_start.replace(year=month_start.year + 1, month=1)
-            month_end = next_month - timedelta(days=1)
+            # Get the first day of next month
+            if month == 12:
+                next_month_start = month_start.replace(year=year + 1, month=1, day=1)
+            else:
+                next_month_start = month_start.replace(month=month + 1, day=1)
+            # Last day of current month is day before first day of next month
+            month_end = next_month_start - timedelta(days=1)
         
         month_revenue = Payment.objects.filter(
             package__trainer=request.user,
@@ -260,9 +277,18 @@ def dashboard_view(request):
         
         monthly_revenue.append({
             'month': month_start.strftime('%Y년 %m월'),
-            'revenue': month_revenue
+            'revenue': int(month_revenue)  # Convert to int for JavaScript
         })
+        
+        # Debug logging
+        print(f"DEBUG: Month {month_start.strftime('%Y-%m')}: Revenue = {month_revenue}")
+        
     monthly_revenue.reverse()
+    
+    # Debug: Print final monthly revenue data
+    print("DEBUG: Final monthly_revenue data:")
+    for item in monthly_revenue:
+        print(f"  {item['month']}: {item['revenue']}")
     
     # Package status distribution (active vs inactive)
     package_distribution = SessionPackage.objects.filter(

@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Django migration of The5HC is in progress in the `django_migration/` directory. The migration uses Django 5.0.1 with HTMX + Alpine.js for the frontend.
+The Django migration of The5HC has been completed and deployed to production. The application is now live at https://the5hc.herokuapp.com/ using Django 5.0.1 with HTMX + Alpine.js for the frontend.
 
 ## Migration Status
 
@@ -24,12 +24,14 @@ A Django migration of The5HC is in progress in the `django_migration/` directory
   - ✅ Testing Infrastructure Migration (pytest, 72.3% passing)
   - ✅ RESTful API Development (Django REST Framework)
   - ✅ Session Management Bug Fixes (2025-01-09)
-- **Phase 6**: 🔲 Production Deployment (Not started)
+- **Phase 6**: ✅ COMPLETED - Production Deployment (2025-01-11)
 
 ## Django Project Structure
 
+Note: Django has been moved to the root directory as of 2025-01-11.
+
 ```
-django_migration/
+The5HC/
 ├── apps/                    # Django applications
 │   ├── accounts/           # Authentication & user management
 │   ├── analytics/          # Analytics app (placeholder)
