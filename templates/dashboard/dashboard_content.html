@@ -1,4 +1,5 @@
 {% load humanize %}
+{% load l10n %}
 
 <div class="container mx-auto px-4 py-8">
     <div class="mb-8">
@@ -91,7 +92,7 @@
         
         <!-- Revenue This Month -->
         <div class="bg-white rounded-lg shadow p-6"
-             x-data="{ amount: 0, target: {{ revenue_this_month|floatformat:0 }} }" 
+             x-data="{ amount: 0, target: {{ revenue_this_month|default:0|unlocalize }} }" 
              x-init="setTimeout(() => { 
                  let interval = setInterval(() => { 
                      if(amount < target) { 
@@ -126,13 +127,17 @@
         <!-- Weekly Sessions Chart -->
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-4">주간 세션 현황 (최근 7주)</h2>
-            <div class="h-64" id="weekly-sessions-chart"></div>
+            <div class="h-64 relative">
+                <canvas id="weekly-sessions-chart"></canvas>
+            </div>
         </div>
         
         <!-- Monthly Revenue Chart -->
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-4">월별 매출 현황 (최근 6개월)</h2>
-            <div class="h-64" id="monthly-revenue-chart"></div>
+            <div class="h-64 relative">
+                <canvas id="monthly-revenue-chart"></canvas>
+            </div>
         </div>
     </div>
     
@@ -300,12 +305,20 @@
     </div>
 </div>
 
-<!-- Chart.js for analytics -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Chart initialization for HTMX loaded content -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Weekly Sessions Chart
-    const weeklyCtx = document.getElementById('weekly-sessions-chart').getContext('2d');
+// Initialize charts immediately since this is loaded via HTMX
+(function() {
+    // Wait a moment for DOM to be ready
+    setTimeout(function() {
+        // Weekly Sessions Chart
+        const weeklyCanvas = document.getElementById('weekly-sessions-chart');
+        if (!weeklyCanvas) {
+            console.error('Weekly sessions chart canvas not found');
+            return;
+        }
+        const weeklyCtx = weeklyCanvas.getContext('2d');
     new Chart(weeklyCtx, {
         type: 'line',
         data: {
@@ -337,15 +350,48 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Monthly Revenue Chart
-    const revenueCtx = document.getElementById('monthly-revenue-chart').getContext('2d');
+        // Monthly Revenue Chart
+        const revenueCanvas = document.getElementById('monthly-revenue-chart');
+        if (!revenueCanvas) {
+            console.error('Monthly revenue chart canvas not found');
+            return;
+        }
+        const revenueCtx = revenueCanvas.getContext('2d');
+        
+        // Get revenue data and calculate max value
+        const revenueData = [{% for month in monthly_revenue %}{{ month.revenue|unlocalize }}{% if not forloop.last %},{% endif %}{% endfor %}];
+        const monthLabels = [{% for month in monthly_revenue %}'{{ month.month }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+        const maxRevenue = Math.max(...revenueData, 0);
+        
+        // Calculate appropriate scale
+        let suggestedMax;
+        let stepSize;
+        
+        if (maxRevenue === 0) {
+            // No revenue yet, show reasonable scale
+            suggestedMax = 1000000;
+            stepSize = 200000;
+        } else if (maxRevenue < 1000000) {
+            // Under 1M, round up to nearest 100K
+            suggestedMax = Math.ceil(maxRevenue / 100000) * 100000 + 100000;
+            stepSize = 100000;
+        } else if (maxRevenue < 10000000) {
+            // 1M-10M, round up to nearest 500K
+            suggestedMax = Math.ceil(maxRevenue / 500000) * 500000 + 500000;
+            stepSize = 500000;
+        } else {
+            // Over 10M, round up to nearest 1M
+            suggestedMax = Math.ceil(maxRevenue / 1000000) * 1000000 + 1000000;
+            stepSize = 1000000;
+        }
+        
     new Chart(revenueCtx, {
         type: 'bar',
         data: {
-            labels: [{% for month in monthly_revenue %}'{{ month.month }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            labels: monthLabels,
             datasets: [{
                 label: '매출 (원)',
-                data: [{% for month in monthly_revenue %}{{ month.revenue }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                data: revenueData,
                 backgroundColor: 'rgba(234, 179, 8, 0.7)',
                 borderColor: 'rgb(234, 179, 8)',
                 borderWidth: 1
@@ -360,10 +406,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             },
             scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
                 y: {
                     beginAtZero: true,
+                    suggestedMax: suggestedMax,
                     ticks: {
+                        stepSize: stepSize,
                         callback: function(value) {
+                            if (value >= 1000000000) {
+                                return '₩' + (value / 1000000000).toFixed(1) + 'B';
+                            } else if (value >= 1000000) {
+                                return '₩' + (value / 1000000).toFixed(1) + 'M';
+                            } else if (value >= 1000) {
+                                return '₩' + (value / 1000).toFixed(0) + 'K';
+                            }
                             return '₩' + value.toLocaleString();
                         }
                     }
@@ -371,5 +431,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-});
+    }, 100);  // Wait 100ms for DOM to be ready
+})();
 </script>
