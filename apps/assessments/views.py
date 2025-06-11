@@ -113,6 +113,12 @@ def assessment_detail_view(request, pk):
         'score_descriptions': score_descriptions,
         'weasyprint_available': WEASYPRINT_AVAILABLE
     }
+    
+    # Check if this is an HTMX request
+    if request.headers.get('HX-Request'):
+        # Create a partial template for HTMX requests
+        return render(request, 'assessments/assessment_detail_partial.html', context)
+    
     return render(request, 'assessments/assessment_detail.html', context)
 
 
