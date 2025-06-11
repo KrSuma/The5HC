@@ -34,7 +34,14 @@ CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='', cast=lambda v:
 if not CORS_ALLOWED_ORIGINS:
     # Default to allowing the Heroku app domain
     CORS_ALLOWED_ORIGINS = [
-        f"https://{ALLOWED_HOSTS[0]}" if ALLOWED_HOSTS else "https://the5hc-fitness.herokuapp.com",
+        f"https://{ALLOWED_HOSTS[0]}" if ALLOWED_HOSTS else "https://the5hc.herokuapp.com",
+    ]
+
+# CSRF trusted origins for Django 4.0+
+if not config('CSRF_TRUSTED_ORIGINS', default=''):
+    CSRF_TRUSTED_ORIGINS = [
+        f"https://{ALLOWED_HOSTS[0]}" if ALLOWED_HOSTS else "https://the5hc.herokuapp.com",
+        "https://the5hc-ed48c8d8fe2e.herokuapp.com",  # Heroku app URL
     ]
 
 # Email configuration (example with Gmail)
