@@ -1,28 +1,26 @@
 # The 5HC Fitness Assessment System
 
-A comprehensive fitness assessment application for trainers to evaluate, track, and manage their clients' fitness levels. The system features standardized tests, automated scoring, personalized recommendations, and professional PDF reports.
+A comprehensive fitness assessment application built with Django for trainers to evaluate, track, and manage their clients' fitness levels. The system features standardized tests, automated scoring, personalized recommendations, professional PDF reports, and a RESTful API.
 
-## Enhancements in this Version
+## Key Features
 
-- 🔒 **Improved Security**: Enhanced password handling with proper salting and hashing
-- ⚡ **Better Error Handling**: Robust error handling throughout the application
-- 📊 **Enhanced Data Validation**: Input validation for all assessment calculations
-- 👥 **Service Layer Architecture**: Clear separation between UI, business logic, and data access
-- 🏷️ **Type Hints**: Added type hints for better code clarity and IDE support
-- 📋 **Structured Compensation Pattern Tracking**: Detailed tracking of movement issues
-- 👨‍👩‍👧‍👦 **Personalized Recommendations**: Age and gender-specific recommendations
-- 📈 **Asymmetry Detection**: Automatic detection of bilateral asymmetries
-- 📱 **Improved UI**: Enhanced user interface with tabs and appropriate feedback
-- 🧪 **Unit Tests**: Added unit tests for critical assessment scoring functions
-- 📝 **Enhanced PDF Reports**: Better font handling and more personalized content
-- 💰 **VAT and Fee Calculation**: Automatic calculation and display of 10% VAT and 3.5% card processing fees
-- 📊 **Financial Transparency**: Detailed breakdown of gross amount, fees, and net credits in package management
+- 🔐 **Django Authentication**: Secure login system with rate limiting and account lockout
+- 🌐 **Modern Web Stack**: Django 5.0.1 with HTMX, Alpine.js, and Tailwind CSS
+- 📱 **RESTful API**: Complete API with JWT authentication for mobile/external integrations
+- 🧪 **Comprehensive Testing**: pytest-based test suite with 72%+ coverage
+- 📊 **Real-time Analytics**: Interactive dashboard with Chart.js visualizations
+- 🇰🇷 **Korean Localization**: Full Korean language support with 135+ translations
+- 💰 **Financial Management**: Automatic VAT (10%) and card fee (3.5%) calculations
+- 📈 **Session Management**: Package-based credit system with payment tracking
+- 📄 **PDF Reports**: Professional assessment reports with WeasyPrint
+- 🎯 **7 Fitness Tests**: Comprehensive assessment system with age/gender-specific scoring
 
 ## Features
 
-- **User Authentication System**: Secure login and registration for trainers
-- **Client Management**: Add, view, and manage client information
-- **Fitness Assessment System**: 7 standardized fitness tests covering:
+### Core Features
+- **User Authentication**: Django authentication with custom User model, rate limiting, and remember me functionality
+- **Client Management**: Full CRUD operations with search, filtering, and CSV export
+- **Fitness Assessment System**: 7 standardized fitness tests:
   - Overhead Squat (lower body function)
   - Push-up Test (upper body function)
   - Single Leg Balance (balance and coordination)
@@ -30,162 +28,221 @@ A comprehensive fitness assessment application for trainers to evaluate, track, 
   - FMS Shoulder Mobility (upper body flexibility)
   - Farmer's Carry (grip strength and endurance)
   - Harvard 3-min Step Test (cardiovascular fitness)
-- **Automated Scoring**: Age and gender-specific scoring standards
-- **Results Analysis**: Category scores for strength, mobility, balance, and cardio
-- **Personalized Recommendations**: Tailored improvement suggestions based on assessment results
-- **PDF Report Generation**: Professional-looking assessment reports
-- **Data Dashboard**: Overview of client and assessment statistics
-- **Session Package Management**: Create and manage training packages with credit system
-- **Financial Management**: Automatic VAT (10%) and card processing fee (3.5%) calculations
-- **Payment Tracking**: Comprehensive payment history with fee breakdowns
+- **Automated Scoring**: Age and gender-specific scoring with real-time calculations
+- **PDF Reports**: Professional assessment reports with charts and recommendations
+- **Session Management**: Package-based credit system with calendar view
+- **Financial Tracking**: VAT and card fee calculations with payment history
+- **Analytics Dashboard**: Real-time metrics, revenue tracking, and activity feeds
+
+### Technical Features
+- **RESTful API**: Complete API with JWT authentication and OpenAPI documentation
+- **Real-time UI**: HTMX-powered dynamic updates without page refreshes
+- **Responsive Design**: Mobile-friendly interface with Tailwind CSS
+- **Korean Support**: Full i18n with Korean translations
+- **Testing Suite**: pytest-based tests with factories and fixtures
+- **Production Ready**: Configured for Heroku deployment with PostgreSQL
 
 ## Project Structure
 
-The improved application is organized into several modules for better maintainability:
-
-- `main.py` - Main application file and entry point
-- `service_layer.py` - Service layer to separate UI from database operations
-- `improved_db_utils.py` - Database utilities with improved error handling and security
-- `improved_assessment_scoring.py` - Enhanced assessment scoring with input validation
-- `improved_recommendations.py` - Personalized recommendation generation
-- `improved_pdf_generator.py` - PDF report creation with better font handling
-- `improved_assessment_page.py` - Enhanced assessment page with structured compensation tracking
-- `test_assessment_scoring.py` - Unit tests for assessment scoring functions
-- Original modules maintained for compatibility:
-  - `ui_pages.py` - Original UI page definitions
-  - `assessment_scoring.py` - Original assessment scoring functions
-  - `recommendations.py` - Original recommendation functions
-  - `pdf_generator.py` - Original PDF generation functions
-  - `db_utils.py` - Original database utilities
+```
+The5HC/
+├── README.md                    # This file
+├── requirements.txt             # Points to Django requirements
+├── Procfile                     # Heroku deployment configuration
+├── .gitignore                   # Git ignore file
+├── runtime.txt                  # Python version for Heroku
+├── django_migration/            # Main Django project
+│   ├── apps/                    # Django applications
+│   │   ├── accounts/           # User authentication
+│   │   ├── analytics/          # Analytics dashboard
+│   │   ├── api/                # RESTful API
+│   │   ├── assessments/        # Fitness assessments
+│   │   ├── clients/            # Client management
+│   │   ├── reports/            # PDF generation
+│   │   └── sessions/           # Session/payment tracking
+│   ├── the5hc/                 # Django settings
+│   ├── templates/              # HTML templates
+│   ├── static/                 # CSS, JS, fonts
+│   ├── locale/                 # Korean translations
+│   ├── manage.py               # Django CLI
+│   └── requirements.txt        # Python dependencies
+├── docs/                       # Documentation
+│   ├── kb/                     # Knowledge base
+│   └── project/                # Project guidelines
+└── logs/                       # Development logs
+```
 
 ## Requirements
 
-- Python 3.7+
-- Streamlit
-- Pandas
-- NumPy
-- Matplotlib
-- FPDF
-- Korean fonts: NanumGothic.ttf and NanumGothicBold.ttf (should be in the application directory)
+- Python 3.10+
+- Django 5.0.1
+- PostgreSQL (production) or SQLite (development)
+- Redis (optional, for caching)
+- System dependencies for WeasyPrint (PDF generation)
 
 ## Installation
 
 1. Clone the repository:
-```
-git clone https://github.com/your-username/fitness-assessment-system.git
-cd fitness-assessment-system
+```bash
+git clone https://github.com/your-username/the5hc.git
+cd the5hc/django_migration
 ```
 
-2. Install the required packages:
+2. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
+
+3. Install dependencies:
+```bash
 pip install -r requirements.txt
 ```
 
-3. Place the required fonts in the application directory:
-   - NanumGothic.ttf
-   - NanumGothicBold.ttf
+4. Set up the database:
+```bash
+python manage.py migrate
+python manage.py compilemessages  # Compile Korean translations
+```
+
+5. Create a superuser:
+```bash
+python manage.py createsuperuser
+```
+
+6. Install system dependencies for PDF generation (macOS):
+```bash
+brew install cairo pango gdk-pixbuf libffi
+```
 
 ## Usage
 
-1. Start the application:
-```
-streamlit run main.py
-```
-
-2. Register a new trainer account or login with an existing account
-
-3. Navigate through the application using the sidebar menu:
-   - **대시보드 (Dashboard)**: View overview statistics and recent assessments
-   - **회원 관리 (Client Management)**: Add and manage clients
-   - **새 평가 (New Assessment)**: Conduct fitness assessments for clients
-
-4. The Options section in the sidebar allows you to:
-   - Enable the search functionality in the dashboard
-   - Use a simplified assessment form with checkboxes
-
-## Architecture Improvements
-
-### Service Layer Architecture
-
-The improved application implements a service layer architecture to separate UI, business logic, and data access:
-
-```
-UI (Streamlit) → Service Layer → Database Access
+1. Start the development server:
+```bash
+python manage.py runserver
 ```
 
-This provides several benefits:
-- Better code organization and maintainability
-- Easier testing and debugging
-- Clearer separation of concerns
+2. Access the application at `http://localhost:8000`
 
-### Improved Database Operations
+3. Login with your superuser credentials or register a new trainer account
 
-- Context managers for proper connection handling
-- Enhanced error handling with try-except blocks
-- Parameterized queries to prevent SQL injection
-- Properly salted password hashing for security
+4. Navigate through the application:
+   - **대시보드**: Analytics dashboard with metrics and charts
+   - **회원 관리**: Client management with search and filters
+   - **새 평가**: Conduct fitness assessments
+   - **세션 관리**: Manage training sessions and payments
+   - **보고서**: View and download PDF reports
 
-### Enhanced Assessment Scoring
+## API Documentation
 
-- Input validation for all parameters
-- Constants for scoring thresholds
-- Type hints for better code clarity
-- Comprehensive unit tests
-
-### Structured Compensation Pattern Tracking
-
-The new assessment page now includes structured tracking of common compensation patterns:
-
-- **Overhead Squat**: Foot turn-out, knee valgus, forward lean, etc.
-- **Push-up**: Lumbar extension, scapular winging, elbow flare, etc.
-- **Single Leg Balance**: Pelvic drop, excessive arm movement, etc.
-- **Toe Touch**: Knee flexion, limited pelvic movement, etc.
-- **Shoulder Mobility**: Cervical tilt, shoulder elevation, etc.
-- **Farmer's Carry**: Shoulder elevation, lateral trunk flexion, etc.
-
-This structured approach allows for:
-- More consistent assessments
-- Better identification of movement issues
-- More specific corrective exercise recommendations
-- Easier tracking of progress over time
-
-### Enhanced Personalization
-
-The improved recommendation engine provides:
-- Age-specific recommendations (youth, adults, seniors)
-- Gender-specific recommendations where appropriate
-- BMI-based recommendations
-- Asymmetry-specific recommendations
-- Customized training schedules and intensity guidelines
-
-## Running Tests
-
-Run the unit tests to verify the assessment scoring functions:
-
-```
-python -m unittest test_assessment_scoring.py
+### Authentication
+```bash
+# Get JWT token
+curl -X POST http://localhost:8000/api/v1/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "your_username", "password": "your_password"}'
 ```
 
-## Customization
+### API Endpoints
+- `/api/v1/auth/login/` - JWT authentication
+- `/api/v1/clients/` - Client management
+- `/api/v1/assessments/` - Assessment CRUD
+- `/api/v1/packages/` - Session packages
+- `/api/v1/sessions/` - Training sessions
+- `/api/v1/payments/` - Payment records
+- `/api/v1/users/` - User profiles
+- `/api/v1/docs/` - Interactive API documentation (Swagger/ReDoc)
 
-The application features a modular structure that makes it easy to modify different components:
+## Testing
 
-- To change scoring criteria, edit the constants in `improved_assessment_scoring.py`
-- To customize recommendations, modify the functions in `improved_recommendations.py`
-- To adjust the PDF report layout, update the functions in `improved_pdf_generator.py`
-- To add or modify UI pages, create new functions following the pattern in `improved_assessment_page.py`
+### Run all tests:
+```bash
+pytest
+```
 
-## Future Improvements
+### Run with coverage:
+```bash
+pytest --cov=apps --cov-report=html
+```
 
-Potential areas for future enhancement:
+### Run specific test module:
+```bash
+pytest apps/accounts/test_models_simple.py -v
+```
 
-- **Database Migration System**: Add a version control system for database schema changes
-- **Connection Pooling**: Implement connection pooling for better performance with multiple users
-- **Offline Mode**: Allow assessments to be conducted offline and synced later
-- **Mobile Support**: Optimize UI for tablet/mobile use in gym settings
-- **Data Visualization**: Add more interactive charts and progress tracking
-- **Exercise Library**: Include a visual library of recommended exercises
-- **Client Portal**: Provide a separate interface for clients to view their progress
-- **Video Analysis**: Add support for movement video analysis
-- **Integration with Wearables**: Connect with fitness trackers for more data
+### API tests:
+```bash
+python run_api_tests.py  # Interactive test runner
+```
+
+## Production Deployment
+
+### Heroku Deployment
+
+1. Create Heroku app:
+```bash
+heroku create your-app-name
+heroku addons:create heroku-postgresql:mini
+```
+
+2. Configure environment variables:
+```bash
+heroku config:set SECRET_KEY='your-secret-key'
+heroku config:set DEBUG=False
+heroku config:set ALLOWED_HOSTS='your-app-name.herokuapp.com'
+```
+
+3. Deploy:
+```bash
+git push heroku main
+heroku run python manage.py migrate
+heroku run python manage.py createsuperuser
+```
+
+### Environment Variables
+
+- `SECRET_KEY` - Django secret key
+- `DEBUG` - Set to False in production
+- `DATABASE_URL` - PostgreSQL connection string (auto-set by Heroku)
+- `ALLOWED_HOSTS` - Your domain name
+- `REDIS_URL` - Redis connection (optional)
+
+## Development Guidelines
+
+### Code Style
+- Follow PEP 8 Python style guide
+- Use type hints for function parameters and returns
+- Write docstrings for all classes and functions
+- Keep functions focused and under 50 lines
+
+### Testing Requirements
+- Write tests for all new features
+- Maintain 70%+ test coverage
+- Use factories for test data creation
+- Test both success and error cases
+
+### Git Workflow
+- Create feature branches for new work
+- Write clear commit messages
+- Create pull requests for review
+- Run tests before merging
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with tests
+4. Run the test suite
+5. Submit a pull request
+
+## License
+
+This project is proprietary software. All rights reserved.
+
+## Support
+
+For issues or questions:
+- Create an issue on GitHub
+- Contact the development team
+- Check the documentation in `/docs`
 

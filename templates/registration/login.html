@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}로그인 - The5HC{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-screen">
+    <div class="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">🏋️ The5HC</h1>
+            <p class="text-gray-600 mt-2">피트니스 평가 시스템</p>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-8">로그인</h2>
+        
+        <div id="login-form-container">
+            <form method="post" 
+                  hx-post="{% url 'accounts:login' %}"
+                  hx-target="#login-form-container"
+                  hx-swap="innerHTML">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="mb-4">
+                    {{ form.email_or_username.label_tag }}
+                    {{ form.email_or_username }}
+                    {% if form.email_or_username.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ form.email_or_username.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-4">
+                    {{ form.password.label_tag }}
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ form.password.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-6 flex items-center">
+                    {{ form.remember_me }}
+                    <label for="{{ form.remember_me.id_for_label }}" class="ml-2 text-gray-700">
+                        {{ form.remember_me.label }}
+                    </label>
+                </div>
+                
+                <button type="submit" 
+                        class="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                    로그인
+                    <span class="htmx-indicator ml-2">
+                        <svg class="animate-spin h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+                </button>
+            </form>
+        </div>
+        
+        <div class="mt-6 text-center">
+            <a href="{% url 'accounts:password_reset' %}" 
+               class="text-blue-500 hover:text-blue-700 text-sm">
+                비밀번호를 잊으셨나요?
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

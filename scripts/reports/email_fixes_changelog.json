@@ -1,0 +1,13 @@
+{
+  "timestamp": "2025-06-09T14:02:32.766801",
+  "database": "/Users/jslee/PycharmProjects/The5HC/data/fitness_assessment.db",
+  "changes": [
+    {
+      "trainer_id": 2,
+      "username": "jaesun9090",
+      "old_email": "jaesun9090@gmail.com",
+      "new_email": "jaesun90901@gmail.com"
+    }
+  ],
+  "total_fixes": 1
+}

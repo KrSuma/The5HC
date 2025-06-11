@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>더파이브 헬스케어 체력 평가 보고서</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            line-height: 1.2;
+            color: #333;
+            background: white;
+            font-size: 10px;
+        }
+
+        .page {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            padding: 10mm;
+            background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .header p {
+            font-size: 11px;
+            opacity: 0.9;
+        }
+
+        .top-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 120px;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .client-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            font-size: 9px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: #6c757d;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #343a40;
+        }
+
+        .overall-score {
+            text-align: center;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 15px 8px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .score-number {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .score-rating {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .category-scores {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .category-label {
+            font-size: 9px;
+            font-weight: 500;
+            color: #495057;
+            width: 60px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 0 6px;
+        }
+
+        .progress {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-strength { background: #667eea; }
+        .progress-mobility { background: #00c9a7; }
+        .progress-balance { background: #fbbc05; }
+        .progress-cardio { background: #ea4335; }
+
+        .category-score {
+            font-size: 9px;
+            font-weight: 600;
+            width: 30px;
+            text-align: right;
+        }
+
+        .test-results {
+            margin-top: 12px;
+        }
+
+        .test-results h2 {
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .test-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+        }
+
+        .test-table th {
+            background: #667eea;
+            color: white;
+            padding: 6px;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .test-table td {
+            padding: 6px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .test-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .grade {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+            font-size: 8px;
+        }
+
+        .grade-excellent { background: #d4edda; color: #155724; }
+        .grade-good { background: #d1ecf1; color: #0c5460; }
+        .grade-average { background: #fff3cd; color: #856404; }
+        .grade-improvement { background: #f8d7da; color: #721c24; }
+
+        .suggestions {
+            margin-top: 15px;
+        }
+
+        .suggestions h2 {
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .suggestion-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .suggestion-box {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid;
+        }
+
+        .suggestion-strength { border-color: #667eea; }
+        .suggestion-mobility { border-color: #00c9a7; }
+        .suggestion-balance { border-color: #fbbc05; }
+        .suggestion-cardio { border-color: #ea4335; }
+
+        .suggestion-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 10px;
+        }
+
+        .suggestion-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .suggestion-list li {
+            position: relative;
+            padding-left: 12px;
+            margin-bottom: 4px;
+            font-size: 9px;
+            line-height: 1.4;
+        }
+
+        .suggestion-list li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .training-program {
+            margin-top: 15px;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .training-program h2 {
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .program-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .program-item {
+            background: white;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+
+        .program-phase {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 9px;
+            margin-bottom: 4px;
+        }
+
+        .program-details {
+            font-size: 8px;
+            line-height: 1.4;
+        }
+
+        .footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 2px solid #e9ecef;
+            font-size: 9px;
+            color: #6c757d;
+            text-align: center;
+        }
+
+        .follow-up {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 8px;
+        }
+
+        .follow-up-item {
+            text-align: center;
+        }
+
+        .follow-up-label {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .follow-up-date {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .page {
+                box-shadow: none;
+                margin: 0;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <h1>더파이브 헬스케어 체력 평가 보고서</h1>
+            <p>{{ assessment.assessment_date|date:"Y년 m월 d일" }} | 담당: {{ trainer_name }}</p>
+        </div>
+
+        <div class="top-section">
+            <div class="section">
+                <h2>회원 정보</h2>
+                <div class="client-info">
+                    <div class="info-item">
+                        <span class="info-label">이름</span>
+                        <span class="info-value">{{ client.name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">나이</span>
+                        <span class="info-value">{{ client.age }}세</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">성별</span>
+                        <span class="info-value">{{ client.get_gender_display }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">신장</span>
+                        <span class="info-value">{{ client.height }}cm</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">체중</span>
+                        <span class="info-value">{{ client.weight }}kg</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">BMI</span>
+                        <span class="info-value">{{ bmi }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>카테고리별 점수</h2>
+                <div class="category-scores">
+                    <div class="category-item">
+                        <span class="category-label">근력</span>
+                        <div class="progress-bar">
+                            <div class="progress progress-strength" style="width: {{ strength_pct }}%"></div>
+                        </div>
+                        <span class="category-score">{{ scores.strength_score|floatformat:1 }}</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-label">유연성</span>
+                        <div class="progress-bar">
+                            <div class="progress progress-mobility" style="width: {{ mobility_pct }}%"></div>
+                        </div>
+                        <span class="category-score">{{ scores.mobility_score|floatformat:1 }}</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-label">균형</span>
+                        <div class="progress-bar">
+                            <div class="progress progress-balance" style="width: {{ balance_pct }}%"></div>
+                        </div>
+                        <span class="category-score">{{ scores.balance_score|floatformat:1 }}</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-label">심폐지구력</span>
+                        <div class="progress-bar">
+                            <div class="progress progress-cardio" style="width: {{ cardio_pct }}%"></div>
+                        </div>
+                        <span class="category-score">{{ scores.cardio_score|floatformat:1 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overall-score">
+                <div class="score-number">{{ scores.overall_score|floatformat:0 }}</div>
+                <div class="score-rating">{{ overall_rating }}</div>
+            </div>
+        </div>
+
+        <div class="test-results">
+            <h2>세부 측정 결과</h2>
+            <table class="test-table">
+                <thead>
+                    <tr>
+                        <th>측정 항목</th>
+                        <th>측정값</th>
+                        <th>단위</th>
+                        <th>등급</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for test in test_results %}
+                    <tr>
+                        <td>{{ test.name }}</td>
+                        <td>{{ test.value }}</td>
+                        <td>{{ test.unit }}</td>
+                        <td><span class="grade grade-{{ test.grade_class }}">{{ test.grade }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="suggestions">
+            <h2>개선 제안사항</h2>
+            <div class="suggestion-grid">
+                {% for category, items in suggestions.items %}
+                <div class="suggestion-box suggestion-{{ category }}">
+                    <div class="suggestion-title">{{ category|title }} 개선</div>
+                    <ul class="suggestion-list">
+                        {% for item in items %}
+                        <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="training-program">
+            <h2>맞춤형 운동 프로그램</h2>
+            <div class="program-grid">
+                {% for phase in training_program %}
+                <div class="program-item">
+                    <div class="program-phase">{{ phase.name }}</div>
+                    <div class="program-details">{{ phase.details }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="follow-up">
+                <div class="follow-up-item">
+                    <div class="follow-up-label">평가일</div>
+                    <div class="follow-up-date">{{ assessment.assessment_date|date:"Y.m.d" }}</div>
+                </div>
+                <div class="follow-up-item">
+                    <div class="follow-up-label">중간 점검</div>
+                    <div class="follow-up-date">{{ intermediate_check|date:"Y.m.d" }}</div>
+                </div>
+                <div class="follow-up-item">
+                    <div class="follow-up-label">재평가 예정</div>
+                    <div class="follow-up-date">{{ next_assessment|date:"Y.m.d" }}</div>
+                </div>
+            </div>
+            <p>본 보고서는 더파이브 헬스케어에서 실시한 체력 평가를 바탕으로 작성되었습니다.</p>
+        </div>
+    </div>
+</body>
+</html>

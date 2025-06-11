@@ -1,0 +1,339 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}평가 상세 - {{ assessment.client.name }} - The5HC{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-start">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">평가 결과</h1>
+            <p class="text-gray-600 mt-2">
+                <a href="{% url 'clients:detail' assessment.client.pk %}" 
+                   class="text-blue-600 hover:text-blue-800"
+                   hx-get="{% url 'clients:detail' assessment.client.pk %}"
+                   hx-target="#main-content"
+                   hx-push-url="true">
+                    {{ assessment.client.name }}
+                </a> 
+                | {{ assessment.date|date:"Y년 m월 d일" }}
+            </p>
+        </div>
+        <div class="flex space-x-2">
+            {% if weasyprint_available %}
+            <a href="{% url 'reports:generate' assessment.pk %}" 
+               class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200">
+                <svg class="inline-block w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                PDF 리포트
+            </a>
+            {% else %}
+            <span class="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed" 
+                  title="PDF 생성 기능을 사용할 수 없습니다. WeasyPrint가 설치되지 않았습니다.">
+                <svg class="inline-block w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                PDF 리포트 (사용 불가)
+            </span>
+            {% endif %}
+            <button class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200"
+                    hx-post="{% url 'assessments:delete' assessment.pk %}"
+                    hx-confirm="정말로 이 평가를 삭제하시겠습니까?">
+                <svg class="inline-block w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                삭제
+            </button>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Overall Score Card -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">종합 평가</h2>
+                <div class="text-center">
+                    <div class="relative inline-block">
+                        <div class="text-6xl font-bold 
+                            {% if assessment.overall_score >= 90 %}text-green-600
+                            {% elif assessment.overall_score >= 80 %}text-blue-600
+                            {% elif assessment.overall_score >= 70 %}text-yellow-600
+                            {% elif assessment.overall_score >= 60 %}text-orange-600
+                            {% else %}text-red-600{% endif %}">
+                            {{ assessment.overall_score|floatformat:1|default:"0.0" }}
+                        </div>
+                        <div class="text-sm text-gray-600 mt-2">
+                            {{ score_descriptions.overall }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Category Scores -->
+                <div class="mt-6 space-y-4">
+                    <div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">근력</span>
+                            <span class="font-medium">{{ assessment.strength_score|floatformat:1|default:"0.0" }}/50</span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: {{ assessment.strength_score|default:0|floatformat:0 }}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">{{ score_descriptions.strength }}</p>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">유연성</span>
+                            <span class="font-medium">{{ assessment.mobility_score|floatformat:1|default:"0.0" }}/50</span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ assessment.mobility_score|default:0|floatformat:0 }}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">{{ score_descriptions.mobility }}</p>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">균형</span>
+                            <span class="font-medium">{{ assessment.balance_score|floatformat:1|default:"0.0" }}/50</span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-purple-600 h-2 rounded-full" style="width: {{ assessment.balance_score|default:0|floatformat:0 }}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">{{ score_descriptions.balance }}</p>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">심폐지구력</span>
+                            <span class="font-medium">{{ assessment.cardio_score|floatformat:1|default:"0.0" }}/40</span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-red-600 h-2 rounded-full" style="width: {% widthratio assessment.cardio_score|default:0 40 100 %}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">{{ score_descriptions.cardio }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Client Info -->
+            <div class="bg-white rounded-lg shadow p-6 mt-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">회원 정보</h2>
+                <dl class="space-y-2">
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">이름</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ assessment.client.name }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">나이</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ assessment.client.age }}세</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">성별</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ assessment.client.get_gender_display }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">BMI</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ assessment.client.bmi }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+        
+        <!-- Test Results -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-800">테스트 결과</h2>
+                </div>
+                <div class="p-6 space-y-6">
+                    <!-- Strength Tests -->
+                    <div>
+                        <h3 class="text-md font-semibold text-gray-700 mb-3">근력 평가</h3>
+                        <div class="space-y-3">
+                            {% if assessment.overhead_squat_score is not None %}
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">오버헤드 스쿼트</span>
+                                <span class="font-medium">점수: {{ assessment.overhead_squat_score }}/3</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if assessment.push_up_reps is not None %}
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">푸시업</span>
+                                <span class="font-medium">{{ assessment.push_up_reps }}회 (점수: {{ assessment.push_up_score|default:"-" }}/5)</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if assessment.farmer_carry_weight is not None %}
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">파머스 캐리</span>
+                                <span class="font-medium">{{ assessment.farmer_carry_weight }}kg, {{ assessment.farmer_carry_distance }}m (점수: {{ assessment.farmer_carry_score|default:"-" }}/5)</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Balance Tests -->
+                    <div>
+                        <h3 class="text-md font-semibold text-gray-700 mb-3">균형 평가</h3>
+                        <div class="space-y-3">
+                            {% if assessment.single_leg_balance_right_eyes_open is not None %}
+                            <div class="p-3 bg-gray-50 rounded">
+                                <p class="text-sm font-medium text-gray-700 mb-2">외발 서기</p>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span class="text-gray-600">눈 뜨고:</span>
+                                        <span class="ml-2">우 {{ assessment.single_leg_balance_right_eyes_open }}초 / 좌 {{ assessment.single_leg_balance_left_eyes_open }}초</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">눈 감고:</span>
+                                        <span class="ml-2">우 {{ assessment.single_leg_balance_right_eyes_closed }}초 / 좌 {{ assessment.single_leg_balance_left_eyes_closed }}초</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Flexibility Tests -->
+                    <div>
+                        <h3 class="text-md font-semibold text-gray-700 mb-3">유연성 평가</h3>
+                        <div class="space-y-3">
+                            {% if assessment.toe_touch_distance is not None %}
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">앞으로 굽히기</span>
+                                <span class="font-medium">{{ assessment.toe_touch_distance }}cm (점수: {{ assessment.toe_touch_score|default:"-" }}/5)</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if assessment.shoulder_mobility_score is not None %}
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">어깨 유연성</span>
+                                <span class="font-medium">우 {{ assessment.shoulder_mobility_right|default:"-" }}cm / 좌 {{ assessment.shoulder_mobility_left|default:"-" }}cm (점수: {{ assessment.shoulder_mobility_score }}/3)</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Cardio Tests -->
+                    <div>
+                        <h3 class="text-md font-semibold text-gray-700 mb-3">심폐 평가</h3>
+                        <div class="space-y-3">
+                            {% if assessment.harvard_step_test_heart_rate is not None %}
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">하버드 스텝 테스트</span>
+                                <span class="font-medium">심박수: {{ assessment.harvard_step_test_heart_rate }}bpm, 지속시간: {{ assessment.harvard_step_test_duration }}초</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Notes -->
+                    {% if assessment.overhead_squat_notes or assessment.push_up_notes or assessment.single_leg_balance_notes or assessment.toe_touch_notes or assessment.shoulder_mobility_notes or assessment.farmer_carry_notes or assessment.harvard_step_test_notes %}
+                    <div>
+                        <h3 class="text-md font-semibold text-gray-700 mb-3">메모</h3>
+                        <div class="space-y-2">
+                            {% if assessment.overhead_squat_notes %}
+                            <div class="p-3 bg-yellow-50 rounded">
+                                <p class="text-sm"><strong>오버헤드 스쿼트:</strong> {{ assessment.overhead_squat_notes }}</p>
+                            </div>
+                            {% endif %}
+                            {% if assessment.push_up_notes %}
+                            <div class="p-3 bg-yellow-50 rounded">
+                                <p class="text-sm"><strong>푸시업:</strong> {{ assessment.push_up_notes }}</p>
+                            </div>
+                            {% endif %}
+                            {% if assessment.farmer_carry_notes %}
+                            <div class="p-3 bg-yellow-50 rounded">
+                                <p class="text-sm"><strong>파머스 캐리:</strong> {{ assessment.farmer_carry_notes }}</p>
+                            </div>
+                            {% endif %}
+                            {% if assessment.single_leg_balance_notes %}
+                            <div class="p-3 bg-yellow-50 rounded">
+                                <p class="text-sm"><strong>균형:</strong> {{ assessment.single_leg_balance_notes }}</p>
+                            </div>
+                            {% endif %}
+                            {% if assessment.toe_touch_notes %}
+                            <div class="p-3 bg-yellow-50 rounded">
+                                <p class="text-sm"><strong>앞으로 굽히기:</strong> {{ assessment.toe_touch_notes }}</p>
+                            </div>
+                            {% endif %}
+                            {% if assessment.shoulder_mobility_notes %}
+                            <div class="p-3 bg-yellow-50 rounded">
+                                <p class="text-sm"><strong>어깨 유연성:</strong> {{ assessment.shoulder_mobility_notes }}</p>
+                            </div>
+                            {% endif %}
+                            {% if assessment.harvard_step_test_notes %}
+                            <div class="p-3 bg-yellow-50 rounded">
+                                <p class="text-sm"><strong>심폐:</strong> {{ assessment.harvard_step_test_notes }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Radar Chart -->
+    <div class="bg-white rounded-lg shadow p-6 mt-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">능력치 차트</h2>
+        <div class="max-w-md mx-auto">
+            <canvas id="radarChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+// Radar Chart
+const ctx = document.getElementById('radarChart').getContext('2d');
+const radarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+        labels: ['근력', '유연성', '균형', '심폐지구력'],
+        datasets: [{
+            label: '평가 점수',
+            data: [
+                {{ assessment.strength_score|default:0 }},
+                {{ assessment.mobility_score|default:0 }},
+                {{ assessment.balance_score|default:0 }},
+                {% widthratio assessment.cardio_score|default:0 40 50 %}
+            ],
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            borderColor: 'rgba(59, 130, 246, 1)',
+            borderWidth: 2,
+            pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+            r: {
+                beginAtZero: true,
+                max: 50,
+                ticks: {
+                    stepSize: 10
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

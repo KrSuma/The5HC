@@ -1,24 +1,64 @@
-# Fitness Assessment System Dependencies
+# The5HC Django Migration Project
+# Last Updated: 2025-06-09
+# Status: Phase 3 Complete, Phase 4 Planned
 
-# Core web application
-streamlit==1.41.0
-pandas==2.2.3
-numpy==2.2.0
-matplotlib==3.10.0
+# Django Core (5.0.x LTS)
+django==5.0.1
+django-htmx==1.17.2         # HTMX integration for dynamic UI
+django-compressor==4.4      # CSS/JS compression
+django-crispy-forms==2.1    # Form rendering
+crispy-tailwind==1.0.3      # Tailwind CSS for crispy forms
 
-# PDF generation
-weasyprint==63.1
-
-# Image processing
-seaborn==0.13.2
-pillow==11.1.0
+# Configuration & Environment
+python-decouple==3.8        # Environment variable management
+dj-database-url==2.1.0      # Database URL parsing
 
 # Database
-psycopg2-binary==2.9.10
+psycopg2-binary==2.9.9      # PostgreSQL adapter
 
-# Security and performance
-bcrypt==4.2.1
-pydantic==2.10.4
+# Caching (configured but not actively used yet)
+redis==5.0.1                # Redis client for caching
 
-# Development and testing
-pytest==8.3.4
+# Static Files & Production
+whitenoise==6.6.0           # Static file serving
+gunicorn==21.2.0            # WSGI HTTP Server
+
+# Development Tools
+django-debug-toolbar==4.2.0  # Debug toolbar for development
+django-extensions==3.2.3     # Extended Django commands
+
+# === PHASE 4 DEPENDENCIES (Active) ===
+# PDF Generation
+weasyprint==63.1           # PDF generation with HTML/CSS
+cairocffi==1.7.1          # Required by weasyprint
+Pillow==11.1.0            # Image processing
+
+# Data Processing (for migration from Streamlit)
+pandas==2.2.3             # Data manipulation
+numpy==2.2.0              # Numerical operations
+
+# === PHASE 5 - API DEVELOPMENT (Active) ===
+# RESTful API Framework
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+drf-spectacular==0.27.0    # OpenAPI/Swagger documentation
+djangorestframework-simplejwt==5.3.1  # JWT authentication
+
+# Background Tasks (Future)
+# celery==5.3.4
+# django-celery-beat==2.5.0
+
+# Advanced Features (Future)
+# django-ratelimit==4.1.0    # Rate limiting
+# python-dateutil==2.8.2     # Date utilities
+# pytz==2023.3              # Timezone support
+
+# === TESTING (PHASE 5 - pytest migration) ===
+# Pytest testing framework
+pytest==8.0.0
+pytest-django==4.7.0
+pytest-cov==4.1.0
+factory-boy==3.3.0
+pytest-mock==3.12.0
+pytest-asyncio==0.23.0
+faker==22.0.0

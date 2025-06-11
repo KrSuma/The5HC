@@ -1,0 +1,321 @@
+import os
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional
+from io import BytesIO
+
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.core.files.base import ContentFile
+
+try:
+    from weasyprint import HTML, CSS
+    from weasyprint.text.fonts import FontConfiguration
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError):
+    WEASYPRINT_AVAILABLE = False
+    HTML = None
+    CSS = None
+    FontConfiguration = None
+
+from apps.assessments.models import Assessment
+from apps.reports.models import AssessmentReport
+
+logger = logging.getLogger(__name__)
+
+
+class ReportGenerator:
+    """Service for generating PDF reports from assessments"""
+    
+    def __init__(self):
+        if WEASYPRINT_AVAILABLE:
+            self.font_config = FontConfiguration()
+        else:
+            self.font_config = None
+    
+    def generate_assessment_report(
+        self, 
+        assessment_id: int, 
+        report_type: str = 'detailed',
+        user=None
+    ) -> AssessmentReport:
+        """
+        Generate a PDF report for an assessment
+        
+        Args:
+            assessment_id: ID of the assessment
+            report_type: Type of report ('summary' or 'detailed')
+            user: User generating the report
+            
+        Returns:
+            AssessmentReport instance
+        """
+        if not WEASYPRINT_AVAILABLE:
+            raise RuntimeError("WeasyPrint is not available. Please install system dependencies.")
+            
+        try:
+            # Get assessment with related data
+            assessment = Assessment.objects.select_related('client').get(id=assessment_id)
+            
+            # Calculate scores
+            scores = self._calculate_scores(assessment)
+            
+            # Calculate BMI
+            bmi = self._calculate_bmi(assessment.client.height, assessment.client.weight)
+            
+            # Get test results formatted for display
+            test_results = self._format_test_results(assessment)
+            
+            # Get suggestions
+            suggestions = self._get_suggestions(scores)
+            
+            # Get training program
+            training_program = self._get_training_program(assessment.client, scores)
+            
+            # Calculate follow-up dates
+            intermediate_check = assessment.assessment_date + timedelta(days=45)
+            next_assessment = assessment.assessment_date + timedelta(days=90)
+            
+            # Prepare context for template
+            context = {
+                'assessment': assessment,
+                'client': assessment.client,
+                'trainer_name': user.get_full_name() if user else '트레이너',
+                'bmi': bmi,
+                'scores': scores,
+                'strength_pct': min(100, max(0, (scores['strength_score'] / 25) * 100)),
+                'mobility_pct': min(100, max(0, (scores['mobility_score'] / 25) * 100)),
+                'balance_pct': min(100, max(0, (scores['balance_score'] / 25) * 100)),
+                'cardio_pct': min(100, max(0, (scores['cardio_score'] / 25) * 100)),
+                'overall_rating': self._get_overall_rating(scores['overall_score']),
+                'test_results': test_results,
+                'suggestions': suggestions,
+                'training_program': training_program,
+                'intermediate_check': intermediate_check,
+                'next_assessment': next_assessment,
+            }
+            
+            # Render HTML
+            html_string = render_to_string('reports/assessment_report.html', context)
+            
+            # Convert to PDF
+            pdf_file = self._html_to_pdf(html_string)
+            
+            # Create report record
+            report = AssessmentReport.objects.create(
+                assessment=assessment,
+                generated_by=user,
+                report_type=report_type,
+                file_size=pdf_file.getbuffer().nbytes
+            )
+            
+            # Save PDF file
+            filename = f"assessment_report_{assessment.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            report.file_path.save(filename, ContentFile(pdf_file.getvalue()))
+            
+            logger.info(f"Generated report for assessment {assessment_id}")
+            return report
+            
+        except Assessment.DoesNotExist:
+            logger.error(f"Assessment {assessment_id} not found")
+            raise
+        except Exception as e:
+            logger.error(f"Error generating report: {str(e)}")
+            raise
+    
+    def _html_to_pdf(self, html_string: str) -> BytesIO:
+        """Convert HTML to PDF using WeasyPrint"""
+        if not WEASYPRINT_AVAILABLE:
+            raise RuntimeError("WeasyPrint is not available.")
+            
+        # Get font path
+        font_path = os.path.join(settings.STATIC_ROOT or settings.STATICFILES_DIRS[0], 'fonts')
+        
+        # CSS for Korean font
+        font_css = CSS(string=f'''
+            @font-face {{
+                font-family: 'NanumGothic';
+                src: url('file://{font_path}/NanumGothic.ttf');
+                font-weight: normal;
+            }}
+            @font-face {{
+                font-family: 'NanumGothic';
+                src: url('file://{font_path}/NanumGothicBold.ttf');
+                font-weight: bold;
+            }}
+            body {{
+                font-family: 'NanumGothic', 'Noto Sans KR', sans-serif;
+            }}
+        ''', font_config=self.font_config)
+        
+        # Generate PDF
+        pdf_file = BytesIO()
+        HTML(string=html_string).write_pdf(
+            pdf_file,
+            stylesheets=[font_css],
+            font_config=self.font_config
+        )
+        pdf_file.seek(0)
+        
+        return pdf_file
+    
+    def _calculate_scores(self, assessment: Assessment) -> Dict[str, float]:
+        """Calculate category scores from assessment data"""
+        
+        # Strength tests
+        strength_tests = [
+            assessment.pushup,
+            assessment.wall_squat,
+            assessment.plank
+        ]
+        strength_score = sum(filter(None, strength_tests)) / len([t for t in strength_tests if t is not None])
+        
+        # Mobility tests
+        mobility_tests = [
+            assessment.sit_and_reach,
+            assessment.shoulder_flexibility
+        ]
+        mobility_score = sum(filter(None, mobility_tests)) / len([t for t in mobility_tests if t is not None])
+        
+        # Balance tests
+        balance_tests = [
+            assessment.single_leg_stand,
+            assessment.tug
+        ]
+        balance_score = sum(filter(None, balance_tests)) / len([t for t in balance_tests if t is not None])
+        
+        # Cardio tests
+        cardio_tests = [
+            assessment.grip_strength_left,
+            assessment.grip_strength_right,
+            assessment.vo2_max if assessment.vo2_max else 0
+        ]
+        cardio_score = sum(filter(None, cardio_tests)) / len([t for t in cardio_tests if t is not None])
+        
+        # Overall score
+        all_scores = [strength_score, mobility_score, balance_score, cardio_score]
+        overall_score = sum(all_scores) / len(all_scores)
+        
+        return {
+            'strength_score': round(strength_score, 1),
+            'mobility_score': round(mobility_score, 1),
+            'balance_score': round(balance_score, 1),
+            'cardio_score': round(cardio_score, 1),
+            'overall_score': round(overall_score, 1)
+        }
+    
+    def _calculate_bmi(self, height: float, weight: float) -> float:
+        """Calculate BMI"""
+        height_m = height / 100
+        return round(weight / (height_m ** 2), 1)
+    
+    def _get_overall_rating(self, score: float) -> str:
+        """Get overall rating based on score"""
+        if score >= 80:
+            return "우수"
+        elif score >= 60:
+            return "양호"
+        elif score >= 40:
+            return "보통"
+        else:
+            return "개선필요"
+    
+    def _format_test_results(self, assessment: Assessment) -> List[Dict[str, Any]]:
+        """Format test results for display"""
+        
+        test_mapping = [
+            ("푸쉬업", assessment.pushup, "회", "strength"),
+            ("벽 스쿼트", assessment.wall_squat, "초", "strength"),
+            ("플랭크", assessment.plank, "초", "strength"),
+            ("앉아 윗몸 앞으로 굽히기", assessment.sit_and_reach, "cm", "mobility"),
+            ("어깨 유연성", assessment.shoulder_flexibility, "cm", "mobility"),
+            ("한 발 서기", assessment.single_leg_stand, "초", "balance"),
+            ("TUG 테스트", assessment.tug, "초", "balance"),
+            ("악력 (좌)", assessment.grip_strength_left, "kg", "cardio"),
+            ("악력 (우)", assessment.grip_strength_right, "kg", "cardio"),
+        ]
+        
+        results = []
+        for name, value, unit, category in test_mapping:
+            if value is not None:
+                grade, grade_class = self._get_grade(value, category)
+                results.append({
+                    'name': name,
+                    'value': value,
+                    'unit': unit,
+                    'grade': grade,
+                    'grade_class': grade_class
+                })
+        
+        return results
+    
+    def _get_grade(self, value: float, category: str) -> tuple:
+        """Get grade and CSS class based on value"""
+        # Simplified grading logic - would need proper thresholds per test
+        if value >= 80:
+            return "우수", "excellent"
+        elif value >= 60:
+            return "양호", "good"
+        elif value >= 40:
+            return "보통", "average"
+        else:
+            return "개선필요", "improvement"
+    
+    def _get_suggestions(self, scores: Dict[str, float]) -> Dict[str, List[str]]:
+        """Get improvement suggestions based on scores"""
+        
+        suggestions = {}
+        
+        # Strength suggestions
+        if scores['strength_score'] < 60:
+            suggestions['strength'] = [
+                "주 3회 이상 근력 운동 실시",
+                "점진적 과부하 원칙 적용",
+                "복합 운동 위주로 구성"
+            ]
+        
+        # Mobility suggestions
+        if scores['mobility_score'] < 60:
+            suggestions['mobility'] = [
+                "매일 10-15분 스트레칭",
+                "요가나 필라테스 병행",
+                "관절 가동 범위 운동"
+            ]
+        
+        # Balance suggestions
+        if scores['balance_score'] < 60:
+            suggestions['balance'] = [
+                "균형 감각 향상 운동",
+                "코어 강화 운동 추가",
+                "한 발 서기 연습"
+            ]
+        
+        # Cardio suggestions
+        if scores['cardio_score'] < 60:
+            suggestions['cardio'] = [
+                "주 150분 이상 유산소 운동",
+                "인터벌 트레이닝 도입",
+                "점진적 강도 증가"
+            ]
+        
+        return suggestions
+    
+    def _get_training_program(self, client: Any, scores: Dict[str, float]) -> List[Dict[str, str]]:
+        """Generate personalized training program"""
+        
+        program = [
+            {
+                'name': '1-4주차',
+                'details': '기초 체력 구축 및 운동 적응 단계'
+            },
+            {
+                'name': '5-8주차',
+                'details': '운동 강도 증가 및 근력 향상 집중'
+            },
+            {
+                'name': '9-12주차',
+                'details': '종합적 체력 향상 및 목표 달성'
+            }
+        ]
+        
+        return program

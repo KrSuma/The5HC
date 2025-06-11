@@ -1,0 +1,1077 @@
+{
+  "tables": {
+    "trainers": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "username",
+          "type": "TEXT",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "password_hash",
+          "type": "TEXT",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "email",
+          "type": "TEXT",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "not_null": false,
+          "default": "CURRENT_TIMESTAMP",
+          "primary_key": false
+        },
+        {
+          "name": "last_login",
+          "type": "TIMESTAMP",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "failed_login_attempts",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": "0",
+          "primary_key": false
+        },
+        {
+          "name": "locked_until",
+          "type": "TIMESTAMP",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [],
+      "row_count": 7,
+      "indexes": [
+        {
+          "name": "idx_trainers_username",
+          "unique": false
+        },
+        {
+          "name": "sqlite_autoindex_trainers_1",
+          "unique": true
+        }
+      ]
+    },
+    "clients": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "trainer_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "age",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "gender",
+          "type": "TEXT",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "height",
+          "type": "REAL",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "weight",
+          "type": "REAL",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "email",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "phone",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "not_null": false,
+          "default": "CURRENT_TIMESTAMP",
+          "primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP",
+          "not_null": false,
+          "default": "CURRENT_TIMESTAMP",
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "trainer_id",
+          "references_table": "trainers",
+          "references_column": "id"
+        }
+      ],
+      "row_count": 10,
+      "indexes": [
+        {
+          "name": "idx_clients_trainer",
+          "unique": false
+        }
+      ]
+    },
+    "assessments": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "client_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "trainer_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "date",
+          "type": "TEXT",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "overhead_squat_score",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "overhead_squat_notes",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "overhead_squat_compensations",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "push_up_score",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "push_up_reps",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "push_up_notes",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "push_up_compensations",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "single_leg_balance_left_eyes_open",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "single_leg_balance_right_eyes_open",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "single_leg_balance_left_eyes_closed",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "single_leg_balance_right_eyes_closed",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "single_leg_balance_notes",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "toe_touch_score",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "toe_touch_distance",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "toe_touch_notes",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "toe_touch_compensations",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "shoulder_mobility_left",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "shoulder_mobility_right",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "shoulder_mobility_notes",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "shoulder_mobility_compensations",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "farmer_carry_weight",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "farmer_carry_distance",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "farmer_carry_notes",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "farmer_carry_compensations",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "harvard_step_test_heart_rate",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "harvard_step_test_duration",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "harvard_step_test_notes",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "overall_score",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "strength_score",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "mobility_score",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "balance_score",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "cardio_score",
+          "type": "REAL",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "not_null": false,
+          "default": "CURRENT_TIMESTAMP",
+          "primary_key": false
+        },
+        {
+          "name": "shoulder_mobility_score",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "farmer_carry_score",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "trainer_id",
+          "references_table": "trainers",
+          "references_column": "id"
+        },
+        {
+          "column": "client_id",
+          "references_table": "clients",
+          "references_column": "id"
+        }
+      ],
+      "row_count": 7,
+      "indexes": [
+        {
+          "name": "idx_assessments_date",
+          "unique": false
+        },
+        {
+          "name": "idx_assessments_client",
+          "unique": false
+        },
+        {
+          "name": "idx_assessments_trainer",
+          "unique": false
+        }
+      ]
+    },
+    "session_packages": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "client_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "trainer_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "total_amount",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "session_price",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "total_sessions",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "remaining_credits",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "remaining_sessions",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "package_name",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "not_null": false,
+          "default": "CURRENT_TIMESTAMP",
+          "primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP",
+          "not_null": false,
+          "default": "CURRENT_TIMESTAMP",
+          "primary_key": false
+        },
+        {
+          "name": "is_active",
+          "type": "BOOLEAN",
+          "not_null": false,
+          "default": "1",
+          "primary_key": false
+        },
+        {
+          "name": "gross_amount",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "vat_amount",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "card_fee_amount",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "net_amount",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "vat_rate",
+          "type": "DECIMAL(5,2)",
+          "not_null": false,
+          "default": "0.10",
+          "primary_key": false
+        },
+        {
+          "name": "card_fee_rate",
+          "type": "DECIMAL(5,2)",
+          "not_null": false,
+          "default": "0.035",
+          "primary_key": false
+        },
+        {
+          "name": "fee_calculation_method",
+          "type": "TEXT",
+          "not_null": false,
+          "default": "'inclusive'",
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "trainer_id",
+          "references_table": "trainers",
+          "references_column": "id"
+        },
+        {
+          "column": "client_id",
+          "references_table": "clients",
+          "references_column": "id"
+        }
+      ],
+      "row_count": 5,
+      "indexes": [
+        {
+          "name": "idx_session_packages_trainer",
+          "unique": false
+        },
+        {
+          "name": "idx_session_packages_client",
+          "unique": false
+        }
+      ]
+    },
+    "sessions": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "client_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "package_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "session_date",
+          "type": "DATE",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "session_time",
+          "type": "TIME",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "session_duration",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "session_cost",
+          "type": "REAL",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "not_null": false,
+          "default": "'scheduled'",
+          "primary_key": false
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "not_null": false,
+          "default": "CURRENT_TIMESTAMP",
+          "primary_key": false
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "trainer_id",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "package_id",
+          "references_table": "session_packages",
+          "references_column": "id"
+        },
+        {
+          "column": "client_id",
+          "references_table": "clients",
+          "references_column": "id"
+        }
+      ],
+      "row_count": 7,
+      "indexes": []
+    },
+    "payments": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "client_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "package_id",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "amount",
+          "type": "REAL",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "payment_method",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "payment_date",
+          "type": "DATE",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "not_null": false,
+          "default": "CURRENT_TIMESTAMP",
+          "primary_key": false
+        },
+        {
+          "name": "trainer_id",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "gross_amount",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "vat_amount",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "card_fee_amount",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "net_amount",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "vat_rate",
+          "type": "DECIMAL(5,2)",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "card_fee_rate",
+          "type": "DECIMAL(5,2)",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "package_id",
+          "references_table": "session_packages",
+          "references_column": "id"
+        },
+        {
+          "column": "client_id",
+          "references_table": "clients",
+          "references_column": "id"
+        }
+      ],
+      "row_count": 6,
+      "indexes": []
+    },
+    "fee_audit_log": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "package_id",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "payment_id",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "calculation_type",
+          "type": "TEXT",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "gross_amount",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "vat_amount",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "card_fee_amount",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "net_amount",
+          "type": "INTEGER",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "vat_rate",
+          "type": "DECIMAL(5,2)",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "card_fee_rate",
+          "type": "DECIMAL(5,2)",
+          "not_null": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "calculation_details",
+          "type": "TEXT",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_by",
+          "type": "INTEGER",
+          "not_null": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "not_null": false,
+          "default": "CURRENT_TIMESTAMP",
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "created_by",
+          "references_table": "trainers",
+          "references_column": "id"
+        },
+        {
+          "column": "payment_id",
+          "references_table": "payments",
+          "references_column": "id"
+        },
+        {
+          "column": "package_id",
+          "references_table": "session_packages",
+          "references_column": "id"
+        }
+      ],
+      "row_count": 0,
+      "indexes": []
+    }
+  },
+  "data_integrity": {},
+  "migration_plan": {
+    "relationships": {
+      "trainers": {
+        "has_many": [
+          "clients",
+          "assessments",
+          "session_packages",
+          "sessions",
+          "payments"
+        ]
+      },
+      "clients": {
+        "belongs_to": "trainers",
+        "has_many": [
+          "assessments",
+          "session_packages",
+          "sessions",
+          "payments"
+        ]
+      },
+      "assessments": {
+        "belongs_to": [
+          "clients",
+          "trainers"
+        ]
+      },
+      "session_packages": {
+        "belongs_to": [
+          "clients",
+          "trainers"
+        ],
+        "has_many": [
+          "sessions",
+          "payments"
+        ]
+      },
+      "sessions": {
+        "belongs_to": [
+          "clients",
+          "session_packages",
+          "trainers"
+        ]
+      },
+      "payments": {
+        "belongs_to": [
+          "clients",
+          "session_packages",
+          "trainers"
+        ]
+      }
+    },
+    "model_mapping": {
+      "trainers": "accounts.User",
+      "clients": "clients.Client",
+      "assessments": "assessments.Assessment",
+      "session_packages": "sessions.SessionPackage",
+      "sessions": "sessions.Session",
+      "payments": "sessions.Payment",
+      "fee_audit_log": "sessions.FeeAuditLog"
+    },
+    "type_mapping": {
+      "INTEGER": "IntegerField",
+      "TEXT": "CharField/TextField",
+      "REAL": "FloatField",
+      "DATETIME": "DateTimeField",
+      "DATE": "DateField",
+      "TIME": "TimeField",
+      "BOOLEAN": "BooleanField",
+      "DECIMAL": "DecimalField"
+    },
+    "migration_order": [
+      "trainers",
+      "clients",
+      "assessments",
+      "session_packages",
+      "sessions",
+      "payments",
+      "fee_audit_log"
+    ]
+  },
+  "warnings": [],
+  "summary": {
+    "total_tables": 7,
+    "total_rows": 42,
+    "warnings_count": 0,
+    "database_size": 0.109375,
+    "analysis_date": "2025-06-09T14:05:16.232034"
+  }
+}

@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}패키지 상세 - {{ package.package_name }} - The5HC{% endblock %}
+
+{% block content %}
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-start">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">{{ package.package_name }}</h1>
+            <p class="text-gray-600 mt-2">
+                <a href="{% url 'clients:detail' package.client.pk %}" 
+                   class="text-blue-600 hover:text-blue-800"
+                   hx-get="{% url 'clients:detail' package.client.pk %}"
+                   hx-target="#main-content"
+                   hx-push-url="true">
+                    {{ package.client.name }}
+                </a> 
+                | 생성일: {{ package.created_at|date:"Y년 m월 d일" }}
+            </p>
+        </div>
+        <div class="flex space-x-2">
+            <a href="{% url 'sessions:session_add' %}?package={{ package.pk }}" 
+               class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200"
+               hx-get="{% url 'sessions:session_add' %}?package={{ package.pk }}"
+               hx-target="#main-content"
+               hx-push-url="true">
+                <svg class="inline-block w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                세션 추가
+            </a>
+            <a href="{% url 'sessions:payment_add' %}?package={{ package.pk }}" 
+               class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200"
+               hx-get="{% url 'sessions:payment_add' %}?package={{ package.pk }}"
+               hx-target="#main-content"
+               hx-push-url="true">
+                <svg class="inline-block w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                결제 추가
+            </a>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Package Info Card -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">패키지 정보</h2>
+                
+                <!-- Session Status -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-gray-600">세션 현황</span>
+                        <span class="text-2xl font-bold text-gray-900">
+                            {{ package.remaining_sessions }} / {{ package.total_sessions }}
+                        </span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full" 
+                             style="width: {% widthratio package.remaining_sessions package.total_sessions 100 %}%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">
+                        사용: {{ completed_sessions_count }}회 | 남은 세션: {{ package.remaining_sessions }}회
+                    </p>
+                </div>
+                
+                <!-- Package Details -->
+                <dl class="space-y-3">
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">상태</dt>
+                        <dd>
+                            {% if package.is_active %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    활성
+                                </span>
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    비활성
+                                </span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">생성일</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ package.created_at|date:"Y-m-d" }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">세션당 가격</dt>
+                        <dd class="text-sm font-medium text-gray-900">₩{{ package.session_price|intcomma }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">남은 크레딧</dt>
+                        <dd class="text-sm font-medium text-gray-900">₩{{ package.remaining_credits|intcomma }}</dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <!-- Payment Info Card -->
+            <div class="bg-white rounded-lg shadow p-6 mt-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">결제 정보</h2>
+                <dl class="space-y-3">
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">총 금액</dt>
+                        <dd class="text-sm font-medium text-gray-900">₩{{ package.gross_amount|intcomma }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">공급가액</dt>
+                        <dd class="text-sm font-medium text-gray-900">₩{{ package.net_amount|intcomma }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">VAT</dt>
+                        <dd class="text-sm font-medium text-gray-900">₩{{ package.vat_amount|intcomma }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">카드 수수료</dt>
+                        <dd class="text-sm font-medium text-gray-900">₩{{ package.card_fee_amount|intcomma }}</dd>
+                    </div>
+                    <div class="flex justify-between border-t pt-3">
+                        <dt class="text-sm font-semibold text-gray-700">실 수령액</dt>
+                        <dd class="text-sm font-bold text-gray-900">₩{{ package.net_amount|intcomma }}</dd>
+                    </div>
+                    <div class="flex justify-between border-t pt-3">
+                        <dt class="text-sm font-semibold text-gray-700">총 결제액</dt>
+                        <dd class="text-sm font-bold text-green-600">₩{{ total_payments|intcomma }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+        
+        <!-- Sessions and Payments -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Recent Sessions -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-800">최근 세션</h2>
+                    <span class="text-sm text-gray-500">전체 {{ total_sessions_count }}개</span>
+                </div>
+                <div class="p-6">
+                    {% if sessions %}
+                    <div class="space-y-3">
+                        {% for session in sessions %}
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">
+                                    {{ session.session_date|date:"Y-m-d" }}
+                                    {% if session.session_time %}
+                                    {{ session.session_time|time:"H:i" }}
+                                    {% endif %}
+                                </p>
+                                {% if session.notes %}
+                                <p class="text-xs text-gray-500 mt-1">{{ session.notes|truncatewords:10 }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="text-right">
+                                {% if session.status == 'completed' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        완료
+                                    </span>
+                                {% elif session.status == 'scheduled' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        예약
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        취소
+                                    </span>
+                                {% endif %}
+                                {% if session.session_duration %}
+                                    <p class="text-xs text-gray-500 mt-1">{{ session.session_duration }}분</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-center py-4">등록된 세션이 없습니다.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Recent Payments -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-800">최근 결제</h2>
+                    <span class="text-sm text-gray-500">총 ₩{{ total_payments|intcomma }}</span>
+                </div>
+                <div class="p-6">
+                    {% if payments %}
+                    <div class="space-y-3">
+                        {% for payment in payments %}
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">
+                                    {{ payment.payment_date|date:"Y-m-d" }}
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">{{ payment.get_payment_method_display }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-gray-900">₩{{ payment.amount|intcomma }}</p>
+                                {% if payment.description %}
+                                <p class="text-xs text-gray-500 mt-1">{{ payment.description|truncatewords:5 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-center py-4">결제 내역이 없습니다.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Notes -->
+            {% if package.notes %}
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">메모</h2>
+                <p class="text-gray-700">{{ package.notes|linebreaksbr }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

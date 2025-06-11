@@ -1,0 +1,16 @@
+{% load i18n %}
+{% load l10n %}
+{% load humanize %}
+
+<!-- Korean Number Formatting Template -->
+<!-- Usage: {% include 'components/korean_formatting.html' with amount=value currency=True %} -->
+
+{% if currency %}
+    ₩{{ amount|floatformat:0|intcomma }}
+{% elif percentage %}
+    {{ amount|floatformat:1 }}%
+{% elif decimal %}
+    {{ amount|floatformat:1|intcomma }}
+{% else %}
+    {{ amount|intcomma }}
+{% endif %}

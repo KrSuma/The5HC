@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}보고서 생성 - {{ assessment.client.name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-2">
+                    <li>
+                        <a href="{% url 'clients:list' %}" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-users"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <span class="mx-2 text-gray-400">/</span>
+                        <a href="{% url 'clients:detail' assessment.client.id %}" class="text-gray-500 hover:text-gray-700">
+                            {{ assessment.client.name }}
+                        </a>
+                    </li>
+                    <li>
+                        <span class="mx-2 text-gray-400">/</span>
+                        <a href="{% url 'assessments:detail' assessment.id %}" class="text-gray-500 hover:text-gray-700">
+                            평가 ({{ assessment.assessment_date|date:"Y-m-d" }})
+                        </a>
+                    </li>
+                    <li>
+                        <span class="mx-2 text-gray-400">/</span>
+                        <span class="text-gray-900 font-medium">보고서 생성</span>
+                    </li>
+                </ol>
+            </nav>
+            <h1 class="mt-4 text-3xl font-bold text-gray-900">보고서 생성</h1>
+        </div>
+
+        <!-- Report Generation Form -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="mb-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">평가 정보</h2>
+                <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">고객명</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ assessment.client.name }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">평가일</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ assessment.assessment_date|date:"Y년 m월 d일" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">종합 점수</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            <span class="font-semibold">{{ assessment.overall_score|floatformat:0 }}점</span>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">상태</dt>
+                        <dd class="mt-1">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                평가 완료
+                            </span>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+
+            <form method="post" action="{% url 'reports:generate' assessment.id %}" class="mt-6">
+                {% csrf_token %}
+                
+                <div class="mb-6">
+                    <label for="report_type" class="block text-sm font-medium text-gray-700 mb-2">
+                        보고서 유형
+                    </label>
+                    <select name="report_type" id="report_type" 
+                            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        {% for value, label in report_types %}
+                        <option value="{{ value }}" {% if value == 'detailed' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-2 text-sm text-gray-500">
+                        상세 보고서는 모든 측정 결과와 개선 제안사항을 포함합니다.
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <a href="{% url 'assessments:detail' assessment.id %}" 
+                       class="text-gray-700 hover:text-gray-900">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        돌아가기
+                    </a>
+                    <button type="submit"
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <i class="fas fa-file-pdf mr-2"></i>
+                        보고서 생성
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Existing Reports -->
+        {% if assessment.reports.exists %}
+        <div class="mt-8 bg-white shadow rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">기존 보고서</h3>
+            <div class="space-y-3">
+                {% for report in assessment.reports.all %}
+                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-file-pdf text-red-500 mr-3"></i>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ report.get_report_type_display }}</p>
+                            <p class="text-xs text-gray-500">
+                                {{ report.generated_at|date:"Y-m-d H:i" }} · {{ report.generated_by.username }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <a href="{% url 'reports:view' report.id %}" 
+                           class="text-indigo-600 hover:text-indigo-900 text-sm">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{% url 'reports:download' report.id %}" 
+                           class="text-green-600 hover:text-green-900 text-sm">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

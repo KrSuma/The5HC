@@ -1,0 +1,55 @@
+{
+  "analysis_date": "2025-06-09T13:58:10.548143",
+  "database": "/Users/jslee/PycharmProjects/The5HC/data/fitness_assessment.db",
+  "issues": {
+    "duplicate_tables": [
+      {
+        "tables": [
+          "sessions",
+          "training_sessions"
+        ],
+        "issue": "Both tables contain data",
+        "recommendation": "Merge data from both tables during migration"
+      },
+      {
+        "tables": [
+          "payments",
+          "payment_records"
+        ],
+        "issue": "Both tables contain data",
+        "recommendation": "Merge data from both tables during migration"
+      }
+    ],
+    "duplicate_data": [
+      {
+        "table": "trainers",
+        "field": "email",
+        "value": "jaesun9090@gmail.com",
+        "usernames": "criminal,jaesun9090",
+        "recommendation": "Update duplicate emails to be unique before migration"
+      }
+    ],
+    "missing_data": [],
+    "data_inconsistencies": [],
+    "migration_conflicts": [],
+    "recommendations": [
+      {
+        "priority": 1,
+        "action": "Fix duplicate emails in trainers table",
+        "script": "fix_duplicate_emails.py",
+        "description": "Update duplicate emails to be unique (e.g., append numbers)"
+      },
+      {
+        "priority": 2,
+        "action": "Merge duplicate table data",
+        "script": "merge_duplicate_tables.py",
+        "description": "Combine data from sessions/training_sessions and payments/payment_records"
+      }
+    ]
+  },
+  "summary": {
+    "total_issues": 5,
+    "critical_issues": 3,
+    "recommendations_count": 2
+  }
+}

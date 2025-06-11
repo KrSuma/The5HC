@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}보고서 목록{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">보고서 목록</h1>
+            <p class="mt-2 text-sm text-gray-600">생성된 모든 평가 보고서를 확인하고 관리할 수 있습니다.</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white shadow rounded-lg p-6 mb-8">
+            <form method="get" class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div>
+                    <label for="search" class="block text-sm font-medium text-gray-700">검색</label>
+                    <input type="text" name="search" id="search" value="{{ search_query }}"
+                           placeholder="고객명 또는 이메일"
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="type" class="block text-sm font-medium text-gray-700">보고서 유형</label>
+                    <select name="type" id="type" 
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <option value="">전체</option>
+                        {% for value, label in report_types %}
+                        <option value="{{ value }}" {% if value == report_type %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" 
+                            class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <i class="fas fa-search mr-2"></i>
+                        검색
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Report List -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+            {% if page_obj %}
+            <ul class="divide-y divide-gray-200">
+                {% for report in page_obj %}
+                <li>
+                    <div class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ report.assessment.client.name }} - {{ report.get_report_type_display }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        평가일: {{ report.assessment.assessment_date|date:"Y-m-d" }} | 
+                                        생성일: {{ report.generated_at|date:"Y-m-d H:i" }}
+                                    </div>
+                                    <div class="mt-1 text-xs text-gray-400">
+                                        생성자: {{ report.generated_by.username }} | 
+                                        크기: {{ report.file_size|filesizeformat }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <a href="{% url 'reports:view' report.id %}" 
+                                   class="text-indigo-600 hover:text-indigo-900"
+                                   title="보기">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'reports:download' report.id %}" 
+                                   class="text-green-600 hover:text-green-900"
+                                   title="다운로드">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <form method="post" action="{% url 'reports:delete' report.id %}" 
+                                      class="inline-block"
+                                      onsubmit="return confirm('정말로 이 보고서를 삭제하시겠습니까?');">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                            class="text-red-600 hover:text-red-900"
+                                            title="삭제">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-center py-12">
+                <i class="fas fa-file-pdf text-gray-300 text-5xl mb-4"></i>
+                <p class="text-gray-500">생성된 보고서가 없습니다.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if report_type %}&type={{ report_type }}{% endif %}" 
+                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    이전
+                </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if report_type %}&type={{ report_type }}{% endif %}" 
+                   class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    다음
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        총 <span class="font-medium">{{ page_obj.paginator.count }}</span>개 중
+                        <span class="font-medium">{{ page_obj.start_index }}</span> -
+                        <span class="font-medium">{{ page_obj.end_index }}</span> 표시
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if report_type %}&type={{ report_type }}{% endif %}" 
+                           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <span class="relative inline-flex items-center px-4 py-2 border border-indigo-500 bg-indigo-50 text-sm font-medium text-indigo-600">
+                                {{ num }}
+                            </span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if report_type %}&type={{ report_type }}{% endif %}" 
+                               class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                {{ num }}
+                            </a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if report_type %}&type={{ report_type }}{% endif %}" 
+                           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

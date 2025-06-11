@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Profile" %} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">{% trans "Profile" %}</h1>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">{% trans "User Information" %}</h2>
+        
+        <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <dt class="text-sm font-medium text-gray-500">{% trans "Username" %}</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ user.username }}</dd>
+            </div>
+            
+            <div>
+                <dt class="text-sm font-medium text-gray-500">{% trans "Email" %}</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ user.email }}</dd>
+            </div>
+            
+            <div>
+                <dt class="text-sm font-medium text-gray-500">{% trans "Name" %}</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ user.name|default:"-" }}</dd>
+            </div>
+            
+            <div>
+                <dt class="text-sm font-medium text-gray-500">{% trans "Member Since" %}</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ user.date_joined|date:"Y-m-d" }}</dd>
+            </div>
+        </dl>
+    </div>
+</div>
+{% endblock %}

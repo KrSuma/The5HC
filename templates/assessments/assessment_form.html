@@ -1,0 +1,488 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}평가 등록 - The5HC{% endblock %}
+
+{% block extra_head %}
+<style>
+    .step-indicator {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+    }
+    .step {
+        flex: 1;
+        text-align: center;
+        padding: 1rem;
+        position: relative;
+    }
+    .step:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: -50%;
+        width: 100%;
+        height: 2px;
+        background-color: #e5e7eb;
+    }
+    .step.active::after {
+        background-color: #3b82f6;
+    }
+    .step.completed::after {
+        background-color: #10b981;
+    }
+    .step-number {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        background-color: #e5e7eb;
+        color: #6b7280;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    .step.active .step-number {
+        background-color: #3b82f6;
+        color: white;
+    }
+    .step.completed .step-number {
+        background-color: #10b981;
+        color: white;
+    }
+    .step-content {
+        display: none;
+    }
+    .step-content.active {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8" x-data="assessmentForm()">
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">체력 평가 등록</h1>
+    
+    <!-- Client Selection (if not pre-selected) -->
+    {% if not client %}
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">회원 선택</h2>
+        <select id="client-select" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                @change="selectClient($event.target.value)">
+            <option value="">회원을 선택하세요</option>
+            {% for c in clients %}
+            <option value="{{ c.pk }}" data-age="{{ c.age }}" data-gender="{{ c.gender }}">
+                {{ c.name }} ({{ c.age }}세, {{ c.get_gender_display }})
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    {% else %}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <p class="text-blue-800">
+            <strong>평가 대상:</strong> {{ client.name }} ({{ client.age }}세, {{ client.get_gender_display }})
+        </p>
+    </div>
+    {% endif %}
+    
+    <!-- Step Indicator -->
+    <div class="step-indicator mb-8">
+        <div class="step" :class="{ 'active': currentStep === 1, 'completed': currentStep > 1 }">
+            <div class="step-number">1</div>
+            <div class="text-sm font-medium">기본 정보</div>
+        </div>
+        <div class="step" :class="{ 'active': currentStep === 2, 'completed': currentStep > 2 }">
+            <div class="step-number">2</div>
+            <div class="text-sm font-medium">근력 평가</div>
+        </div>
+        <div class="step" :class="{ 'active': currentStep === 3, 'completed': currentStep > 3 }">
+            <div class="step-number">3</div>
+            <div class="text-sm font-medium">균형 평가</div>
+        </div>
+        <div class="step" :class="{ 'active': currentStep === 4, 'completed': currentStep > 4 }">
+            <div class="step-number">4</div>
+            <div class="text-sm font-medium">유연성 평가</div>
+        </div>
+        <div class="step" :class="{ 'active': currentStep === 5, 'completed': currentStep > 5 }">
+            <div class="step-number">5</div>
+            <div class="text-sm font-medium">심폐 평가</div>
+        </div>
+    </div>
+    
+    <!-- Error Messages -->
+    {% if form.errors %}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <h3 class="text-red-800 font-semibold mb-2">오류가 발생했습니다:</h3>
+        <ul class="list-disc list-inside text-red-700">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li>{{ field.label }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <!-- Multi-step Form -->
+    <form method="post" action="{% url 'assessments:add' %}">
+        {% csrf_token %}
+        {% if client %}
+        <input type="hidden" name="client" value="{{ client.pk }}">
+        {% else %}
+        <input type="hidden" name="client" x-model="selectedClient">
+        {% endif %}
+        
+        <div id="form-container">
+            <!-- Step 1: Basic Information -->
+            <div class="step-content" :class="{ 'active': currentStep === 1 }">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-6">기본 정보</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">평가 날짜</label>
+                            {{ form.date }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 2: Strength Assessment -->
+            <div class="step-content" :class="{ 'active': currentStep === 2 }">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-6">근력 평가</h2>
+                    
+                    <!-- Overhead Squat -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-medium text-gray-700 mb-4">오버헤드 스쿼트</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">점수</label>
+                                {{ form.overhead_squat_score }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                                {{ form.overhead_squat_notes }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Push-up Test -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-medium text-gray-700 mb-4">푸시업 테스트</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">반복 횟수</label>
+                                {{ form.push_up_reps }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">점수 (자동 계산)</label>
+                                {{ form.push_up_score }}
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                            {{ form.push_up_notes }}
+                        </div>
+                    </div>
+                    
+                    <!-- Farmer's Carry -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-4">파머스 캐리</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">무게 (kg)</label>
+                                {{ form.farmer_carry_weight }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">거리 (m)</label>
+                                {{ form.farmer_carry_distance }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">점수 (자동 계산)</label>
+                                {{ form.farmer_carry_score }}
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                            {{ form.farmer_carry_notes }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 3: Balance Assessment -->
+            <div class="step-content" :class="{ 'active': currentStep === 3 }">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-6">균형 평가</h2>
+                    
+                    <h3 class="text-lg font-medium text-gray-700 mb-4">외발 서기 테스트</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Eyes Open -->
+                        <div>
+                            <h4 class="font-medium text-gray-600 mb-3">눈 뜨고</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">오른발 (초)</label>
+                                    {{ form.single_leg_balance_right_eyes_open }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">왼발 (초)</label>
+                                    {{ form.single_leg_balance_left_eyes_open }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Eyes Closed -->
+                        <div>
+                            <h4 class="font-medium text-gray-600 mb-3">눈 감고</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">오른발 (초)</label>
+                                    {{ form.single_leg_balance_right_eyes_closed }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">왼발 (초)</label>
+                                    {{ form.single_leg_balance_left_eyes_closed }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">균형 점수 (자동 계산)</label>
+                        <input type="text" x-model="balanceScore" readonly 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100">
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                        {{ form.single_leg_balance_notes }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 4: Flexibility Assessment -->
+            <div class="step-content" :class="{ 'active': currentStep === 4 }">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-6">유연성 평가</h2>
+                    
+                    <!-- Toe Touch -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-medium text-gray-700 mb-4">앞으로 굽히기</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">거리 (cm)</label>
+                                {{ form.toe_touch_distance }}
+                                <p class="text-xs text-gray-500 mt-1">바닥 위는 +, 아래는 -</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">점수 (자동 계산)</label>
+                                {{ form.toe_touch_score }}
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                            {{ form.toe_touch_notes }}
+                        </div>
+                    </div>
+                    
+                    <!-- Shoulder Mobility -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-4">어깨 유연성</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">오른쪽 (cm)</label>
+                                {{ form.shoulder_mobility_right }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">왼쪽 (cm)</label>
+                                {{ form.shoulder_mobility_left }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">점수</label>
+                                {{ form.shoulder_mobility_score }}
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                            {{ form.shoulder_mobility_notes }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 5: Cardio Assessment -->
+            <div class="step-content" :class="{ 'active': currentStep === 5 }">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-6">심폐 평가</h2>
+                    
+                    <h3 class="text-lg font-medium text-gray-700 mb-4">하버드 스텝 테스트</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">심박수 (bpm)</label>
+                            {{ form.harvard_step_test_heart_rate }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">지속 시간 (초)</label>
+                            {{ form.harvard_step_test_duration }}
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                        {{ form.harvard_step_test_notes }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between mt-8">
+            <button type="button" 
+                    @click="previousStep"
+                    x-show="currentStep > 1"
+                    class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition duration-200">
+                이전
+            </button>
+            
+            <div class="ml-auto space-x-4">
+                <a href="{% url 'assessments:list' %}" 
+                   class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-200 inline-block">
+                    취소
+                </a>
+                
+                <button type="button" 
+                        @click="nextStep"
+                        x-show="currentStep < 5"
+                        class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200">
+                    다음
+                </button>
+                
+                <button type="submit" 
+                        x-show="currentStep === 5"
+                        class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200">
+                    <span class="htmx-indicator">
+                        <svg class="inline-block w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+                    평가 저장
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function assessmentForm() {
+    return {
+        currentStep: 1,
+        {% if client %}
+        selectedClient: {{ client.pk }},
+        clientAge: {{ client.age }},
+        clientGender: '{{ client.gender }}',
+        {% else %}
+        selectedClient: null,
+        clientAge: null,
+        clientGender: null,
+        {% endif %}
+        pushUpReps: null,
+        pushUpScore: null,
+        balanceRightOpen: null,
+        balanceLeftOpen: null,
+        balanceRightClosed: null,
+        balanceLeftClosed: null,
+        balanceScore: null,
+        toeTouchDistance: null,
+        toeTouchScore: null,
+        farmerWeight: null,
+        farmerDistance: null,
+        farmerScore: null,
+        
+        selectClient(clientId) {
+            if (!clientId) return;
+            
+            const select = document.getElementById('client-select');
+            const option = select.options[select.selectedIndex];
+            
+            this.selectedClient = clientId;
+            this.clientAge = parseInt(option.dataset.age);
+            this.clientGender = option.dataset.gender;
+        },
+        
+        nextStep() {
+            if (this.currentStep < 5) {
+                this.currentStep++;
+            }
+        },
+        
+        previousStep() {
+            if (this.currentStep > 1) {
+                this.currentStep--;
+            }
+        },
+        
+        async calculatePushUpScore() {
+            if (!this.pushUpReps || !this.clientAge || !this.clientGender) return;
+            
+            try {
+                const response = await fetch(`{% url 'assessments:calculate_pushup_score' %}?gender=${this.clientGender}&age=${this.clientAge}&reps=${this.pushUpReps}`);
+                const data = await response.json();
+                this.pushUpScore = data.score;
+            } catch (error) {
+                console.error('Error calculating push-up score:', error);
+            }
+        },
+        
+        async calculateBalanceScore() {
+            const values = [
+                this.balanceRightOpen,
+                this.balanceLeftOpen,
+                this.balanceRightClosed,
+                this.balanceLeftClosed
+            ];
+            
+            if (values.some(v => v === null || v === '')) return;
+            
+            try {
+                const response = await fetch(`{% url 'assessments:calculate_balance_score' %}?right_open=${this.balanceRightOpen}&left_open=${this.balanceLeftOpen}&right_closed=${this.balanceRightClosed}&left_closed=${this.balanceLeftClosed}`);
+                const data = await response.json();
+                this.balanceScore = data.score;
+            } catch (error) {
+                console.error('Error calculating balance score:', error);
+            }
+        },
+        
+        async calculateToeTouchScore() {
+            if (this.toeTouchDistance === null || this.toeTouchDistance === '') return;
+            
+            try {
+                const response = await fetch(`{% url 'assessments:calculate_toe_touch_score' %}?distance=${this.toeTouchDistance}`);
+                const data = await response.json();
+                this.toeTouchScore = data.score;
+            } catch (error) {
+                console.error('Error calculating toe touch score:', error);
+            }
+        },
+        
+        async calculateFarmerScore() {
+            if (!this.farmerWeight || !this.farmerDistance || !this.clientGender) return;
+            
+            try {
+                const response = await fetch(`{% url 'assessments:calculate_farmer_score' %}?gender=${this.clientGender}&weight=${this.farmerWeight}&distance=${this.farmerDistance}`);
+                const data = await response.json();
+                this.farmerScore = data.score;
+            } catch (error) {
+                console.error('Error calculating farmer score:', error);
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

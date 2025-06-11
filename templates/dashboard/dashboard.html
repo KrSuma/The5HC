@@ -1,0 +1,382 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load i18n %}
+{% load l10n %}
+
+{% block title %}대시보드 - The5HC{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">대시보드</h1>
+        <p class="text-gray-600 mt-2">환영합니다, {{ user.name }}님!</p>
+    </div>
+    
+    <!-- Enhanced Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Clients Card -->
+        <div class="bg-white rounded-lg shadow p-6" 
+             x-data="{ count: 0, target: {{ total_clients }} }" 
+             x-init="setTimeout(() => { 
+                 let interval = setInterval(() => { 
+                     if(count < target) { 
+                         count += Math.ceil(target/20); 
+                         if(count > target) count = target; 
+                     } else { 
+                         clearInterval(interval); 
+                     } 
+                 }, 50); 
+             }, 100)">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-blue-500 rounded-lg p-3">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h2 class="text-sm font-medium text-gray-600">전체 회원</h2>
+                    <p class="text-2xl font-semibold text-gray-900" x-text="count">0</p>
+                    <p class="text-xs text-gray-500 mt-1">이번 달 +{{ new_clients_this_month }}명</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Packages Card -->
+        <div class="bg-white rounded-lg shadow p-6"
+             x-data="{ count: 0, target: {{ active_packages }} }" 
+             x-init="setTimeout(() => { 
+                 let interval = setInterval(() => { 
+                     if(count < target) { 
+                         count += Math.ceil(target/20); 
+                         if(count > target) count = target; 
+                     } else { 
+                         clearInterval(interval); 
+                     } 
+                 }, 50); 
+             }, 100)">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-green-500 rounded-lg p-3">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h2 class="text-sm font-medium text-gray-600">활성 패키지</h2>
+                    <p class="text-2xl font-semibold text-gray-900" x-text="count">0</p>
+                    <p class="text-xs text-gray-500 mt-1">총 {{ package_stats.total_sessions_sold|default:0 }}회 판매</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- This Month Sessions -->
+        <div class="bg-white rounded-lg shadow p-6"
+             x-data="{ count: 0, target: {{ sessions_this_month }} }" 
+             x-init="setTimeout(() => { 
+                 let interval = setInterval(() => { 
+                     if(count < target) { 
+                         count += Math.ceil(target/20); 
+                         if(count > target) count = target; 
+                     } else { 
+                         clearInterval(interval); 
+                     } 
+                 }, 50); 
+             }, 200)">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-purple-500 rounded-lg p-3">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h2 class="text-sm font-medium text-gray-600">이번 달 세션</h2>
+                    <p class="text-2xl font-semibold text-gray-900" x-text="count">0</p>
+                    <p class="text-xs text-gray-500 mt-1">완료: {{ completed_sessions_this_month }}회</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Revenue This Month -->
+        <div class="bg-white rounded-lg shadow p-6"
+             x-data="{ amount: 0, target: {{ revenue_this_month|floatformat:0 }} }" 
+             x-init="setTimeout(() => { 
+                 let interval = setInterval(() => { 
+                     if(amount < target) { 
+                         amount += Math.ceil(target/20); 
+                         if(amount > target) amount = target; 
+                     } else { 
+                         clearInterval(interval); 
+                     } 
+                 }, 50); 
+             }, 300)">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-yellow-500 rounded-lg p-3">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h2 class="text-sm font-medium text-gray-600">이번 달 매출</h2>
+                    <p class="text-2xl font-semibold text-gray-900">₩<span x-text="amount.toLocaleString()">0</span></p>
+                    {% if revenue_growth != 0 %}
+                    <p class="text-xs mt-1 {% if revenue_growth > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                        {% if revenue_growth > 0 %}↗{% else %}↘{% endif %} {{ revenue_growth|floatformat:1 }}%
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Weekly Sessions Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">주간 세션 현황 (최근 7주)</h2>
+            <div class="h-64" id="weekly-sessions-chart"></div>
+        </div>
+        
+        <!-- Monthly Revenue Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">월별 매출 현황 (최근 6개월)</h2>
+            <div class="h-64" id="monthly-revenue-chart"></div>
+        </div>
+    </div>
+    
+    <!-- Performance Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Assessment Metrics -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">평가 지표</h3>
+                <div class="bg-purple-100 p-2 rounded-lg">
+                    <svg class="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">이번 달 평가</span>
+                    <span class="font-semibold">{{ assessments_this_month }}회</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">평균 점수</span>
+                    <span class="font-semibold">{{ avg_score_this_month|floatformat:1 }}점</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Package Metrics -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">패키지 지표</h3>
+                <div class="bg-green-100 p-2 rounded-lg">
+                    <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">총 판매액</span>
+                    <span class="font-semibold">₩{{ package_stats.total_value|default:0|floatformat:0|intcomma }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">평균 패키지 금액</span>
+                    <span class="font-semibold">₩{{ package_stats.avg_value|default:0|floatformat:0|intcomma }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Client Growth -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">회원 증가</h3>
+                <div class="bg-blue-100 p-2 rounded-lg">
+                    <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">이번 달 신규</span>
+                    <span class="font-semibold">{{ new_clients_this_month }}명</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">이번 주 신규</span>
+                    <span class="font-semibold">{{ new_clients_this_week }}명</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activities and Quick Actions -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent Activities -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-800">최근 활동</h2>
+            </div>
+            <div class="p-6">
+                {% if recent_activities %}
+                <div class="space-y-4">
+                    {% for activity in recent_activities %}
+                    <div class="flex items-start space-x-3 py-2">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-{{ activity.color }}-100 flex items-center justify-center">
+                            {% if activity.icon == 'user-plus' %}
+                            <svg class="w-4 h-4 text-{{ activity.color }}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                            </svg>
+                            {% elif activity.icon == 'calendar' %}
+                            <svg class="w-4 h-4 text-{{ activity.color }}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            {% elif activity.icon == 'clipboard-check' %}
+                            <svg class="w-4 h-4 text-{{ activity.color }}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                            </svg>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900">{{ activity.title }}</p>
+                            <p class="text-xs text-gray-500">{{ activity.date|timesince }} 전</p>
+                            {% if activity.score %}
+                            <p class="text-xs text-gray-600">점수: {{ activity.score }}점</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-gray-500 text-center py-8">최근 활동이 없습니다.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-800">빠른 작업</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-center transition duration-150"
+                            hx-get="{% url 'clients:add' %}"
+                            hx-target="#main-content"
+                            hx-push-url="true">
+                        <svg class="h-8 w-8 text-blue-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                        </svg>
+                        <p class="text-sm font-medium text-gray-900">새 회원 등록</p>
+                    </button>
+                    
+                    <button class="p-4 bg-green-50 hover:bg-green-100 rounded-lg text-center transition duration-150"
+                            hx-get="{% url 'assessments:add' %}"
+                            hx-target="#main-content"
+                            hx-push-url="true">
+                        <svg class="h-8 w-8 text-green-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                        <p class="text-sm font-medium text-gray-900">평가 실시</p>
+                    </button>
+                    
+                    <button class="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-center transition duration-150"
+                            hx-get="{% url 'sessions:package_add' %}"
+                            hx-target="#main-content"
+                            hx-push-url="true">
+                        <svg class="h-8 w-8 text-purple-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
+                        <p class="text-sm font-medium text-gray-900">패키지 등록</p>
+                    </button>
+                    
+                    <button class="p-4 bg-yellow-50 hover:bg-yellow-100 rounded-lg text-center transition duration-150"
+                            hx-get="{% url 'sessions:session_add' %}"
+                            hx-target="#main-content"
+                            hx-push-url="true">
+                        <svg class="h-8 w-8 text-yellow-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <p class="text-sm font-medium text-gray-900">세션 예약</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js for analytics -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Weekly Sessions Chart
+    const weeklyCtx = document.getElementById('weekly-sessions-chart').getContext('2d');
+    new Chart(weeklyCtx, {
+        type: 'line',
+        data: {
+            labels: [{% for week in weekly_sessions %}'{{ week.week }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: '세션 수',
+                data: [{% for week in weekly_sessions %}{{ week.sessions }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                borderColor: 'rgb(147, 51, 234)',
+                backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+    
+    // Monthly Revenue Chart
+    const revenueCtx = document.getElementById('monthly-revenue-chart').getContext('2d');
+    new Chart(revenueCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for month in monthly_revenue %}'{{ month.month }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: '매출 (원)',
+                data: [{% for month in monthly_revenue %}{{ month.revenue }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: 'rgba(234, 179, 8, 0.7)',
+                borderColor: 'rgb(234, 179, 8)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₩' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

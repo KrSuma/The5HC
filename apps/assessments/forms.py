@@ -1,0 +1,346 @@
+from django import forms
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from .models import Assessment
+
+
+class AssessmentForm(forms.ModelForm):
+    """Main assessment form with all test fields"""
+    
+    class Meta:
+        model = Assessment
+        fields = [
+            'client', 'date',
+            # Overhead Squat
+            'overhead_squat_score', 'overhead_squat_notes',
+            # Push-up
+            'push_up_reps', 'push_up_score', 'push_up_notes',
+            # Single Leg Balance
+            'single_leg_balance_right_eyes_open', 'single_leg_balance_left_eyes_open',
+            'single_leg_balance_right_eyes_closed', 'single_leg_balance_left_eyes_closed',
+            'single_leg_balance_notes',
+            # Toe Touch
+            'toe_touch_distance', 'toe_touch_score', 'toe_touch_notes',
+            # Shoulder Mobility
+            'shoulder_mobility_right', 'shoulder_mobility_left', 
+            'shoulder_mobility_score', 'shoulder_mobility_notes',
+            # Farmer's Carry
+            'farmer_carry_weight', 'farmer_carry_distance',
+            'farmer_carry_score', 'farmer_carry_notes',
+            # Harvard Step Test
+            'harvard_step_test_heart_rate', 'harvard_step_test_duration',
+            'harvard_step_test_notes'
+        ]
+        
+        widgets = {
+            'date': forms.DateInput(
+                attrs={
+                    'type': 'date',
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'value': timezone.now().strftime('%Y-%m-%d')
+                }
+            ),
+            'client': forms.HiddenInput(),
+            
+            # Overhead Squat
+            'overhead_squat_score': forms.Select(
+                choices=[(None, '선택'), (0, '0 - 통증'), (1, '1 - 불가'), (2, '2 - 보정동작'), (3, '3 - 완벽')],
+                attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}
+            ),
+            'overhead_squat_notes': forms.Textarea(
+                attrs={
+                    'rows': 2,
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '추가 메모 (선택사항)'
+                }
+            ),
+            
+            # Push-up
+            'push_up_reps': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '완료한 개수',
+                    'min': 0,
+                    'x-model': 'pushUpReps',
+                    '@input': 'calculatePushUpScore()'
+                }
+            ),
+            'push_up_score': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100',
+                    'x-model': 'pushUpScore',
+                    'readonly': True
+                }
+            ),
+            'push_up_notes': forms.Textarea(
+                attrs={
+                    'rows': 2,
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '추가 메모 (선택사항)'
+                }
+            ),
+            
+            # Single Leg Balance (all in seconds)
+            'single_leg_balance_right_eyes_open': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '초',
+                    'min': 0,
+                    'max': 120,
+                    'x-model': 'balanceRightOpen',
+                    '@input': 'calculateBalanceScore()'
+                }
+            ),
+            'single_leg_balance_left_eyes_open': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '초',
+                    'min': 0,
+                    'max': 120,
+                    'x-model': 'balanceLeftOpen',
+                    '@input': 'calculateBalanceScore()'
+                }
+            ),
+            'single_leg_balance_right_eyes_closed': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '초',
+                    'min': 0,
+                    'max': 120,
+                    'x-model': 'balanceRightClosed',
+                    '@input': 'calculateBalanceScore()'
+                }
+            ),
+            'single_leg_balance_left_eyes_closed': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '초',
+                    'min': 0,
+                    'max': 120,
+                    'x-model': 'balanceLeftClosed',
+                    '@input': 'calculateBalanceScore()'
+                }
+            ),
+            'single_leg_balance_notes': forms.Textarea(
+                attrs={
+                    'rows': 2,
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '추가 메모 (선택사항)'
+                }
+            ),
+            
+            # Toe Touch
+            'toe_touch_distance': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': 'cm (바닥 위는 +, 아래는 -)',
+                    'step': '0.1',
+                    'x-model': 'toeTouchDistance',
+                    '@input': 'calculateToeTouchScore()'
+                }
+            ),
+            'toe_touch_score': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100',
+                    'x-model': 'toeTouchScore',
+                    'readonly': True
+                }
+            ),
+            'toe_touch_notes': forms.Textarea(
+                attrs={
+                    'rows': 2,
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '추가 메모 (선택사항)'
+                }
+            ),
+            
+            # Shoulder Mobility
+            'shoulder_mobility_right': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': 'cm',
+                    'step': '0.1',
+                    'min': 0
+                }
+            ),
+            'shoulder_mobility_left': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': 'cm',
+                    'step': '0.1',
+                    'min': 0
+                }
+            ),
+            'shoulder_mobility_score': forms.Select(
+                choices=[(None, '선택'), (0, '0 - 통증'), (1, '1 - 2주먹 이상'), (2, '2 - 1.5주먹'), (3, '3 - 1주먹 이내')],
+                attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}
+            ),
+            'shoulder_mobility_notes': forms.Textarea(
+                attrs={
+                    'rows': 2,
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '추가 메모 (선택사항)'
+                }
+            ),
+            
+            # Farmer's Carry
+            'farmer_carry_weight': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': 'kg',
+                    'step': '0.5',
+                    'min': 0,
+                    'x-model': 'farmerWeight',
+                    '@input': 'calculateFarmerScore()'
+                }
+            ),
+            'farmer_carry_distance': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '미터',
+                    'step': '0.1',
+                    'min': 0,
+                    'x-model': 'farmerDistance',
+                    '@input': 'calculateFarmerScore()'
+                }
+            ),
+            'farmer_carry_score': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100',
+                    'x-model': 'farmerScore',
+                    'readonly': True
+                }
+            ),
+            'farmer_carry_notes': forms.Textarea(
+                attrs={
+                    'rows': 2,
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '추가 메모 (선택사항)'
+                }
+            ),
+            
+            # Harvard Step Test
+            'harvard_step_test_heart_rate': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': 'bpm',
+                    'min': 40,
+                    'max': 250
+                }
+            ),
+            'harvard_step_test_duration': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '초',
+                    'step': '0.1',
+                    'min': 0
+                }
+            ),
+            'harvard_step_test_notes': forms.Textarea(
+                attrs={
+                    'rows': 2,
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '추가 메모 (선택사항)'
+                }
+            ),
+        }
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set default date to now
+        if not self.instance.pk:
+            self.fields['date'].initial = timezone.now()
+            
+        # Set default values for all numeric fields
+        defaults = {
+            'overhead_squat_score': 2,
+            'push_up_reps': 10,
+            'push_up_score': 3,
+            'single_leg_balance_right_eyes_open': 30,
+            'single_leg_balance_left_eyes_open': 30,
+            'single_leg_balance_right_eyes_closed': 10,
+            'single_leg_balance_left_eyes_closed': 10,
+            'toe_touch_distance': 0,
+            'toe_touch_score': 3,
+            'shoulder_mobility_right': 10,
+            'shoulder_mobility_left': 10,
+            'shoulder_mobility_score': 3,
+            'farmer_carry_weight': 20,
+            'farmer_carry_distance': 20,
+            'farmer_carry_score': 3,
+            'harvard_step_test_heart_rate': 80,
+            'harvard_step_test_duration': 180,
+        }
+        
+        # Apply defaults to initial data only for new instances
+        if not self.instance.pk:
+            for field_name, default_value in defaults.items():
+                if field_name in self.fields and not self.fields[field_name].initial:
+                    self.fields[field_name].initial = default_value
+            
+    def clean_date(self):
+        date = self.cleaned_data.get('date')
+        if date and date > timezone.now():
+            raise ValidationError("평가 날짜는 미래일 수 없습니다.")
+        return date
+
+
+class AssessmentSearchForm(forms.Form):
+    """Form for searching and filtering assessments"""
+    
+    search = forms.CharField(
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'placeholder': '회원 이름으로 검색...',
+            'hx-get': '',
+            'hx-trigger': 'keyup changed delay:500ms',
+            'hx-target': '#assessment-list',
+            'hx-swap': 'innerHTML',
+            'hx-indicator': '#search-indicator'
+        })
+    )
+    
+    date_from = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '',
+            'hx-trigger': 'change',
+            'hx-target': '#assessment-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    date_to = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '',
+            'hx-trigger': 'change',
+            'hx-target': '#assessment-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    score_range = forms.ChoiceField(
+        choices=[
+            ('', '전체 점수'),
+            ('90-100', '90-100 (매우 우수)'),
+            ('80-89', '80-89 (우수)'),
+            ('70-79', '70-79 (평균)'),
+            ('60-69', '60-69 (주의 필요)'),
+            ('0-59', '0-59 (개선 필요)')
+        ],
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '',
+            'hx-trigger': 'change',
+            'hx-target': '#assessment-list',
+            'hx-swap': 'innerHTML'
+        })
+    )

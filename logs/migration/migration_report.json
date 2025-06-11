@@ -1,0 +1,53 @@
+{
+  "timestamp": "2025-06-09T05:38:43.994340",
+  "source_database": "/Users/jslee/PycharmProjects/The5HC/data/fitness_assessment.db",
+  "statistics": {
+    "trainers": {
+      "processed": 7,
+      "created": 7,
+      "skipped": 0,
+      "errors": 0
+    },
+    "clients": {
+      "processed": 10,
+      "created": 10,
+      "skipped": 0,
+      "errors": 0
+    },
+    "assessments": {
+      "processed": 7,
+      "created": 5,
+      "skipped": 2,
+      "errors": 0
+    },
+    "session_packages": {
+      "processed": 5,
+      "created": 5,
+      "skipped": 0,
+      "errors": 0
+    },
+    "sessions": {
+      "processed": 7,
+      "created": 7,
+      "skipped": 0,
+      "errors": 0
+    },
+    "payments": {
+      "processed": 6,
+      "created": 6,
+      "skipped": 0,
+      "errors": 0
+    }
+  },
+  "mappings": {
+    "trainers_count": 7,
+    "clients_count": 10,
+    "packages_count": 5
+  },
+  "summary": {
+    "total_processed": 42,
+    "total_created": 40,
+    "total_skipped": 2,
+    "total_errors": 0
+  }
+}

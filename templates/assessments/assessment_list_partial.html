@@ -1,0 +1,175 @@
+{% load humanize %}
+
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    {% if page_obj.object_list %}
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">날짜</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">회원</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">종합 점수</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">근력</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">유연성</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">균형</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">심폐</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">작업</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for assessment in page_obj.object_list %}
+            <tr class="hover:bg-gray-50 transition duration-150">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ assessment.date|date:"Y.m.d" }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <a href="{% url 'clients:detail' assessment.client.pk %}" 
+                       class="text-blue-600 hover:text-blue-800"
+                       hx-get="{% url 'clients:detail' assessment.client.pk %}"
+                       hx-target="#main-content"
+                       hx-push-url="true">
+                        {{ assessment.client.name }}
+                    </a>
+                    <p class="text-xs text-gray-500">{{ assessment.client.age }}세, {{ assessment.client.get_gender_display }}</p>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    {% if assessment.overall_score %}
+                    <span class="text-lg font-semibold 
+                        {% if assessment.overall_score >= 90 %}text-green-600
+                        {% elif assessment.overall_score >= 80 %}text-blue-600
+                        {% elif assessment.overall_score >= 70 %}text-yellow-600
+                        {% elif assessment.overall_score >= 60 %}text-orange-600
+                        {% else %}text-red-600{% endif %}">
+                        {{ assessment.overall_score|floatformat:1 }}
+                    </span>
+                    {% else %}
+                    <span class="text-gray-400">-</span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ assessment.strength_score|floatformat:1|default:"-" }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ assessment.mobility_score|floatformat:1|default:"-" }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ assessment.balance_score|floatformat:1|default:"-" }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ assessment.cardio_score|floatformat:1|default:"-" }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                    <a href="{% url 'assessments:detail' assessment.pk %}" 
+                       class="text-blue-600 hover:text-blue-800 mr-3"
+                       hx-get="{% url 'assessments:detail' assessment.pk %}"
+                       hx-target="#main-content"
+                       hx-push-url="true">
+                        상세보기
+                    </a>
+                    <a href="{% url 'assessments:report' assessment.pk %}" 
+                       class="text-green-600 hover:text-green-800">
+                        리포트
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+        <div class="flex items-center justify-between">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" 
+                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                   hx-get="?page={{ page_obj.previous_page_number }}"
+                   hx-target="#assessment-list"
+                   hx-swap="innerHTML">
+                    이전
+                </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" 
+                   class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                   hx-get="?page={{ page_obj.next_page_number }}"
+                   hx-target="#assessment-list"
+                   hx-swap="innerHTML">
+                    다음
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        총 <span class="font-medium">{{ page_obj.paginator.count }}</span>개 중
+                        <span class="font-medium">{{ page_obj.start_index }}</span> -
+                        <span class="font-medium">{{ page_obj.end_index }}</span> 표시
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}" 
+                           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                           hx-get="?page={{ page_obj.previous_page_number }}"
+                           hx-target="#assessment-list"
+                           hx-swap="innerHTML">
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                                {{ num }}
+                            </span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}" 
+                               class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                               hx-get="?page={{ num }}"
+                               hx-target="#assessment-list"
+                               hx-swap="innerHTML">
+                                {{ num }}
+                            </a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" 
+                           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                           hx-get="?page={{ page_obj.next_page_number }}"
+                           hx-target="#assessment-list"
+                           hx-swap="innerHTML">
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">평가 기록이 없습니다</h3>
+        <p class="mt-1 text-sm text-gray-500">새로운 평가를 등록해보세요.</p>
+        <div class="mt-6">
+            <a href="{% url 'assessments:add' %}" 
+               class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                <svg class="mr-2 -ml-1 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                새 평가 등록
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>

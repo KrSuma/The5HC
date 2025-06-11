@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}세션 추가 - The5HC{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">새 세션 추가</h1>
+            <p class="text-gray-600 mt-2">회원의 운동 세션을 기록합니다.</p>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <form method="post" action="{% url 'sessions:session_add' %}" x-data="sessionForm()">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <div class="space-y-6">
+                    <!-- Client Selection -->
+                    <div>
+                        <label for="{{ form.client.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            회원 선택 <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.client }}
+                        {% if form.client.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.client.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Package Selection (dynamically loaded based on client) -->
+                    <div>
+                        <label for="{{ form.package.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            패키지 선택 <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.package }}
+                        {% if form.package.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.package.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">회원을 선택하면 해당 회원의 활성 패키지가 표시됩니다.</p>
+                    </div>
+
+                    <!-- Session Date -->
+                    <div>
+                        <label for="{{ form.session_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            세션 날짜 <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.session_date }}
+                        {% if form.session_date.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.session_date.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Session Time -->
+                    <div>
+                        <label for="{{ form.session_time.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            세션 시간
+                        </label>
+                        {{ form.session_time }}
+                        {% if form.session_time.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.session_time.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Duration -->
+                    <div>
+                        <label for="{{ form.session_duration.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            세션 시간 (분)
+                        </label>
+                        {{ form.session_duration }}
+                        {% if form.session_duration.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.session_duration.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Session Cost -->
+                    <div>
+                        <label for="{{ form.session_cost.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            세션 비용
+                        </label>
+                        {{ form.session_cost }}
+                        {% if form.session_cost.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.session_cost.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            메모
+                        </label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.notes.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <!-- Form Actions -->
+                <div class="mt-8 flex justify-end space-x-3">
+                    <a href="{% url 'sessions:session_list' %}" 
+                       class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                       hx-get="{% url 'sessions:session_list' %}"
+                       hx-target="#main-content"
+                       hx-push-url="true">
+                        취소
+                    </a>
+                    <button type="submit" 
+                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        세션 저장
+                    </button>
+                </div>
+            </form>
+        </div>
+</div>
+
+<script>
+// Dynamically update package options based on selected client
+document.addEventListener('DOMContentLoaded', function() {
+    const clientSelect = document.getElementById('{{ form.client.id_for_label }}');
+    const packageSelect = document.getElementById('{{ form.package.id_for_label }}');
+    
+    if (clientSelect && packageSelect) {
+        clientSelect.addEventListener('change', function() {
+            const clientId = this.value;
+            
+            if (clientId) {
+                // Fetch packages for the selected client
+                fetch(`/sessions/ajax/get-client-packages/?client_id=${clientId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Clear current options
+                        packageSelect.innerHTML = '<option value="">---------</option>';
+                        
+                        // Add new options
+                        data.packages.forEach(pkg => {
+                            const option = document.createElement('option');
+                            option.value = pkg.id;
+                            option.textContent = `${pkg.package_name} (남은 세션: ${pkg.remaining_sessions})`;
+                            packageSelect.appendChild(option);
+                        });
+                        
+                        // Enable/disable based on whether packages exist
+                        packageSelect.disabled = data.packages.length === 0;
+                        
+                        if (data.packages.length === 0) {
+                            const option = document.createElement('option');
+                            option.value = '';
+                            option.textContent = '활성 패키지가 없습니다';
+                            packageSelect.appendChild(option);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching packages:', error);
+                    });
+            } else {
+                packageSelect.innerHTML = '<option value="">먼저 회원을 선택하세요</option>';
+                packageSelect.disabled = true;
+            }
+        });
+        
+        // Trigger on page load if client is pre-selected
+        if (clientSelect.value) {
+            clientSelect.dispatchEvent(new Event('change'));
+        }
+    }
+});
+</script>
+
+<script>
+function sessionForm() {
+    return {
+        selectedClient: '{{ form.client.value|default:"" }}',
+        selectedPackage: '{{ form.package.value|default:"" }}',
+        sessionCost: {{ form.session_cost.value|default:0 }},
+        packages: [],
+        
+        init() {
+            // Load packages if client is pre-selected
+            if (this.selectedClient) {
+                this.loadClientPackages();
+            }
+        },
+        
+        loadClientPackages() {
+            if (!this.selectedClient) {
+                this.packages = [];
+                return;
+            }
+            
+            fetch(`/sessions/ajax/get-client-packages/?client_id=${this.selectedClient}`)
+                .then(response => response.json())
+                .then(data => {
+                    this.packages = data.packages;
+                    // Update package select options
+                    const packageSelect = document.getElementById('{{ form.package.id_for_label }}');
+                    packageSelect.innerHTML = '<option value="">---------</option>';
+                    
+                    data.packages.forEach(pkg => {
+                        const option = document.createElement('option');
+                        option.value = pkg.id;
+                        option.textContent = `${pkg.package_name} (남은 세션: ${pkg.remaining_sessions})`;
+                        packageSelect.appendChild(option);
+                    });
+                    
+                    if (data.packages.length === 0) {
+                        packageSelect.innerHTML = '<option value="">활성 패키지가 없습니다</option>';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        },
+        
+        packageChanged() {
+            const pkg = this.packages.find(p => p.id == this.selectedPackage);
+            if (pkg) {
+                this.sessionCost = pkg.session_price;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}
