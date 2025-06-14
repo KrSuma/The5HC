@@ -1,4 +1,137 @@
-# Feature Changelog: VAT and Card Processing Fee Implementation
+# Feature Changelog
+
+## 2025-06-14: PDF Report Generation & HTMX Navigation Pattern Standardization
+
+### PDF Report Generation Implementation
+
+#### Summary
+Enabled PDF generation for fitness assessment reports by fixing the integration between the assessments and reports apps. The feature was already implemented in the reports app but was blocked by a conflicting URL pattern.
+
+### Key Changes
+- **Removed Conflicting Route**: Deleted redundant URL pattern and view in assessments app
+- **Fixed Field Mappings**: Updated report service to use correct Assessment model fields
+- **Updated Score References**: Fixed template variables to match service output
+- **Date Field Corrections**: Changed from non-existent `assessment_date` to `created_at`
+
+### Technical Details
+- **Infrastructure**: WeasyPrint 63.1 with Korean font support already configured
+- **Report Service**: Complete `ReportGenerator` class with PDF generation logic
+- **Templates**: Professional HTML template with score visualizations
+- **File Storage**: Reports saved to `media/reports/` with proper naming
+
+### Files Modified
+- `apps/assessments/urls.py` - Removed conflicting route
+- `apps/assessments/views.py` - Removed redundant view function
+- `apps/reports/services.py` - Fixed field mappings and score calculations
+- `templates/reports/assessment_report.html` - Updated template variables
+
+### Impact
+- PDF reports now fully functional from assessment detail page
+- Korean text rendering working correctly
+- Reports include all assessment data, scores, and recommendations
+- File size: ~35KB per report
+
+### HTMX Navigation Pattern Standardization
+
+#### Summary
+Standardized HTMX navigation handling across the application to fix duplicate header/footer issues. Created a comprehensive pattern for proper HTMX navigation that prevents nested layouts while maintaining performance benefits.
+
+#### Problem
+- Duplicate headers and footers appeared when navigating via HTMX links
+- Views were returning full templates (with base.html) inside the `#main-content` div
+- Issue affected multiple views including assessment list and client management pages
+
+#### Solution
+- Created content-only templates for HTMX navigation requests
+- Updated views to detect navigation requests via `HX-Target: main-content` header
+- Implemented consistent pattern across assessment and client views
+- Created comprehensive documentation for future implementations
+
+#### Technical Implementation
+```python
+# Navigation detection pattern
+if request.headers.get('HX-Request') and request.headers.get('HX-Target') == 'main-content':
+    return render(request, 'template_content.html', context)
+return render(request, 'template.html', context)
+```
+
+#### Files Created
+- `templates/assessments/assessment_list_content.html` - Content-only assessment list
+- `templates/clients/client_form_content.html` - Content-only client form
+- `templates/clients/client_detail_content.html` - Content-only client detail
+- `docs/HTMX_NAVIGATION_PATTERN.md` - Comprehensive pattern documentation
+
+#### Files Modified
+- `apps/assessments/views.py` - Added HTMX navigation detection
+- `apps/clients/views.py` - Updated add, edit, and detail views
+- `templates/assessments/assessment_list_partial.html` - Fixed URL pattern
+
+#### Impact
+- Eliminated duplicate header/footer issues
+- Consistent user experience across all navigation methods
+- Preserved HTMX performance benefits for partial updates
+- Established pattern for future view implementations
+
+## 2025-06-13: Assessment Score Calculation Implementation (Phase 1-2)
+
+### Summary
+Implemented automatic fitness assessment score calculation with integration of scoring algorithms from the original Streamlit application. This feature automatically calculates individual test scores, category scores (strength, mobility, balance, cardio), and overall fitness scores.
+
+### Key Features Implemented
+
+#### Phase 1: Model Field Updates
+- Added `farmer_carry_time` field to track time parameter for scoring
+- Split Harvard Step Test heart rate into three fields (hr1, hr2, hr3)
+- Updated forms and templates to support new fields
+- Created AJAX endpoints for real-time score calculation
+
+#### Phase 2: Score Calculation Implementation
+- Integrated all scoring functions from `apps/assessments/scoring.py`
+- Implemented `calculate_scores()` method in Assessment model
+- Added automatic score calculation on save
+- Created management command for bulk score updates
+- Added score comparison and breakdown methods
+
+### Technical Details
+- **Scoring Logic**: Push-ups, Farmer's Carry, and Step Test scores calculated from raw data
+- **Category Scores**: Weighted averages for strength, mobility, balance, and cardio
+- **Overall Score**: Combined score from all categories (0-100 scale)
+- **Data Handling**: Graceful handling of missing data with defaults
+- **Gender Mapping**: Automatic conversion from lowercase to title case
+
+### Files Modified
+- `apps/assessments/models.py` - Added calculate_scores() and helper methods
+- `apps/assessments/forms.py` - Updated field lists for new fields
+- `templates/assessments/assessment_form.html` - Added new input fields
+- `apps/assessments/views.py` - Added AJAX score calculation endpoints
+
+### Files Created
+- `apps/assessments/management/commands/recalculate_scores.py` - Bulk update command
+
+### Impact
+- 5 of 6 existing assessments updated with calculated scores
+- Scores now automatically calculated when assessments are saved
+- Foundation laid for visual score displays in Phase 3
+
+#### Phase 3: Form and UI Updates for Score Display
+- Real-time score calculation as data is entered
+- Visual score indicators with color-coded badges (green/yellow/red)
+- Comprehensive score summary section on final step
+- Radar chart visualization using Chart.js
+- Enhanced user experience with immediate feedback
+
+### Technical Details
+- **Scoring Logic**: Push-ups, Farmer's Carry, and Step Test scores calculated from raw data
+- **Category Scores**: Weighted averages for strength, mobility, balance, and cardio
+- **Overall Score**: Combined score from all categories (0-100 scale)
+- **Data Handling**: Graceful handling of missing data with defaults
+- **Gender Mapping**: Automatic conversion from lowercase to title case
+- **Real-time Updates**: Alpine.js integration for reactive UI
+- **Visualization**: Chart.js radar charts for category scores
+
+---
+
+## VAT and Card Processing Fee Implementation
 
 ## Summary
 

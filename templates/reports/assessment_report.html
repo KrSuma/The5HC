@@ -348,7 +348,7 @@
     <div class="page">
         <div class="header">
             <h1>더파이브 헬스케어 체력 평가 보고서</h1>
-            <p>{{ assessment.assessment_date|date:"Y년 m월 d일" }} | 담당: {{ trainer_name }}</p>
+            <p>{{ assessment.created_at|date:"Y년 m월 d일" }} | 담당: {{ trainer_name }}</p>
         </div>
 
         <div class="top-section">
@@ -390,34 +390,34 @@
                         <div class="progress-bar">
                             <div class="progress progress-strength" style="width: {{ strength_pct }}%"></div>
                         </div>
-                        <span class="category-score">{{ scores.strength_score|floatformat:1 }}</span>
+                        <span class="category-score">{{ scores.strength|floatformat:1 }}</span>
                     </div>
                     <div class="category-item">
                         <span class="category-label">유연성</span>
                         <div class="progress-bar">
                             <div class="progress progress-mobility" style="width: {{ mobility_pct }}%"></div>
                         </div>
-                        <span class="category-score">{{ scores.mobility_score|floatformat:1 }}</span>
+                        <span class="category-score">{{ scores.mobility|floatformat:1 }}</span>
                     </div>
                     <div class="category-item">
                         <span class="category-label">균형</span>
                         <div class="progress-bar">
                             <div class="progress progress-balance" style="width: {{ balance_pct }}%"></div>
                         </div>
-                        <span class="category-score">{{ scores.balance_score|floatformat:1 }}</span>
+                        <span class="category-score">{{ scores.balance|floatformat:1 }}</span>
                     </div>
                     <div class="category-item">
                         <span class="category-label">심폐지구력</span>
                         <div class="progress-bar">
                             <div class="progress progress-cardio" style="width: {{ cardio_pct }}%"></div>
                         </div>
-                        <span class="category-score">{{ scores.cardio_score|floatformat:1 }}</span>
+                        <span class="category-score">{{ scores.cardio|floatformat:1 }}</span>
                     </div>
                 </div>
             </div>
 
             <div class="overall-score">
-                <div class="score-number">{{ scores.overall_score|floatformat:0 }}</div>
+                <div class="score-number">{{ scores.overall|floatformat:0 }}</div>
                 <div class="score-rating">{{ overall_rating }}</div>
             </div>
         </div>

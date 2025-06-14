@@ -87,6 +87,11 @@ def client_detail_view(request, pk):
         'completed_sessions': client.sessions.filter(status='completed').count(),
     }
     
+    # Check if this is an HTMX navigation request (navbar click)
+    # HX-Target will be #main-content for navbar navigation
+    if request.headers.get('HX-Request') and request.headers.get('HX-Target') == 'main-content':
+        return render(request, 'clients/client_detail_content.html', context)
+    
     return render(request, 'clients/client_detail.html', context)
 
 
@@ -116,6 +121,14 @@ def client_add_view(request):
                 })
     else:
         form = ClientForm(trainer=request.user)
+    
+    # Check if this is an HTMX navigation request (navbar click)
+    # HX-Target will be #main-content for navbar navigation
+    if request.headers.get('HX-Request') and request.headers.get('HX-Target') == 'main-content':
+        return render(request, 'clients/client_form_content.html', {
+            'form': form,
+            'action': 'add',
+        })
     
     return render(request, 'clients/client_form.html', {
         'form': form,
@@ -153,6 +166,15 @@ def client_edit_view(request, pk):
                 })
     else:
         form = ClientForm(instance=client, trainer=request.user)
+    
+    # Check if this is an HTMX navigation request (navbar click)
+    # HX-Target will be #main-content for navbar navigation
+    if request.headers.get('HX-Request') and request.headers.get('HX-Target') == 'main-content':
+        return render(request, 'clients/client_form_content.html', {
+            'form': form,
+            'client': client,
+            'action': 'edit',
+        })
     
     return render(request, 'clients/client_form.html', {
         'form': form,

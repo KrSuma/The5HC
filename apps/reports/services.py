@@ -73,8 +73,8 @@ class ReportGenerator:
             training_program = self._get_training_program(assessment.client, scores)
             
             # Calculate follow-up dates
-            intermediate_check = assessment.assessment_date + timedelta(days=45)
-            next_assessment = assessment.assessment_date + timedelta(days=90)
+            intermediate_check = assessment.created_at.date() + timedelta(days=45)
+            next_assessment = assessment.created_at.date() + timedelta(days=90)
             
             # Prepare context for template
             context = {
@@ -83,11 +83,11 @@ class ReportGenerator:
                 'trainer_name': user.get_full_name() if user else '트레이너',
                 'bmi': bmi,
                 'scores': scores,
-                'strength_pct': min(100, max(0, (scores['strength_score'] / 25) * 100)),
-                'mobility_pct': min(100, max(0, (scores['mobility_score'] / 25) * 100)),
-                'balance_pct': min(100, max(0, (scores['balance_score'] / 25) * 100)),
-                'cardio_pct': min(100, max(0, (scores['cardio_score'] / 25) * 100)),
-                'overall_rating': self._get_overall_rating(scores['overall_score']),
+                'strength_pct': min(100, max(0, (scores['strength'] / 5) * 100)),
+                'mobility_pct': min(100, max(0, (scores['mobility'] / 5) * 100)),
+                'balance_pct': min(100, max(0, (scores['balance'] / 5) * 100)),
+                'cardio_pct': min(100, max(0, (scores['cardio'] / 5) * 100)),
+                'overall_rating': self._get_overall_rating(scores['overall']),
                 'test_results': test_results,
                 'suggestions': suggestions,
                 'training_program': training_program,
@@ -160,48 +160,15 @@ class ReportGenerator:
         return pdf_file
     
     def _calculate_scores(self, assessment: Assessment) -> Dict[str, float]:
-        """Calculate category scores from assessment data"""
+        """Get category scores from assessment data"""
         
-        # Strength tests
-        strength_tests = [
-            assessment.pushup,
-            assessment.wall_squat,
-            assessment.plank
-        ]
-        strength_score = sum(filter(None, strength_tests)) / len([t for t in strength_tests if t is not None])
-        
-        # Mobility tests
-        mobility_tests = [
-            assessment.sit_and_reach,
-            assessment.shoulder_flexibility
-        ]
-        mobility_score = sum(filter(None, mobility_tests)) / len([t for t in mobility_tests if t is not None])
-        
-        # Balance tests
-        balance_tests = [
-            assessment.single_leg_stand,
-            assessment.tug
-        ]
-        balance_score = sum(filter(None, balance_tests)) / len([t for t in balance_tests if t is not None])
-        
-        # Cardio tests
-        cardio_tests = [
-            assessment.grip_strength_left,
-            assessment.grip_strength_right,
-            assessment.vo2_max if assessment.vo2_max else 0
-        ]
-        cardio_score = sum(filter(None, cardio_tests)) / len([t for t in cardio_tests if t is not None])
-        
-        # Overall score
-        all_scores = [strength_score, mobility_score, balance_score, cardio_score]
-        overall_score = sum(all_scores) / len(all_scores)
-        
+        # Use the pre-calculated scores from the assessment model
         return {
-            'strength_score': round(strength_score, 1),
-            'mobility_score': round(mobility_score, 1),
-            'balance_score': round(balance_score, 1),
-            'cardio_score': round(cardio_score, 1),
-            'overall_score': round(overall_score, 1)
+            'strength': float(assessment.strength_score or 0),
+            'mobility': float(assessment.mobility_score or 0),
+            'balance': float(assessment.balance_score or 0),
+            'cardio': float(assessment.cardio_score or 0),
+            'overall': float(assessment.overall_score or 0)
         }
     
     def _calculate_bmi(self, height: float, weight: float) -> float:
@@ -224,15 +191,16 @@ class ReportGenerator:
         """Format test results for display"""
         
         test_mapping = [
-            ("푸쉬업", assessment.pushup, "회", "strength"),
-            ("벽 스쿼트", assessment.wall_squat, "초", "strength"),
-            ("플랭크", assessment.plank, "초", "strength"),
-            ("앉아 윗몸 앞으로 굽히기", assessment.sit_and_reach, "cm", "mobility"),
-            ("어깨 유연성", assessment.shoulder_flexibility, "cm", "mobility"),
-            ("한 발 서기", assessment.single_leg_stand, "초", "balance"),
-            ("TUG 테스트", assessment.tug, "초", "balance"),
-            ("악력 (좌)", assessment.grip_strength_left, "kg", "cardio"),
-            ("악력 (우)", assessment.grip_strength_right, "kg", "cardio"),
+            ("오버헤드 스쿼트", assessment.overhead_squat_score, "점", "strength"),
+            ("푸쉬업", assessment.push_up_reps, "회", "strength"),
+            ("발끝 닿기", assessment.toe_touch_distance, "cm", "mobility"),
+            ("어깨 유연성", assessment.shoulder_mobility_score, "점", "mobility"),
+            ("한발 서기 (우-눈뜨고)", assessment.single_leg_balance_right_eyes_open, "초", "balance"),
+            ("한발 서기 (좌-눈뜨고)", assessment.single_leg_balance_left_eyes_open, "초", "balance"),
+            ("한발 서기 (우-눈감고)", assessment.single_leg_balance_right_eyes_closed, "초", "balance"),
+            ("한발 서기 (좌-눈감고)", assessment.single_leg_balance_left_eyes_closed, "초", "balance"),
+            ("파머스 캐리", assessment.farmer_carry_time, "초", "strength"),
+            ("하버드 스텝 테스트", self._get_harvard_step_score(assessment), "점", "cardio"),
         ]
         
         results = []
@@ -248,6 +216,12 @@ class ReportGenerator:
                 })
         
         return results
+    
+    def _get_harvard_step_score(self, assessment: Assessment) -> Optional[int]:
+        """Get Harvard step test score"""
+        if hasattr(assessment, '_harvard_step_test_score'):
+            return assessment._harvard_step_test_score
+        return None
     
     def _get_grade(self, value: float, category: str) -> tuple:
         """Get grade and CSS class based on value"""
@@ -267,7 +241,7 @@ class ReportGenerator:
         suggestions = {}
         
         # Strength suggestions
-        if scores['strength_score'] < 60:
+        if scores['strength'] < 3:
             suggestions['strength'] = [
                 "주 3회 이상 근력 운동 실시",
                 "점진적 과부하 원칙 적용",
@@ -275,7 +249,7 @@ class ReportGenerator:
             ]
         
         # Mobility suggestions
-        if scores['mobility_score'] < 60:
+        if scores['mobility'] < 3:
             suggestions['mobility'] = [
                 "매일 10-15분 스트레칭",
                 "요가나 필라테스 병행",
@@ -283,7 +257,7 @@ class ReportGenerator:
             ]
         
         # Balance suggestions
-        if scores['balance_score'] < 60:
+        if scores['balance'] < 3:
             suggestions['balance'] = [
                 "균형 감각 향상 운동",
                 "코어 강화 운동 추가",
@@ -291,7 +265,7 @@ class ReportGenerator:
             ]
         
         # Cardio suggestions
-        if scores['cardio_score'] < 60:
+        if scores['cardio'] < 3:
             suggestions['cardio'] = [
                 "주 150분 이상 유산소 운동",
                 "인터벌 트레이닝 도입",

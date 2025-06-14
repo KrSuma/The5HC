@@ -44,6 +44,9 @@ python manage.py createsuperuser
 
 # Run API tests
 python run_api_tests.py
+
+# Recalculate assessment scores
+python manage.py recalculate_scores [--dry-run] [--assessment-id ID]
 ```
 
 ### Key Technologies
@@ -64,6 +67,34 @@ python run_api_tests.py
 - ✅ Phase 4: PDF generation and data migration - COMPLETE
 - ✅ Phase 5: API development and testing - COMPLETE
 - ✅ Phase 6: Production deployment - COMPLETE (2025-01-11)
+
+### Recent Completed Features
+
+#### 2025-06-14
+- ✅ PDF Report Generation Implementation (COMPLETE)
+  - Fixed integration between assessments and reports apps
+  - Removed conflicting URL patterns
+  - Updated field mappings in report service
+  - PDF generation now fully functional with Korean support
+- ✅ HTMX Navigation Pattern Standardization (COMPLETE)
+  - Fixed duplicate header/footer issues across multiple views
+  - Created content-only templates for HTMX navigation
+  - Implemented proper detection of navigation vs partial requests
+  - Created comprehensive documentation at `docs/HTMX_NAVIGATION_PATTERN.md`
+  - Fixed views: Assessment list, Client add/edit/detail
+
+#### 2025-06-13
+- ✅ Assessment Score Calculation Implementation (COMPLETE)
+  - ✅ Phase 1: Model field updates for proper scoring
+  - ✅ Phase 2: Implement calculate_scores() method
+  - ✅ Phase 3: Form and UI updates for score display
+  - ✅ Phase 4: Data migration for existing assessments (All 6 assessments updated)
+  - ✅ Phase 5: Testing and validation (pytest configuration fixed)
+
+### Known Issues & Fixes
+
+- **pytest-asyncio incompatibility**: Removed from requirements.txt due to AttributeError with Package objects. Tests now run successfully without it.
+- **HTMX Navigation Pattern**: Fixed duplicate header/footer issues by implementing content-only templates for HTMX navigation. See `docs/HTMX_NAVIGATION_PATTERN.md` for implementation guide.
 
 ### Important Files
 
@@ -138,7 +169,11 @@ The5HC/
 │   │   ├── troubleshooting/      # Troubleshooting
 │   │   └── workflow/             # Workflows
 │   ├── project/                   # Project guidelines
-│   └── migration/                 # Migration docs
+│   ├── migration/                 # Migration docs
+│   ├── HTMX_NAVIGATION_PATTERN.md # HTMX navigation guide
+│   ├── ASSESSMENT_SCORING_ALGORITHMS.md # Scoring documentation
+│   ├── PYTEST_FIX_LOG.md          # pytest troubleshooting
+│   └── SCORING_VALIDATION_EXAMPLES.md # Score validation
 ├── logs/                          # All logs (consolidated)
 │   ├── migration/                 # Migration phase logs
 │   ├── feature/                   # Feature implementation logs
@@ -166,6 +201,6 @@ Total Project Structure:
 - Templates: 30+ HTML files with HTMX/Alpine.js  
 - Tests: 70+ test files with pytest
 - Documentation: 25+ markdown files (organized)
-- Logs: 30+ log files (consolidated)
+- Logs: 54 log files (organized in subdirectories)
 - API Endpoints: 8+ RESTful endpoints with JWT auth
 ```

@@ -25,11 +25,11 @@ class AssessmentForm(forms.ModelForm):
             'shoulder_mobility_right', 'shoulder_mobility_left', 
             'shoulder_mobility_score', 'shoulder_mobility_notes',
             # Farmer's Carry
-            'farmer_carry_weight', 'farmer_carry_distance',
+            'farmer_carry_weight', 'farmer_carry_distance', 'farmer_carry_time',
             'farmer_carry_score', 'farmer_carry_notes',
             # Harvard Step Test
-            'harvard_step_test_heart_rate', 'harvard_step_test_duration',
-            'harvard_step_test_notes'
+            'harvard_step_test_hr1', 'harvard_step_test_hr2', 'harvard_step_test_hr3',
+            'harvard_step_test_duration', 'harvard_step_test_notes'
         ]
         
         widgets = {
@@ -204,6 +204,15 @@ class AssessmentForm(forms.ModelForm):
                     '@input': 'calculateFarmerScore()'
                 }
             ),
+            'farmer_carry_time': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '초',
+                    'min': 0,
+                    'x-model': 'farmerTime',
+                    '@input': 'calculateFarmerScore()'
+                }
+            ),
             'farmer_carry_score': forms.NumberInput(
                 attrs={
                     'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100',
@@ -220,12 +229,34 @@ class AssessmentForm(forms.ModelForm):
             ),
             
             # Harvard Step Test
-            'harvard_step_test_heart_rate': forms.NumberInput(
+            'harvard_step_test_hr1': forms.NumberInput(
                 attrs={
                     'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
-                    'placeholder': 'bpm',
+                    'placeholder': '1-1.5분 후 심박수',
                     'min': 40,
-                    'max': 250
+                    'max': 250,
+                    'x-model': 'harvardHR1',
+                    '@input': 'calculateHarvardScore()'
+                }
+            ),
+            'harvard_step_test_hr2': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '2-2.5분 후 심박수',
+                    'min': 40,
+                    'max': 250,
+                    'x-model': 'harvardHR2',
+                    '@input': 'calculateHarvardScore()'
+                }
+            ),
+            'harvard_step_test_hr3': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '3-3.5분 후 심박수',
+                    'min': 40,
+                    'max': 250,
+                    'x-model': 'harvardHR3',
+                    '@input': 'calculateHarvardScore()'
                 }
             ),
             'harvard_step_test_duration': forms.NumberInput(
@@ -267,8 +298,11 @@ class AssessmentForm(forms.ModelForm):
             'shoulder_mobility_score': 3,
             'farmer_carry_weight': 20,
             'farmer_carry_distance': 20,
+            'farmer_carry_time': 30,
             'farmer_carry_score': 3,
-            'harvard_step_test_heart_rate': 80,
+            'harvard_step_test_hr1': 80,
+            'harvard_step_test_hr2': 75,
+            'harvard_step_test_hr3': 70,
             'harvard_step_test_duration': 180,
         }
         

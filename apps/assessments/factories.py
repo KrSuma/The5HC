@@ -59,11 +59,15 @@ class AssessmentFactory(DjangoModelFactory):
     # Farmer's Carry Test
     farmer_carry_weight = factory.LazyFunction(lambda: round(random.uniform(10.0, 50.0), 1))
     farmer_carry_distance = factory.LazyFunction(lambda: round(random.uniform(20.0, 100.0), 1))
+    farmer_carry_time = factory.LazyFunction(lambda: random.randint(20, 60))
     farmer_carry_score = factory.LazyFunction(lambda: random.randint(1, 5))
     farmer_carry_notes = factory.LazyFunction(lambda: fake.sentence())
     
     # Harvard Step Test
-    harvard_step_test_heart_rate = factory.LazyFunction(lambda: random.randint(120, 180))
+    # Harvard Step Test - now split into 3 heart rate measurements
+    harvard_step_test_hr1 = factory.LazyFunction(lambda: random.randint(120, 180))
+    harvard_step_test_hr2 = factory.LazyFunction(lambda: random.randint(115, 175))
+    harvard_step_test_hr3 = factory.LazyFunction(lambda: random.randint(110, 170))
     harvard_step_test_duration = factory.LazyFunction(lambda: round(random.uniform(60.0, 300.0), 1))
     harvard_step_test_notes = factory.LazyFunction(lambda: fake.sentence())
     
@@ -123,8 +127,12 @@ class HighScoreAssessmentFactory(AssessmentFactory):
     shoulder_mobility_score = factory.LazyFunction(lambda: random.randint(4, 5))
     farmer_carry_weight = factory.LazyFunction(lambda: round(random.uniform(30.0, 50.0), 1))
     farmer_carry_distance = factory.LazyFunction(lambda: round(random.uniform(80.0, 100.0), 1))
+    farmer_carry_time = factory.LazyFunction(lambda: random.randint(20, 35))
     farmer_carry_score = factory.LazyFunction(lambda: random.randint(4, 5))
-    harvard_step_test_heart_rate = factory.LazyFunction(lambda: random.randint(120, 140))
+    # Harvard Step Test - good fitness
+    harvard_step_test_hr1 = factory.LazyFunction(lambda: random.randint(120, 140))
+    harvard_step_test_hr2 = factory.LazyFunction(lambda: random.randint(115, 135))
+    harvard_step_test_hr3 = factory.LazyFunction(lambda: random.randint(110, 130))
     overall_score = factory.LazyFunction(lambda: round(random.uniform(4.0, 5.0), 1))
     strength_score = factory.LazyFunction(lambda: round(random.uniform(4.0, 5.0), 1))
     mobility_score = factory.LazyFunction(lambda: round(random.uniform(4.0, 5.0), 1))
@@ -149,8 +157,12 @@ class LowScoreAssessmentFactory(AssessmentFactory):
     shoulder_mobility_score = factory.LazyFunction(lambda: random.randint(1, 2))
     farmer_carry_weight = factory.LazyFunction(lambda: round(random.uniform(5.0, 15.0), 1))
     farmer_carry_distance = factory.LazyFunction(lambda: round(random.uniform(10.0, 30.0), 1))
+    farmer_carry_time = factory.LazyFunction(lambda: random.randint(45, 80))
     farmer_carry_score = factory.LazyFunction(lambda: random.randint(1, 2))
-    harvard_step_test_heart_rate = factory.LazyFunction(lambda: random.randint(160, 200))
+    # Harvard Step Test - poor fitness
+    harvard_step_test_hr1 = factory.LazyFunction(lambda: random.randint(160, 200))
+    harvard_step_test_hr2 = factory.LazyFunction(lambda: random.randint(155, 195))
+    harvard_step_test_hr3 = factory.LazyFunction(lambda: random.randint(150, 190))
     overall_score = factory.LazyFunction(lambda: round(random.uniform(1.0, 2.5), 1))
     strength_score = factory.LazyFunction(lambda: round(random.uniform(1.0, 2.5), 1))
     mobility_score = factory.LazyFunction(lambda: round(random.uniform(1.0, 2.5), 1))
@@ -176,8 +188,11 @@ class IncompleteAssessmentFactory(AssessmentFactory):
     shoulder_mobility_score = None
     farmer_carry_weight = None
     farmer_carry_distance = None
+    farmer_carry_time = None
     farmer_carry_score = None
-    harvard_step_test_heart_rate = None
+    harvard_step_test_hr1 = None
+    harvard_step_test_hr2 = None
+    harvard_step_test_hr3 = None
     harvard_step_test_duration = None
     
     # Clear calculated scores

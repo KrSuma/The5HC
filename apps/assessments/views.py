@@ -17,7 +17,8 @@ from apps.clients.models import Client
 from .scoring import (
     calculate_pushup_score, calculate_single_leg_balance_score,
     calculate_toe_touch_score, calculate_farmers_carry_score,
-    calculate_category_scores, get_score_description
+    calculate_step_test_score, calculate_category_scores, 
+    get_score_description
 )
 
 # Check if WeasyPrint is available
@@ -74,19 +75,26 @@ def assessment_list_view(request):
         avg_score=Avg('overall_score')
     )
     
-    # HTMX handling
-    if request.headers.get('HX-Request'):
-        html = render_to_string(
-            'assessments/assessment_list_partial.html',
-            {'page_obj': page_obj, 'request': request}
-        )
-        return HttpResponse(html)
-    
     context = {
         'form': form,
         'page_obj': page_obj,
         'stats': stats
     }
+    
+    # HTMX handling - return full content for navigation, partial for pagination/search
+    if request.headers.get('HX-Request'):
+        # Check if this is a navigation request or just pagination/search
+        if request.headers.get('HX-Target') == 'main-content':
+            # Navigation request - return content without base.html
+            return render(request, 'assessments/assessment_list_content.html', context)
+        else:
+            # Pagination/search - return only the table
+            html = render_to_string(
+                'assessments/assessment_list_partial.html',
+                {'page_obj': page_obj, 'request': request}
+            )
+            return HttpResponse(html)
+    
     return render(request, 'assessments/assessment_list.html', context)
 
 
@@ -266,6 +274,23 @@ def calculate_farmer_score_ajax(request):
         return JsonResponse({'error': str(e)}, status=400)
 
 
+def calculate_harvard_score_ajax(request):
+    """AJAX endpoint to calculate Harvard Step Test score"""
+    try:
+        hr1 = int(request.GET.get('hr1', 0))
+        hr2 = int(request.GET.get('hr2', 0))
+        hr3 = int(request.GET.get('hr3', 0))
+        
+        score, pfi = calculate_step_test_score(hr1, hr2, hr3)
+        
+        return JsonResponse({
+            'score': score,
+            'pfi': round(pfi, 2)
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
 @login_required
 def assessment_delete_view(request, pk):
     """Delete assessment"""
@@ -282,18 +307,3 @@ def assessment_delete_view(request, pk):
     return render(request, 'assessments/assessment_confirm_delete.html', {
         'assessment': assessment
     })
-
-
-@login_required
-def assessment_report_view(request, pk):
-    """Generate PDF report for assessment"""
-    assessment = get_object_or_404(
-        Assessment.objects.select_related('client', 'trainer'),
-        pk=pk,
-        trainer=request.user
-    )
-    
-    # TODO: Implement PDF generation using WeasyPrint
-    # For now, redirect to detail view
-    messages.info(request, 'PDF 리포트 기능은 준비 중입니다.')
-    return redirect('assessments:detail', pk=pk)

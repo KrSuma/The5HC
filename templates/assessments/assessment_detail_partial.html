@@ -166,7 +166,7 @@
                             {% if assessment.farmer_carry_weight is not None %}
                             <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
                                 <span class="text-sm text-gray-600">파머스 캐리</span>
-                                <span class="font-medium">{{ assessment.farmer_carry_weight }}kg, {{ assessment.farmer_carry_distance }}m (점수: {{ assessment.farmer_carry_score|default:"-" }}/5)</span>
+                                <span class="font-medium">{{ assessment.farmer_carry_weight }}kg, {{ assessment.farmer_carry_distance }}m, {{ assessment.farmer_carry_time }}초 (점수: {{ assessment.farmer_carry_score|default:"-" }}/5)</span>
                             </div>
                             {% endif %}
                         </div>
@@ -218,10 +218,10 @@
                     <div>
                         <h3 class="text-md font-semibold text-gray-700 mb-3">심폐 평가</h3>
                         <div class="space-y-3">
-                            {% if assessment.harvard_step_test_heart_rate is not None %}
+                            {% if assessment.harvard_step_test_hr1 is not None %}
                             <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
                                 <span class="text-sm text-gray-600">하버드 스텝 테스트</span>
-                                <span class="font-medium">심박수: {{ assessment.harvard_step_test_heart_rate }}bpm, 지속시간: {{ assessment.harvard_step_test_duration }}초</span>
+                                <span class="font-medium text-sm">심박수: 1-1.5분 {{ assessment.harvard_step_test_hr1 }}bpm, 2-2.5분 {{ assessment.harvard_step_test_hr2 }}bpm, 3-3.5분 {{ assessment.harvard_step_test_hr3 }}bpm, 지속시간: {{ assessment.harvard_step_test_duration }}초</span>
                             </div>
                             {% endif %}
                         </div>
