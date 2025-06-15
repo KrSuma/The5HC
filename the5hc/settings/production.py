@@ -22,7 +22,9 @@ if config('DATABASE_URL', default=''):
     )
 
 # Static files handling with whitenoise
-MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+# Find the position of SecurityMiddleware and insert WhiteNoise after it
+security_index = MIDDLEWARE.index('django.middleware.security.SecurityMiddleware')
+MIDDLEWARE.insert(security_index + 1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Compress settings
