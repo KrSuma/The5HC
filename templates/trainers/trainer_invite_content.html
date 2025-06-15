@@ -1,0 +1,146 @@
+<div id="main-content">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-900">트레이너 초대</h1>
+        <p class="mt-2 text-sm text-gray-600">{{ organization.name }}에 새로운 트레이너를 초대합니다.</p>
+    </div>
+
+    <!-- Invitation Form -->
+    <div class="bg-white shadow rounded-lg p-6 mb-8">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">새 트레이너 초대</h2>
+        
+        <form method="post" 
+              hx-post="{% url 'trainers:invite' %}"
+              hx-target="#main-content"
+              hx-swap="innerHTML">
+            {% csrf_token %}
+            
+            <div class="space-y-4">
+                <!-- Email -->
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        이메일 주소
+                    </label>
+                    <input type="email" 
+                           name="{{ form.email.name }}" 
+                           id="{{ form.email.id_for_label }}"
+                           value="{{ form.email.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                           required>
+                    {% if form.email.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Role -->
+                <div>
+                    <label for="{{ form.role.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        역할
+                    </label>
+                    <select name="{{ form.role.name }}" 
+                            id="{{ form.role.id_for_label }}"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        {% for value, label in form.role.field.choices %}
+                            <option value="{{ value }}" {% if form.role.value == value %}selected{% endif %}>
+                                {% if value == 'admin' %}관리자{% elif value == 'senior' %}시니어 트레이너{% else %}트레이너{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.role.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.role.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Message -->
+                <div>
+                    <label for="{{ form.message.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        초대 메시지 (선택사항)
+                    </label>
+                    <textarea name="{{ form.message.name }}" 
+                              id="{{ form.message.id_for_label }}"
+                              rows="3"
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">{{ form.message.value|default:'' }}</textarea>
+                    {% if form.message.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.message.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <a href="{% url 'trainers:list' %}" 
+                   class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    취소
+                </a>
+                <button type="submit" 
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    초대 보내기
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Pending Invitations -->
+    {% if pending_invitations %}
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">대기 중인 초대</h2>
+        
+        <div class="overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            이메일
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            역할
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            초대일
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            만료일
+                        </th>
+                        <th class="relative px-6 py-3">
+                            <span class="sr-only">작업</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for invitation in pending_invitations %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ invitation.email }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if invitation.role == 'admin' %}관리자
+                            {% elif invitation.role == 'senior' %}시니어 트레이너
+                            {% else %}트레이너{% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ invitation.created_at|date:"Y-m-d" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ invitation.expires_at|date:"Y-m-d" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <form method="post" 
+                                  action="{% url 'trainers:invitation_cancel' invitation.pk %}"
+                                  hx-post="{% url 'trainers:invitation_cancel' invitation.pk %}"
+                                  hx-target="#main-content"
+                                  hx-swap="innerHTML"
+                                  class="inline">
+                                {% csrf_token %}
+                                <button type="submit" 
+                                        class="text-red-600 hover:text-red-900"
+                                        onclick="return confirm('이 초대를 취소하시겠습니까?');">
+                                    취소
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
