@@ -5,8 +5,8 @@
     <!-- Header -->
     <div class="mb-8 flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">{{ organization.name }} {% trans "Dashboard" %}</h1>
-            <p class="mt-2 text-gray-600">{% trans "Organization performance overview" %}</p>
+            <h1 class="text-3xl font-bold text-gray-900">{{ organization.name }} 대시보드</h1>
+            <p class="mt-2 text-gray-600">조직 성과 개요</p>
         </div>
         <div class="flex space-x-3">
             <a href="{% url 'trainers:organization_edit' %}"
@@ -18,7 +18,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
-                {% trans "Settings" %}
+                설정
             </a>
         </div>
     </div>
@@ -29,9 +29,9 @@
         <div class="bg-white rounded-lg shadow p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">{% trans "Total Trainers" %}</p>
+                    <p class="text-sm font-medium text-gray-600">전체 트레이너</p>
                     <p class="text-2xl font-bold text-gray-900">{{ total_trainers }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{% trans "Active" %}: {{ total_trainers }} / {{ organization.max_trainers }}</p>
+                    <p class="text-xs text-gray-500 mt-1">활성: {{ total_trainers }} / {{ organization.max_trainers }}</p>
                 </div>
                 <div class="bg-purple-100 p-3 rounded-full">
                     <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,9 +45,9 @@
         <div class="bg-white rounded-lg shadow p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">{% trans "Active Clients" %}</p>
+                    <p class="text-sm font-medium text-gray-600">활성 회원</p>
                     <p class="text-2xl font-bold text-gray-900">{{ active_clients }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{% trans "New this month" %}: +{{ new_clients_this_month }}</p>
+                    <p class="text-xs text-gray-500 mt-1">이번 달 신규: +{{ new_clients_this_month }}</p>
                 </div>
                 <div class="bg-blue-100 p-3 rounded-full">
                     <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -61,9 +61,9 @@
         <div class="bg-white rounded-lg shadow p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">{% trans "Monthly Revenue" %}</p>
+                    <p class="text-sm font-medium text-gray-600">월 매출</p>
                     <p class="text-2xl font-bold text-gray-900">₩{{ revenue_this_month|intcomma }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{% trans "Total" %}: ₩{{ total_revenue|intcomma }}</p>
+                    <p class="text-xs text-gray-500 mt-1">전체: ₩{{ total_revenue|intcomma }}</p>
                 </div>
                 <div class="bg-green-100 p-3 rounded-full">
                     <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,9 +77,9 @@
         <div class="bg-white rounded-lg shadow p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">{% trans "Sessions This Month" %}</p>
+                    <p class="text-sm font-medium text-gray-600">이번 달 세션</p>
                     <p class="text-2xl font-bold text-gray-900">{{ sessions_this_month }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{% trans "Active packages" %}: {{ active_packages }}</p>
+                    <p class="text-xs text-gray-500 mt-1">활성 패키지: {{ active_packages }}</p>
                 </div>
                 <div class="bg-orange-100 p-3 rounded-full">
                     <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,27 +93,27 @@
     <!-- Trainer Performance Table -->
     <div class="bg-white rounded-lg shadow mb-8">
         <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-medium text-gray-900">{% trans "Trainer Performance" %}</h2>
-            <p class="text-sm text-gray-500 mt-1">{% trans "Monthly performance metrics by trainer" %}</p>
+            <h2 class="text-lg font-medium text-gray-900">트레이너 성과</h2>
+            <p class="text-sm text-gray-500 mt-1">트레이너별 월간 성과 지표</p>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {% trans "Trainer" %}
+                            트레이너
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {% trans "Active Clients" %}
+                            활성 회원
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {% trans "Assessments" %}
+                            평가
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {% trans "Sessions (Month)" %}
+                            세션 (월)
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {% trans "Revenue (Month)" %}
+                            매출 (월)
                         </th>
                     </tr>
                 </thead>
@@ -165,8 +165,8 @@
     <!-- Recent Activity -->
     <div class="bg-white rounded-lg shadow">
         <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-medium text-gray-900">{% trans "Recent Activity" %}</h2>
-            <p class="text-sm text-gray-500 mt-1">{% trans "Latest actions across the organization" %}</p>
+            <h2 class="text-lg font-medium text-gray-900">최근 활동</h2>
+            <p class="text-sm text-gray-500 mt-1">조직 전체의 최신 활동</p>
         </div>
         <div class="max-h-96 overflow-y-auto">
             <ul class="divide-y divide-gray-200">
@@ -179,7 +179,7 @@
                                     {{ activity.user.get_full_name|default:activity.user.email }}
                                 </h3>
                                 <p class="text-sm text-gray-500">
-                                    {{ activity.created_at|timesince }} {% trans "ago" %}
+                                    {{ activity.created_at|timesince }} 전
                                 </p>
                             </div>
                             <p class="text-sm text-gray-500">
@@ -193,7 +193,7 @@
                 </li>
                 {% empty %}
                 <li class="px-6 py-4 text-sm text-gray-500 text-center">
-                    {% trans "No recent activity" %}
+                    최근 활동이 없습니다
                 </li>
                 {% endfor %}
             </ul>
