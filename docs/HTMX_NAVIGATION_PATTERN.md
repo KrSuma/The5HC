@@ -83,11 +83,15 @@ def my_view(request):
    - `assessment_list.html` (full page)
    - `assessment_list_content.html` (content only)
 
-2. **Client Add/Edit** (`apps/clients/views.py`)
+2. **Assessment Add** (`apps/assessments/views.py`)
+   - `assessment_form.html` (full page)
+   - `assessment_form_content.html` (content only)
+
+3. **Client Add/Edit** (`apps/clients/views.py`)
    - `client_form.html` (full page)
    - `client_form_content.html` (content only)
 
-3. **Client Detail** (`apps/clients/views.py`)
+4. **Client Detail** (`apps/clients/views.py`)
    - `client_detail.html` (full page)
    - `client_detail_content.html` (content only)
 

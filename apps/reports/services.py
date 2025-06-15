@@ -131,7 +131,7 @@ class ReportGenerator:
         # Get font path
         font_path = os.path.join(settings.STATIC_ROOT or settings.STATICFILES_DIRS[0], 'fonts')
         
-        # CSS for Korean font
+        # CSS for Korean font and page setup
         font_css = CSS(string=f'''
             @font-face {{
                 font-family: 'NanumGothic';
@@ -143,8 +143,21 @@ class ReportGenerator:
                 src: url('file://{font_path}/NanumGothicBold.ttf');
                 font-weight: bold;
             }}
+            @page {{
+                size: A4;
+                margin: 15mm 15mm 15mm 15mm;
+            }}
             body {{
                 font-family: 'NanumGothic', 'Noto Sans KR', sans-serif;
+                margin: 0;
+                padding: 0;
+            }}
+            .page {{
+                width: 100%;
+                max-width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
             }}
         ''', font_config=self.font_config)
         

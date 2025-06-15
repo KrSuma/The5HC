@@ -24,7 +24,7 @@
                     <li>
                         <span class="mx-2 text-gray-400">/</span>
                         <a href="{% url 'assessments:detail' assessment.id %}" class="text-gray-500 hover:text-gray-700">
-                            평가 ({{ assessment.assessment_date|date:"Y-m-d" }})
+                            평가 ({{ assessment.date|date:"Y-m-d" }})
                         </a>
                     </li>
                     <li>
@@ -47,7 +47,7 @@
                     </div>
                     <div>
                         <dt class="text-sm font-medium text-gray-500">평가일</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ assessment.assessment_date|date:"Y년 m월 d일" }}</dd>
+                        <dd class="mt-1 text-sm text-gray-900">{{ assessment.date|date:"Y년 m월 d일" }}</dd>
                     </div>
                     <div>
                         <dt class="text-sm font-medium text-gray-500">종합 점수</dt>

@@ -1,0 +1,78 @@
+{% load i18n %}
+
+<li class="px-6 py-4 {% if not notification.is_read %}bg-blue-50{% else %}bg-white{% endif %} hover:bg-gray-50">
+    <div class="flex items-start space-x-4">
+        <div class="flex-shrink-0">
+            {% if notification.notification_type == 'client_added' %}
+            <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                </svg>
+            </div>
+            {% elif notification.notification_type == 'assessment_completed' %}
+            <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                </svg>
+            </div>
+            {% elif notification.notification_type == 'payment_received' %}
+            <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            {% elif notification.notification_type == 'trainer_invited' or notification.notification_type == 'trainer_joined' %}
+            <div class="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+            {% else %}
+            <div class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            {% endif %}
+        </div>
+        <div class="flex-1 min-w-0">
+            {% if notification.action_url %}
+            <a href="{{ notification.action_url }}"
+               hx-get="{{ notification.action_url }}"
+               hx-target="#main-content"
+               hx-push-url="true"
+               class="block focus:outline-none">
+            {% endif %}
+                <p class="text-sm font-medium text-gray-900 {% if not notification.is_read %}font-semibold{% endif %}">
+                    {{ notification.title }}
+                </p>
+                <p class="text-sm text-gray-600 mt-1">
+                    {{ notification.message }}
+                </p>
+                <p class="text-xs text-gray-500 mt-2">
+                    {{ notification.created_at|timesince }} {% trans "ago" %}
+                    {% if notification.is_read %}
+                    • {% trans "Read" %} {{ notification.read_at|timesince }} {% trans "ago" %}
+                    {% endif %}
+                </p>
+            {% if notification.action_url %}
+            </a>
+            {% endif %}
+        </div>
+        {% if not notification.is_read %}
+        <div class="flex-shrink-0">
+            <form method="post" 
+                  action="{% url 'trainers:notification_mark_read' notification.pk %}"
+                  hx-post="{% url 'trainers:notification_mark_read' notification.pk %}"
+                  hx-target="closest li"
+                  hx-swap="outerHTML">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="text-xs text-blue-600 hover:text-blue-800">
+                    {% trans "Mark as read" %}
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</li>

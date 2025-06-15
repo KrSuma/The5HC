@@ -28,6 +28,7 @@ urlpatterns = [
     path('assessments/', include('apps.assessments.urls', namespace='assessments')),
     path('sessions/', include('apps.sessions.urls', namespace='sessions')),
     path('reports/', include('apps.reports.urls', namespace='reports')),
+    path('trainers/', include('apps.trainers.urls', namespace='trainers')),
     
     # API URLs
     path('api/v1/', include('apps.api.urls', namespace='api')),

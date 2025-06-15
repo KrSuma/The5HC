@@ -63,6 +63,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
     'apps.accounts.middleware.AuthenticationMiddleware',  # Custom auth middleware
+    'apps.trainers.middleware.TrainerContextMiddleware',  # Trainer context middleware
 ]
 
 ROOT_URLCONF = 'the5hc.urls'

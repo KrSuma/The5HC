@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}{% trans "Analytics" %} - {{ trainer.get_display_name }}{% endblock %}
+
+{% block content %}
+<div id="main-content">
+    {% include 'trainers/trainer_analytics_content.html' %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}

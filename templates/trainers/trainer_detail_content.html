@@ -1,0 +1,225 @@
+{% load i18n %}
+
+<div class="px-4 py-6 sm:px-6 lg:px-8">
+    <!-- Back button -->
+    <div class="mb-4">
+        <a href="{% url 'trainers:list' %}"
+           hx-get="{% url 'trainers:list' %}"
+           hx-target="#main-content"
+           hx-push-url="true"
+           class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700">
+            <svg class="mr-1 -ml-1 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+            </svg>
+            {% trans "Back to Trainers" %}
+        </a>
+    </div>
+
+    <!-- Profile Header -->
+    <div class="lg:flex lg:items-center lg:justify-between">
+        <div class="min-w-0 flex-1">
+            <div class="flex items-center">
+                {% if trainer.profile_photo %}
+                <img class="h-16 w-16 rounded-full" src="{{ trainer.profile_photo.url }}" alt="">
+                {% else %}
+                <div class="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center">
+                    <span class="text-gray-600 font-medium text-xl">
+                        {{ trainer.user.first_name|slice:":1" }}{{ trainer.user.last_name|slice:":1" }}
+                    </span>
+                </div>
+                {% endif %}
+                <div class="ml-4">
+                    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                        {{ trainer.get_display_name }}
+                    </h2>
+                    <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
+                        <div class="mt-2 flex items-center text-sm text-gray-500">
+                            <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset
+                                {% if trainer.role == 'owner' %}bg-purple-50 text-purple-700 ring-purple-600/20
+                                {% elif trainer.role == 'senior' %}bg-blue-50 text-blue-700 ring-blue-600/20
+                                {% elif trainer.role == 'trainer' %}bg-green-50 text-green-700 ring-green-600/20
+                                {% else %}bg-gray-50 text-gray-700 ring-gray-600/20{% endif %}">
+                                {{ trainer.get_role_display }}
+                            </span>
+                        </div>
+                        {% if not trainer.is_active %}
+                        <div class="mt-2 flex items-center text-sm text-gray-500">
+                            <span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">
+                                {% trans "Inactive" %}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-5 flex lg:ml-4 lg:mt-0">
+            {% if is_own_profile or can_manage %}
+            <span class="sm:ml-3">
+                <a href="{% url 'trainers:edit' trainer.pk %}"
+                   hx-get="{% url 'trainers:edit' trainer.pk %}"
+                   hx-target="#main-content"
+                   hx-push-url="true"
+                   class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
+                    </svg>
+                    {% trans "Edit Profile" %}
+                </a>
+            </span>
+            {% endif %}
+            
+            <span class="sm:ml-3">
+                <a href="{% url 'trainers:trainer_analytics' trainer.pk %}"
+                   hx-get="{% url 'trainers:trainer_analytics' trainer.pk %}"
+                   hx-target="#main-content"
+                   hx-push-url="true"
+                   class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M13 7H7v6h6V7z" />
+                        <path fill-rule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 110-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clip-rule="evenodd" />
+                    </svg>
+                    {% trans "View Analytics" %}
+                </a>
+            </span>
+            
+            {% if can_manage and not is_own_profile and trainer.is_active %}
+            <span class="ml-3" x-data="{ showConfirm: false }">
+                <button @click="showConfirm = true"
+                        x-show="!showConfirm"
+                        class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                    {% trans "Deactivate" %}
+                </button>
+                <form method="post" 
+                      action="{% url 'trainers:deactivate' trainer.pk %}"
+                      x-show="showConfirm"
+                      class="inline-flex items-center gap-2">
+                    {% csrf_token %}
+                    <span class="text-sm text-red-600">{% trans "Are you sure?" %}</span>
+                    <button type="submit"
+                            class="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500">
+                        {% trans "Yes, Deactivate" %}
+                    </button>
+                    <button type="button"
+                            @click="showConfirm = false"
+                            class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                        {% trans "Cancel" %}
+                    </button>
+                </form>
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt class="truncate text-sm font-medium text-gray-500">{% trans "Total Clients" %}</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ stats.total_clients }}</dd>
+        </div>
+        <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt class="truncate text-sm font-medium text-gray-500">{% trans "Active Packages" %}</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ stats.active_packages }}</dd>
+        </div>
+        <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt class="truncate text-sm font-medium text-gray-500">{% trans "Total Sessions" %}</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ stats.total_sessions }}</dd>
+        </div>
+        <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt class="truncate text-sm font-medium text-gray-500">{% trans "Assessments" %}</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ stats.assessments }}</dd>
+        </div>
+    </div>
+
+    <!-- Profile Information -->
+    <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <!-- Basic Information -->
+        <div class="bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6">
+                <h3 class="text-base font-semibold leading-6 text-gray-900">{% trans "Basic Information" %}</h3>
+            </div>
+            <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
+                <dl class="sm:divide-y sm:divide-gray-200">
+                    <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 sm:py-5">
+                        <dt class="text-sm font-medium text-gray-500">{% trans "Email" %}</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ trainer.user.email }}</dd>
+                    </div>
+                    <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 sm:py-5">
+                        <dt class="text-sm font-medium text-gray-500">{% trans "Organization" %}</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                            {{ trainer.organization.name|default:"-" }}
+                        </dd>
+                    </div>
+                    <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 sm:py-5">
+                        <dt class="text-sm font-medium text-gray-500">{% trans "Years of Experience" %}</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                            {% if trainer.years_of_experience > 0 %}
+                                {{ trainer.years_of_experience }} {% trans "years" %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 sm:py-5">
+                        <dt class="text-sm font-medium text-gray-500">{% trans "Session Price" %}</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                            ₩{{ trainer.session_price|floatformat:"0" }}
+                        </dd>
+                    </div>
+                    <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 sm:py-5">
+                        <dt class="text-sm font-medium text-gray-500">{% trans "Member Since" %}</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                            {{ trainer.created_at|date:"Y-m-d" }}
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Professional Information -->
+        <div class="bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6">
+                <h3 class="text-base font-semibold leading-6 text-gray-900">{% trans "Professional Information" %}</h3>
+            </div>
+            <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+                <!-- Bio -->
+                <div class="mb-4">
+                    <h4 class="text-sm font-medium text-gray-500 mb-2">{% trans "Biography" %}</h4>
+                    <p class="text-sm text-gray-900">
+                        {{ trainer.bio|default:"-"|linebreaks }}
+                    </p>
+                </div>
+
+                <!-- Certifications -->
+                <div class="mb-4">
+                    <h4 class="text-sm font-medium text-gray-500 mb-2">{% trans "Certifications" %}</h4>
+                    {% if trainer.certifications %}
+                        <ul class="list-disc list-inside text-sm text-gray-900">
+                            {% for cert in trainer.certifications %}
+                            <li>{{ cert }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-500">{% trans "No certifications listed" %}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Specialties -->
+                <div>
+                    <h4 class="text-sm font-medium text-gray-500 mb-2">{% trans "Specialties" %}</h4>
+                    {% if trainer.specialties %}
+                        <div class="flex flex-wrap gap-2">
+                            {% for specialty in trainer.specialties %}
+                            <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                {{ specialty }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-gray-500">{% trans "No specialties listed" %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

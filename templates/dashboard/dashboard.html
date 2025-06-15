@@ -428,7 +428,14 @@ function initializeDashboardCharts() {
 
 // Initialize charts when the page loads
 document.addEventListener('DOMContentLoaded', function() {
-    initializeDashboardCharts();
+    // Only initialize if charts exist
+    if (document.getElementById('weekly-sessions-chart') && document.getElementById('monthly-revenue-chart')) {
+        try {
+            initializeDashboardCharts();
+        } catch (error) {
+            console.error('Error initializing dashboard charts:', error);
+        }
+    }
 });
 
 // Also initialize charts when content is loaded via HTMX
@@ -436,7 +443,13 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
     // Check if the dashboard content was loaded
     if (document.getElementById('weekly-sessions-chart') && document.getElementById('monthly-revenue-chart')) {
         // Small delay to ensure DOM is ready
-        setTimeout(initializeDashboardCharts, 100);
+        setTimeout(function() {
+            try {
+                initializeDashboardCharts();
+            } catch (error) {
+                console.error('Error initializing dashboard charts after HTMX swap:', error);
+            }
+        }, 100);
     }
 });
 </script>

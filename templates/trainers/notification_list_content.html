@@ -1,0 +1,128 @@
+{% load i18n %}
+
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">{% trans "Notifications" %}</h1>
+            <p class="mt-2 text-gray-600">
+                {% if unread_count > 0 %}
+                    {% blocktrans count counter=unread_count %}{{ counter }} unread notification{% plural %}{{ counter }} unread notifications{% endblocktrans %}
+                {% else %}
+                    {% trans "All notifications are read" %}
+                {% endif %}
+            </p>
+        </div>
+        {% if unread_count > 0 %}
+        <form method="post" action="{% url 'trainers:notifications' %}">
+            {% csrf_token %}
+            <input type="hidden" name="mark_all_read" value="1">
+            <button type="submit" class="btn btn-secondary">
+                {% trans "Mark all as read" %}
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    
+    <!-- Notifications List -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul class="divide-y divide-gray-200">
+            {% for notification in page_obj %}
+            {% include 'trainers/notification_item.html' %}
+            {% empty %}
+            <li class="px-6 py-12">
+                <div class="text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-500">{% trans "No notifications yet" %}</p>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="mt-6 flex items-center justify-between">
+        <div class="flex-1 flex justify-between sm:hidden">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}"
+               hx-get="{% url 'trainers:notifications' %}?page={{ page_obj.previous_page_number }}"
+               hx-target="#main-content"
+               hx-push-url="true"
+               class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                {% trans "Previous" %}
+            </a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}"
+               hx-get="{% url 'trainers:notifications' %}?page={{ page_obj.next_page_number }}"
+               hx-target="#main-content"
+               hx-push-url="true"
+               class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                {% trans "Next" %}
+            </a>
+            {% endif %}
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700">
+                    {% trans "Showing" %}
+                    <span class="font-medium">{{ page_obj.start_index }}</span>
+                    {% trans "to" %}
+                    <span class="font-medium">{{ page_obj.end_index }}</span>
+                    {% trans "of" %}
+                    <span class="font-medium">{{ page_obj.paginator.count }}</span>
+                    {% trans "results" %}
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}"
+                       hx-get="{% url 'trainers:notifications' %}?page={{ page_obj.previous_page_number }}"
+                       hx-target="#main-content"
+                       hx-push-url="true"
+                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <span class="sr-only">{% trans "Previous" %}</span>
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                            {{ num }}
+                        </span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}"
+                           hx-get="{% url 'trainers:notifications' %}?page={{ num }}"
+                           hx-target="#main-content"
+                           hx-push-url="true"
+                           class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            {{ num }}
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}"
+                       hx-get="{% url 'trainers:notifications' %}?page={{ page_obj.next_page_number }}"
+                       hx-target="#main-content"
+                       hx-push-url="true"
+                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <span class="sr-only">{% trans "Next" %}</span>
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>

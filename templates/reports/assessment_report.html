@@ -22,12 +22,10 @@
         }
 
         .page {
-            width: 210mm;
-            height: 297mm;
-            margin: 0 auto;
-            padding: 10mm;
+            width: 100%;
+            margin: 0;
+            padding: 0;
             background: white;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
             position: relative;
         }
 
@@ -342,13 +340,18 @@
                 page-break-after: always;
             }
         }
+        
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
     </style>
 </head>
 <body>
     <div class="page">
         <div class="header">
             <h1>더파이브 헬스케어 체력 평가 보고서</h1>
-            <p>{{ assessment.created_at|date:"Y년 m월 d일" }} | 담당: {{ trainer_name }}</p>
+            <p>{{ assessment.date|date:"Y년 m월 d일" }} | 담당: {{ trainer_name }}</p>
         </div>
 
         <div class="top-section">
@@ -478,7 +481,7 @@
             <div class="follow-up">
                 <div class="follow-up-item">
                     <div class="follow-up-label">평가일</div>
-                    <div class="follow-up-date">{{ assessment.assessment_date|date:"Y.m.d" }}</div>
+                    <div class="follow-up-date">{{ assessment.date|date:"Y.m.d" }}</div>
                 </div>
                 <div class="follow-up-item">
                     <div class="follow-up-label">중간 점검</div>

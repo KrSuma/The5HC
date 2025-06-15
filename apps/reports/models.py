@@ -7,7 +7,6 @@ class AssessmentReport(models.Model):
     """PDF report for fitness assessments"""
     
     REPORT_TYPES = [
-        ('summary', '요약 보고서'),
         ('detailed', '상세 보고서'),
     ]
     
@@ -56,6 +55,6 @@ class AssessmentReport(models.Model):
     @property
     def filename(self):
         """Generate a user-friendly filename"""
-        date_str = self.assessment.assessment_date.strftime('%Y%m%d')
+        date_str = self.assessment.date.strftime('%Y%m%d')
         client_name = self.assessment.client.name.replace(' ', '_')
         return f"fitness_assessment_{client_name}_{date_str}.pdf"

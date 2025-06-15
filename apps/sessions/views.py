@@ -13,12 +13,18 @@ import json
 from .models import SessionPackage, Session, Payment
 from .forms import SessionPackageForm, SessionForm, PaymentForm, SessionSearchForm
 from apps.clients.models import Client
+from apps.trainers.decorators import requires_trainer, organization_member_required
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def session_package_list_view(request):
     """List all session packages with search and filter functionality"""
-    packages = SessionPackage.objects.filter(trainer=request.user).select_related('client')
+    # Filter packages by organization
+    packages = SessionPackage.objects.filter(
+        trainer__organization=request.organization
+    ).select_related('client', 'trainer')
     
     # Search functionality
     search = request.GET.get('search')
@@ -66,12 +72,15 @@ def session_package_list_view(request):
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def session_package_detail_view(request, pk):
     """View detailed package information with sessions and payments"""
+    # Ensure package belongs to the same organization
     package = get_object_or_404(
-        SessionPackage.objects.select_related('client'),
+        SessionPackage.objects.select_related('client', 'trainer'),
         pk=pk,
-        trainer=request.user
+        trainer__organization=request.organization
     )
     
     # Get related sessions and payments
@@ -90,15 +99,17 @@ def session_package_detail_view(request, pk):
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def session_package_add_view(request):
     """Add new session package"""
     client_id = request.GET.get('client')
     
     if request.method == 'POST':
-        form = SessionPackageForm(request.POST, user=request.user)
+        form = SessionPackageForm(request.POST, user=request.trainer.user)
         if form.is_valid():
             package = form.save(commit=False)
-            package.trainer = request.user
+            package.trainer = request.trainer.user
             package.remaining_sessions = package.total_sessions
             package.remaining_credits = package.total_amount
             
@@ -140,7 +151,7 @@ def session_package_add_view(request):
         initial = {}
         if client_id:
             initial['client'] = client_id
-        form = SessionPackageForm(initial=initial, user=request.user)
+        form = SessionPackageForm(initial=initial, user=request.trainer.user)
     
     context = {
         'form': form,
@@ -150,10 +161,15 @@ def session_package_add_view(request):
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def session_list_view(request):
     """List all sessions with search and filter functionality"""
     form = SessionSearchForm(request.GET)
-    sessions = Session.objects.filter(trainer=request.user).select_related('client', 'package')
+    # Filter sessions by organization
+    sessions = Session.objects.filter(
+        trainer__organization=request.organization
+    ).select_related('client', 'package', 'trainer')
     
     # Apply filters
     if form.is_valid():
@@ -206,6 +222,8 @@ def session_list_view(request):
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def session_add_view(request):
     """Add new session"""
     client_id = request.GET.get('client')

@@ -11,8 +11,20 @@ document.body.addEventListener('htmx:configRequest', (event) => {
 document.body.addEventListener('htmx:responseError', (event) => {
     console.error('HTMX request failed:', event.detail);
     
-    // Show error notification
-    showNotification('오류가 발생했습니다. 다시 시도해주세요.', 'error');
+    // Don't clear the main content on error
+    event.preventDefault();
+    
+    // If the error is on main content, reload the page to recover
+    if (event.detail.target.id === 'main-content') {
+        console.error('Main content request failed, reloading page');
+        showNotification('오류가 발생했습니다. 페이지를 새로고침합니다.', 'error');
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+    } else {
+        // Show error notification for other requests
+        showNotification('오류가 발생했습니다. 다시 시도해주세요.', 'error');
+    }
 });
 
 // Success handling
@@ -133,3 +145,88 @@ const utils = {
 
 // Export utilities for use in templates
 window.utils = utils;
+
+// Prevent HTMX from swapping content into wrong targets
+document.body.addEventListener('htmx:beforeSwap', (event) => {
+    const targetId = event.detail.target.id;
+    const responseText = event.detail.xhr.responseText;
+    const path = event.detail.requestConfig ? event.detail.requestConfig.path : 'N/A';
+    
+    // Log all swaps for debugging
+    console.log('HTMX beforeSwap:', {
+        targetId: targetId,
+        path: path,
+        responseLength: responseText ? responseText.length : 0,
+        responsePreview: responseText ? responseText.substring(0, 100) + '...' : 'empty',
+        status: event.detail.xhr.status
+    });
+    
+    // Special handling for notification badge
+    if (path.includes('notification_badge')) {
+        // Make sure notification badge only updates its own container
+        if (targetId !== 'notification-badge') {
+            console.error('Notification badge trying to update wrong target:', targetId);
+            event.preventDefault();
+            return false;
+        }
+        // Allow notification badge to update even if empty
+        return;
+    }
+    
+    // Handle empty responses for non-notification requests
+    if (event.detail.xhr.status === 200 && !responseText.trim()) {
+        // Only prevent swap for main content updates
+        if (targetId === 'main-content') {
+            console.warn('Empty response received for main content, preventing swap');
+            event.preventDefault();
+            return false;
+        }
+    }
+    
+    // Log successful swaps
+    if (targetId === 'main-content' && responseText.trim()) {
+        console.log('Main content being updated with', responseText.length, 'characters');
+    }
+});
+
+// After swap event for additional debugging
+document.body.addEventListener('htmx:afterSwap', (event) => {
+    const targetId = event.detail.target.id;
+    if (targetId === 'main-content') {
+        console.log('Main content swap completed');
+        // Check if content is actually visible
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            const contentLength = mainContent.innerHTML.length;
+            const isVisible = mainContent.offsetParent !== null;
+            console.log('Main content check:', {
+                contentLength: contentLength,
+                isVisible: isVisible,
+                display: mainContent.style.display,
+                visibility: mainContent.style.visibility
+            });
+        }
+    }
+});
+
+// Global error handler to catch any JavaScript errors
+window.addEventListener('error', (event) => {
+    console.error('JavaScript error:', event.error);
+    // Don't show notification for every JS error as it might be annoying
+    // but log it for debugging
+});
+
+// Safeguard to ensure main content is never hidden
+setInterval(() => {
+    const mainContent = document.getElementById('main-content');
+    if (mainContent && mainContent.style.display === 'none') {
+        console.error('Main content was hidden, making it visible again');
+        mainContent.style.display = '';
+    }
+    // Also check for visibility
+    if (mainContent && (mainContent.style.visibility === 'hidden' || mainContent.classList.contains('hidden'))) {
+        console.error('Main content visibility was hidden, fixing it');
+        mainContent.style.visibility = '';
+        mainContent.classList.remove('hidden');
+    }
+}, 1000);

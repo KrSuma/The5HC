@@ -29,9 +29,11 @@ class Assessment(models.Model):
         related_name='assessments'
     )
     trainer = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'trainers.Trainer',
         on_delete=models.CASCADE,
-        related_name='assessments_conducted'
+        related_name='assessments_conducted',
+        verbose_name='Trainer',
+        help_text='The trainer who conducted this assessment'
     )
     
     # Assessment metadata

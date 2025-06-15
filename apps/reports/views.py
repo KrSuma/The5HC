@@ -65,32 +65,22 @@ def generate_report(request, assessment_id):
         messages.error(request, 'PDF 생성 기능을 사용할 수 없습니다. WeasyPrint가 설치되지 않았습니다.')
         return redirect('assessments:detail', pk=assessment_id)
     
-    if request.method == 'POST':
-        report_type = request.POST.get('report_type', 'detailed')
+    try:
+        # Generate detailed report directly
+        generator = ReportGenerator()
+        report = generator.generate_assessment_report(
+            assessment_id=assessment.id,
+            report_type='detailed',  # Always generate detailed report
+            user=request.user
+        )
         
-        try:
-            # Generate report
-            generator = ReportGenerator()
-            report = generator.generate_assessment_report(
-                assessment_id=assessment.id,
-                report_type=report_type,
-                user=request.user
-            )
-            
-            messages.success(request, '보고서가 성공적으로 생성되었습니다.')
-            return redirect('reports:download', report_id=report.id)
-            
-        except Exception as e:
-            logger.error(f"Error generating report: {str(e)}")
-            messages.error(request, '보고서 생성 중 오류가 발생했습니다.')
-            return redirect('assessments:detail', pk=assessment_id)
-    
-    context = {
-        'assessment': assessment,
-        'report_types': AssessmentReport.REPORT_TYPES,
-    }
-    
-    return render(request, 'reports/generate_report.html', context)
+        messages.success(request, '보고서가 성공적으로 생성되었습니다.')
+        return redirect('reports:download', report_id=report.id)
+        
+    except Exception as e:
+        logger.error(f"Error generating report: {str(e)}")
+        messages.error(request, '보고서 생성 중 오류가 발생했습니다.')
+        return redirect('assessments:detail', pk=assessment_id)
 
 
 @login_required

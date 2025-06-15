@@ -16,9 +16,11 @@ class Client(models.Model):
     
     # Relationships
     trainer = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'trainers.Trainer',
         on_delete=models.CASCADE,
-        related_name='clients'
+        related_name='clients',
+        verbose_name=_('Trainer'),
+        help_text=_('The trainer managing this client')
     )
     
     # Personal information

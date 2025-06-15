@@ -1,0 +1,319 @@
+{% load i18n %}
+{% load humanize %}
+
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                {% if trainer.profile_photo %}
+                <img class="h-16 w-16 rounded-full object-cover" 
+                     src="{{ trainer.profile_photo.url }}" 
+                     alt="{{ trainer.get_display_name }}">
+                {% else %}
+                <div class="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center">
+                    <span class="text-gray-600 font-medium text-xl">{{ trainer.user.get_full_name|first }}</span>
+                </div>
+                {% endif %}
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        {{ trainer.get_display_name }} {% trans "Analytics" %}
+                    </h1>
+                    <p class="text-gray-600">
+                        {{ trainer.get_role_display }} • {{ trainer.organization.name }}
+                    </p>
+                </div>
+            </div>
+            {% if is_own_profile %}
+            <a href="{% url 'trainers:profile_edit' %}"
+               class="btn btn-secondary"
+               hx-get="{% url 'trainers:profile_edit' %}"
+               hx-target="#main-content"
+               hx-push-url="true">
+                {% trans "Edit Profile" %}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Metrics Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Active Clients -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">{% trans "Active Clients" %}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ active_clients }}</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {% trans "Total" %}: {{ total_clients }} | {% trans "New" %}: +{{ new_clients_30d }}
+                    </p>
+                </div>
+                <div class="bg-blue-100 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Assessments -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">{% trans "Assessments" %}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_assessments }}</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {% trans "This month" %}: {{ assessments_30d }}
+                    </p>
+                </div>
+                <div class="bg-purple-100 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sessions -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">{% trans "Sessions" %}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ sessions_30d }}</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {% trans "Total" %}: {{ total_sessions }}
+                    </p>
+                </div>
+                <div class="bg-orange-100 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Revenue (if allowed) -->
+        {% if can_view_revenue %}
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">{% trans "Monthly Revenue" %}</p>
+                    <p class="text-2xl font-bold text-gray-900">₩{{ revenue_30d|intcomma }}</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {% trans "90 days" %}: ₩{{ revenue_90d|intcomma }}
+                    </p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Client Retention -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">{% trans "Client Retention" %}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ retention_rate }}%</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {% trans "90-day retention rate" %}
+                    </p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Assessment Scores -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">{% trans "Average Assessment Scores" %}</h2>
+            <div class="relative" style="height: 300px;">
+                <canvas id="scoresChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Revenue Trend (if allowed) -->
+        {% if can_view_revenue %}
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">{% trans "Revenue Trend" %}</h2>
+            <div class="relative" style="height: 300px;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+        {% else %}
+        <!-- Recent Activities -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">{% trans "Recent Activity" %}</h2>
+            <div class="max-h-64 overflow-y-auto">
+                <ul class="space-y-3">
+                    {% for activity in recent_activities %}
+                    <li class="flex items-start space-x-3">
+                        <div class="flex-shrink-0 w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-900">
+                                {{ activity.get_action_display }}
+                                {% if activity.content_object %}
+                                    - {{ activity.content_object }}
+                                {% endif %}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                {{ activity.created_at|timesince }} {% trans "ago" %}
+                            </p>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="text-sm text-gray-500">{% trans "No recent activity" %}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if can_view_revenue %}
+    <!-- Top Clients by Revenue -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">{% trans "Top Clients (90 days)" %}</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {% trans "Client" %}
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {% trans "Total Revenue" %}
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for client in top_clients %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{% url 'clients:detail' client.session_package__client__id %}"
+                               class="text-sm font-medium text-blue-600 hover:text-blue-800"
+                               hx-get="{% url 'clients:detail' client.session_package__client__id %}"
+                               hx-target="#main-content"
+                               hx-push-url="true">
+                                {{ client.session_package__client__name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ₩{{ client.total_revenue|intcomma }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="px-6 py-4 text-sm text-gray-500 text-center">
+                            {% trans "No revenue data available" %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Assessment Scores Chart
+    const scoresCtx = document.getElementById('scoresChart').getContext('2d');
+    const avgScores = {
+        overall: {{ avg_scores.avg_overall|default:0 }},
+        strength: {{ avg_scores.avg_strength|default:0 }},
+        mobility: {{ avg_scores.avg_mobility|default:0 }},
+        balance: {{ avg_scores.avg_balance|default:0 }},
+        cardio: {{ avg_scores.avg_cardio|default:0 }}
+    };
+    
+    new Chart(scoresCtx, {
+        type: 'radar',
+        data: {
+            labels: [
+                '{% trans "Overall" %}',
+                '{% trans "Strength" %}', 
+                '{% trans "Mobility" %}',
+                '{% trans "Balance" %}',
+                '{% trans "Cardio" %}'
+            ],
+            datasets: [{
+                label: '{% trans "Average Score" %}',
+                data: [
+                    avgScores.overall,
+                    avgScores.strength,
+                    avgScores.mobility,
+                    avgScores.balance,
+                    avgScores.cardio
+                ],
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+    
+    {% if can_view_revenue %}
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const monthlyRevenue = {{ monthly_revenue_json|safe }};
+    
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: monthlyRevenue.map(item => item.month),
+            datasets: [{
+                label: '{% trans "Monthly Revenue" %}',
+                data: monthlyRevenue.map(item => item.revenue),
+                borderColor: 'rgba(16, 185, 129, 1)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₩' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+</script>

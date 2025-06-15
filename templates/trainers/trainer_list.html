@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Trainers" %} - {{ organization.name }}{% endblock %}
+
+{% block extra_head %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% endblock %}
+
+{% block content %}
+<div id="main-content">
+    {% include 'trainers/trainer_list_content.html' %}
+</div>
+{% endblock %}

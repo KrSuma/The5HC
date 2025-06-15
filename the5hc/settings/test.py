@@ -117,6 +117,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'apps.accounts.middleware.AuthenticationMiddleware',
+    'apps.trainers.middleware.TrainerContextMiddleware',  # Add trainer context
 ]
 
 # Test runner configuration

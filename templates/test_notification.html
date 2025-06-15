@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-4">Notification Test Page</h1>
+    
+    <p>This page tests the notification badge without navigation interference.</p>
+    
+    <div class="mt-8 p-4 border rounded">
+        <h2 class="font-bold mb-2">Test Badge (updates every 5 seconds):</h2>
+        <div id="test-badge"
+             hx-get="{% url 'trainers:notification_badge' %}"
+             hx-trigger="load, every 5s"
+             hx-target="#test-badge"
+             hx-swap="innerHTML"
+             class="inline-block">
+            Loading...
+        </div>
+    </div>
+    
+    <div class="mt-8">
+        <p>Check the browser console for HTMX swap logs.</p>
+    </div>
+</div>
+{% endblock %}

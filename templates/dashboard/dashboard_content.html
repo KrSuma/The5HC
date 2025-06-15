@@ -312,13 +312,14 @@
 (function() {
     // Wait a moment for DOM to be ready
     setTimeout(function() {
-        // Weekly Sessions Chart
-        const weeklyCanvas = document.getElementById('weekly-sessions-chart');
-        if (!weeklyCanvas) {
-            console.error('Weekly sessions chart canvas not found');
-            return;
-        }
-        const weeklyCtx = weeklyCanvas.getContext('2d');
+        try {
+            // Weekly Sessions Chart
+            const weeklyCanvas = document.getElementById('weekly-sessions-chart');
+            if (!weeklyCanvas) {
+                console.error('Weekly sessions chart canvas not found');
+                return;
+            }
+            const weeklyCtx = weeklyCanvas.getContext('2d');
     new Chart(weeklyCtx, {
         type: 'line',
         data: {
@@ -431,6 +432,9 @@
             }
         }
     });
+        } catch (error) {
+            console.error('Error initializing dashboard charts in content view:', error);
+        }
     }, 100);  // Wait 100ms for DOM to be ready
 })();
 </script>

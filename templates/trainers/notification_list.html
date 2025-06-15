@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Notifications" %}{% endblock %}
+
+{% block content %}
+<div id="main-content">
+    {% include 'trainers/notification_list_content.html' %}
+</div>
+{% endblock %}

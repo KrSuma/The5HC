@@ -12,6 +12,7 @@ import json
 from .models import Assessment
 from .forms import AssessmentForm, AssessmentSearchForm
 from apps.clients.models import Client
+from apps.trainers.decorators import requires_trainer, organization_member_required
 
 # Import scoring functions from the Django app
 from .scoring import (
@@ -29,10 +30,15 @@ except ImportError:
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def assessment_list_view(request):
     """List all assessments with search and filter functionality"""
     form = AssessmentSearchForm(request.GET)
-    assessments = Assessment.objects.filter(trainer=request.user).select_related('client')
+    # Filter assessments by organization
+    assessments = Assessment.objects.filter(
+        trainer__organization=request.organization
+    ).select_related('client', 'trainer')
     
     # Apply filters
     if form.is_valid():
@@ -99,12 +105,15 @@ def assessment_list_view(request):
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def assessment_detail_view(request, pk):
     """View detailed assessment results"""
+    # Ensure assessment belongs to the same organization
     assessment = get_object_or_404(
         Assessment.objects.select_related('client', 'trainer'),
         pk=pk,
-        trainer=request.user
+        trainer__organization=request.organization
     )
     
     # Get score descriptions
@@ -131,19 +140,26 @@ def assessment_detail_view(request, pk):
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def assessment_add_view(request):
     """Add new assessment with multi-step form"""
     client_id = request.GET.get('client')
     client = None
     
     if client_id:
-        client = get_object_or_404(Client, pk=client_id, trainer=request.user)
+        # Ensure client belongs to the same organization
+        client = get_object_or_404(
+            Client, 
+            pk=client_id, 
+            trainer__organization=request.organization
+        )
     
     if request.method == 'POST':
         form = AssessmentForm(request.POST)
         if form.is_valid():
             assessment = form.save(commit=False)
-            assessment.trainer = request.user
+            assessment.trainer = request.trainer.user
             
             # Convert date to datetime if needed
             if assessment.date and not hasattr(assessment.date, 'hour'):
@@ -204,12 +220,20 @@ def assessment_add_view(request):
     context = {
         'form': form,
         'client': client,
-        'clients': Client.objects.filter(trainer=request.user) if not client else None
+        'clients': Client.objects.filter(
+            trainer__organization=request.organization
+        ) if not client else None
     }
+    
+    # Check for HTMX navigation request
+    if request.headers.get('HX-Request') and request.headers.get('HX-Target') == 'main-content':
+        return render(request, 'assessments/assessment_form_content.html', context)
+    
     return render(request, 'assessments/assessment_form.html', context)
 
 
 @login_required
+@requires_trainer
 @require_http_methods(["GET"])
 def calculate_push_up_score_ajax(request):
     """AJAX endpoint to calculate push-up score"""
@@ -226,6 +250,7 @@ def calculate_push_up_score_ajax(request):
 
 
 @login_required
+@requires_trainer
 @require_http_methods(["GET"])
 def calculate_balance_score_ajax(request):
     """AJAX endpoint to calculate balance score"""
@@ -245,6 +270,7 @@ def calculate_balance_score_ajax(request):
 
 
 @login_required
+@requires_trainer
 @require_http_methods(["GET"])
 def calculate_toe_touch_score_ajax(request):
     """AJAX endpoint to calculate toe touch score"""
@@ -258,6 +284,7 @@ def calculate_toe_touch_score_ajax(request):
 
 
 @login_required
+@requires_trainer
 @require_http_methods(["GET"])
 def calculate_farmer_score_ajax(request):
     """AJAX endpoint to calculate farmer's carry score"""
@@ -292,9 +319,16 @@ def calculate_harvard_score_ajax(request):
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def assessment_delete_view(request, pk):
     """Delete assessment"""
-    assessment = get_object_or_404(Assessment, pk=pk, trainer=request.user)
+    # Ensure assessment belongs to the same organization
+    assessment = get_object_or_404(
+        Assessment, 
+        pk=pk, 
+        trainer__organization=request.organization
+    )
     
     if request.method == 'POST':
         assessment.delete()

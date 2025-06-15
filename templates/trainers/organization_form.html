@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Edit Organization" %} - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div id="main-content" class="min-h-screen bg-gray-50 py-8">
+    {% include 'trainers/organization_form_content.html' %}
+</div>
+{% endblock %}

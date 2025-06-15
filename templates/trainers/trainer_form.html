@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}
+{% if trainer.pk %}
+    {% trans "Edit Profile" %} - {{ trainer.get_display_name }}
+{% else %}
+    {% trans "Create Profile" %}
+{% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% endblock %}
+
+{% block content %}
+<div id="main-content">
+    {% include 'trainers/trainer_form_content.html' %}
+</div>
+{% endblock %}

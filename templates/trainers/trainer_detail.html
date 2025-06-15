@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ trainer.get_display_name }} - {% trans "Trainer Profile" %}{% endblock %}
+
+{% block extra_head %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% endblock %}
+
+{% block content %}
+<div id="main-content">
+    {% include 'trainers/trainer_detail_content.html' %}
+</div>
+{% endblock %}

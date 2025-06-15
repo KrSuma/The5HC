@@ -12,6 +12,8 @@ from django.utils.translation import gettext as _
 
 from .forms import LoginForm, CustomUserChangeForm, PasswordResetRequestForm
 from .models import User
+from apps.trainers.decorators import requires_trainer, organization_member_required
+from apps.trainers.audit import log_auth_action
 
 
 @never_cache
@@ -46,6 +48,9 @@ def login_view(request):
             user.last_login = timezone.now()
             user.save(update_fields=['last_login'])
             
+            # Log successful login
+            log_auth_action('login_success', request, username=user.username)
+            
             if request.headers.get('HX-Request'):
                 response = HttpResponse()
                 response['HX-Redirect'] = reverse('dashboard')
@@ -64,14 +69,20 @@ def login_view(request):
                     try:
                         user = User.objects.get(email=email_or_username)
                         user.increment_failed_login_attempts()
+                        # Log failed login
+                        log_auth_action('login_failed', request, username=user.username)
                     except User.DoesNotExist:
-                        pass
+                        # Log failed login with unknown email
+                        log_auth_action('login_failed', request, username=email_or_username)
                 else:
                     try:
                         user = User.objects.get(username=email_or_username)
                         user.increment_failed_login_attempts()
+                        # Log failed login
+                        log_auth_action('login_failed', request, username=user.username)
                     except User.DoesNotExist:
-                        pass
+                        # Log failed login with unknown username
+                        log_auth_action('login_failed', request, username=email_or_username)
             
             if request.headers.get('HX-Request'):
                 return render(request, 'registration/login_form.html', {
@@ -89,6 +100,9 @@ def login_view(request):
 @require_http_methods(["POST"])
 def logout_view(request):
     """Handle user logout with HTMX support."""
+    # Log logout action before clearing session
+    log_auth_action('logout', request, username=request.user.username)
+    
     logout(request)
     
     if request.headers.get('HX-Request'):
@@ -156,6 +170,8 @@ def password_reset_request_view(request):
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def dashboard_view(request):
     """Main dashboard view with comprehensive analytics."""
     from django.db.models import Count, Sum, Q, Avg
@@ -171,60 +187,69 @@ def dashboard_view(request):
     this_week_start = today - timedelta(days=today.weekday())
     last_month_start = (this_month_start - timedelta(days=1)).replace(day=1)
     
-    # Basic counts
-    total_clients = request.user.clients.count()
-    active_packages = request.user.session_packages.filter(is_active=True).count()
+    # Basic counts - filter by organization
+    total_clients = Client.objects.filter(
+        trainer__organization=request.organization
+    ).count()
+    active_packages = SessionPackage.objects.filter(
+        trainer__organization=request.organization,
+        is_active=True
+    ).count()
     
-    # Session statistics
-    sessions_this_month = request.user.sessions.filter(
+    # Session statistics - filter by organization
+    sessions_this_month = Session.objects.filter(
+        trainer__organization=request.organization,
         session_date__gte=this_month_start
     ).count()
     
-    completed_sessions_this_month = request.user.sessions.filter(
+    completed_sessions_this_month = Session.objects.filter(
+        trainer__organization=request.organization,
         session_date__gte=this_month_start,
         status='completed'
     ).count()
     
-    # Revenue statistics  
+    # Revenue statistics - filter by organization
     revenue_this_month = Payment.objects.filter(
-        package__trainer=request.user,
+        package__trainer__organization=request.organization,
         payment_date__gte=this_month_start
     ).aggregate(total=Sum('amount'))['total'] or 0
     # Convert Decimal to int for JavaScript
     revenue_this_month = int(revenue_this_month)
     
     revenue_last_month = Payment.objects.filter(
-        package__trainer=request.user,
+        package__trainer__organization=request.organization,
         payment_date__gte=last_month_start,
         payment_date__lt=this_month_start
     ).aggregate(total=Sum('amount'))['total'] or 0
     # Convert Decimal to int for JavaScript
     revenue_last_month = int(revenue_last_month)
     
-    # Client growth statistics
-    new_clients_this_month = request.user.clients.filter(
+    # Client growth statistics - filter by organization
+    new_clients_this_month = Client.objects.filter(
+        trainer__organization=request.organization,
         created_at__gte=this_month_start
     ).count()
     
-    new_clients_this_week = request.user.clients.filter(
+    new_clients_this_week = Client.objects.filter(
+        trainer__organization=request.organization,
         created_at__gte=this_week_start
     ).count()
     
-    # Assessment statistics
+    # Assessment statistics - filter by organization
     assessments_this_month = Assessment.objects.filter(
-        client__trainer=request.user,
+        trainer__organization=request.organization,
         date__gte=this_month_start
     ).count()
     
     avg_score_this_month = Assessment.objects.filter(
-        client__trainer=request.user,
+        trainer__organization=request.organization,
         date__gte=this_month_start,
         overall_score__isnull=False
     ).aggregate(avg=Avg('overall_score'))['avg'] or 0
     
-    # Package statistics
+    # Package statistics - filter by organization
     package_stats = SessionPackage.objects.filter(
-        trainer=request.user
+        trainer__organization=request.organization
     ).aggregate(
         total_value=Sum('total_amount'),
         avg_value=Avg('total_amount'),
@@ -236,7 +261,8 @@ def dashboard_view(request):
     for i in range(7):
         week_start = today - timedelta(weeks=i, days=today.weekday())
         week_end = week_start + timedelta(days=6)
-        week_sessions = request.user.sessions.filter(
+        week_sessions = Session.objects.filter(
+            trainer__organization=request.organization,
             session_date__gte=week_start,
             session_date__lte=week_end
         ).count()
@@ -270,7 +296,7 @@ def dashboard_view(request):
             month_end = next_month_start - timedelta(days=1)
         
         month_revenue = Payment.objects.filter(
-            package__trainer=request.user,
+            package__trainer__organization=request.organization,
             payment_date__gte=month_start,
             payment_date__lte=month_end
         ).aggregate(total=Sum('amount'))['total'] or 0
@@ -290,16 +316,18 @@ def dashboard_view(request):
     for item in monthly_revenue:
         print(f"  {item['month']}: {item['revenue']}")
     
-    # Package status distribution (active vs inactive)
+    # Package status distribution (active vs inactive) - filter by organization
     package_distribution = SessionPackage.objects.filter(
-        trainer=request.user
+        trainer__organization=request.organization
     ).values('is_active').annotate(count=Count('id'))
     
     # Recent activities (mixed recent items)
     recent_activities = []
     
-    # Recent clients
-    for client in request.user.clients.order_by('-created_at')[:3]:
+    # Recent clients - filter by organization
+    for client in Client.objects.filter(
+        trainer__organization=request.organization
+    ).order_by('-created_at')[:3]:
         recent_activities.append({
             'type': 'client_added',
             'title': f"새 회원 등록: {client.name}",
@@ -309,8 +337,10 @@ def dashboard_view(request):
             'url': f"/clients/{client.id}/"
         })
     
-    # Recent sessions
-    for session in request.user.sessions.order_by('-session_date')[:3]:
+    # Recent sessions - filter by organization
+    for session in Session.objects.filter(
+        trainer__organization=request.organization
+    ).select_related('client').order_by('-session_date')[:3]:
         recent_activities.append({
             'type': 'session',
             'title': f"세션: {session.client.name}",
@@ -320,8 +350,10 @@ def dashboard_view(request):
             'status': session.status
         })
     
-    # Recent assessments
-    for assessment in Assessment.objects.filter(client__trainer=request.user).order_by('-date')[:3]:
+    # Recent assessments - filter by organization
+    for assessment in Assessment.objects.filter(
+        trainer__organization=request.organization
+    ).select_related('client').order_by('-date')[:3]:
         recent_activities.append({
             'type': 'assessment',
             'title': f"평가 완료: {assessment.client.name}",
@@ -341,8 +373,14 @@ def dashboard_view(request):
     
     context = {
         'user': request.user,
-        'recent_clients': request.user.clients.order_by('-created_at')[:5],
-        'recent_sessions': request.user.sessions.order_by('-session_date')[:5],
+        'trainer': request.trainer,
+        'organization': request.organization,
+        'recent_clients': Client.objects.filter(
+            trainer__organization=request.organization
+        ).order_by('-created_at')[:5],
+        'recent_sessions': Session.objects.filter(
+            trainer__organization=request.organization
+        ).select_related('client').order_by('-session_date')[:5],
         
         # Enhanced analytics data
         'total_clients': total_clients,

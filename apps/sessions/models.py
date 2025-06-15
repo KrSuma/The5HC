@@ -17,9 +17,11 @@ class SessionPackage(models.Model):
         related_name='session_packages'
     )
     trainer = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'trainers.Trainer',
         on_delete=models.CASCADE,
-        related_name='session_packages'
+        related_name='session_packages',
+        verbose_name='Trainer',
+        help_text='The trainer managing this package'
     )
     
     # Package details
@@ -164,9 +166,11 @@ class Session(models.Model):
         related_name='sessions'
     )
     trainer = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'trainers.Trainer',
         on_delete=models.CASCADE,
-        related_name='sessions'
+        related_name='sessions',
+        verbose_name='Trainer',
+        help_text='The trainer conducting this session'
     )
     
     # Session details
@@ -225,9 +229,11 @@ class Payment(models.Model):
         null=True, blank=True
     )
     trainer = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'trainers.Trainer',
         on_delete=models.CASCADE,
-        related_name='payments'
+        related_name='payments',
+        verbose_name='Trainer',
+        help_text='The trainer who received this payment'
     )
     
     # Payment details
@@ -298,9 +304,11 @@ class FeeAuditLog(models.Model):
     
     # Audit fields
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'trainers.Trainer',
         on_delete=models.CASCADE,
-        related_name='fee_audit_logs'
+        related_name='fee_audit_logs',
+        verbose_name='Created By',
+        help_text='The trainer who created this audit log'
     )
     created_at = models.DateTimeField(auto_now_add=True)
     

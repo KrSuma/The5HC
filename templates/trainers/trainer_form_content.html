@@ -1,0 +1,253 @@
+{% load i18n %}
+
+<div class="px-4 py-6 sm:px-6 lg:px-8">
+    <!-- Back button -->
+    <div class="mb-4">
+        <a href="{% if trainer.pk %}{% url 'trainers:detail' trainer.pk %}{% else %}{% url 'trainers:list' %}{% endif %}"
+           hx-get="{% if trainer.pk %}{% url 'trainers:detail' trainer.pk %}{% else %}{% url 'trainers:list' %}{% endif %}"
+           hx-target="#main-content"
+           hx-push-url="true"
+           class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700">
+            <svg class="mr-1 -ml-1 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+            </svg>
+            {% trans "Back" %}
+        </a>
+    </div>
+
+    <!-- Header -->
+    <div class="sm:flex sm:items-center mb-6">
+        <div class="sm:flex-auto">
+            <h1 class="text-2xl font-semibold text-gray-900">
+                {% if trainer.pk %}
+                    {% trans "Edit Profile" %}
+                {% else %}
+                    {% trans "Create Profile" %}
+                {% endif %}
+            </h1>
+            <p class="mt-2 text-sm text-gray-700">
+                {% trans "Update your professional information and settings." %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" enctype="multipart/form-data" class="space-y-8 divide-y divide-gray-200">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+        <div class="rounded-md bg-red-50 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">{% trans "There were errors with your submission" %}</h3>
+                    <div class="mt-2 text-sm text-red-700">
+                        <ul role="list" class="list-disc space-y-1 pl-5">
+                            {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Basic Information -->
+        <div class="space-y-8 divide-y divide-gray-200">
+            <div>
+                <h3 class="text-base font-semibold leading-6 text-gray-900">{% trans "Basic Information" %}</h3>
+                <p class="mt-1 text-sm text-gray-500">{% trans "This information will be displayed publicly." %}</p>
+
+                <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                    <!-- First Name -->
+                    <div class="sm:col-span-3">
+                        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium leading-6 text-gray-900">
+                            {{ form.first_name.label }}
+                        </label>
+                        <div class="mt-2">
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Last Name -->
+                    <div class="sm:col-span-3">
+                        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium leading-6 text-gray-900">
+                            {{ form.last_name.label }}
+                        </label>
+                        <div class="mt-2">
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="sm:col-span-4">
+                        <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium leading-6 text-gray-900">
+                            {{ form.email.label }}
+                        </label>
+                        <div class="mt-2">
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Profile Photo -->
+                    <div class="sm:col-span-6">
+                        <label for="{{ form.profile_photo.id_for_label }}" class="block text-sm font-medium leading-6 text-gray-900">
+                            {{ form.profile_photo.label }}
+                        </label>
+                        <div class="mt-2 flex items-center gap-x-3">
+                            {% if trainer.profile_photo %}
+                            <img class="h-12 w-12 rounded-full" src="{{ trainer.profile_photo.url }}" alt="">
+                            {% else %}
+                            <div class="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center">
+                                <svg class="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            </div>
+                            {% endif %}
+                            {{ form.profile_photo }}
+                            {% if form.profile_photo.errors %}
+                            <p class="text-sm text-red-600">{{ form.profile_photo.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Bio -->
+                    <div class="sm:col-span-6">
+                        <label for="{{ form.bio.id_for_label }}" class="block text-sm font-medium leading-6 text-gray-900">
+                            {{ form.bio.label }}
+                        </label>
+                        <div class="mt-2">
+                            {{ form.bio }}
+                            {% if form.bio.help_text %}
+                            <p class="mt-2 text-sm text-gray-500">{{ form.bio.help_text }}</p>
+                            {% endif %}
+                            {% if form.bio.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.bio.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Professional Information -->
+            <div class="pt-8">
+                <h3 class="text-base font-semibold leading-6 text-gray-900">{% trans "Professional Information" %}</h3>
+                <p class="mt-1 text-sm text-gray-500">{% trans "Your qualifications and expertise." %}</p>
+
+                <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                    <!-- Years of Experience -->
+                    <div class="sm:col-span-3">
+                        <label for="{{ form.years_of_experience.id_for_label }}" class="block text-sm font-medium leading-6 text-gray-900">
+                            {{ form.years_of_experience.label }}
+                        </label>
+                        <div class="mt-2">
+                            {{ form.years_of_experience }}
+                            {% if form.years_of_experience.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.years_of_experience.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Session Price -->
+                    <div class="sm:col-span-3">
+                        <label for="{{ form.session_price.id_for_label }}" class="block text-sm font-medium leading-6 text-gray-900">
+                            {{ form.session_price.label }}
+                        </label>
+                        <div class="mt-2 relative rounded-md shadow-sm">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <span class="text-gray-500 sm:text-sm">₩</span>
+                            </div>
+                            <div class="pl-7">
+                                {{ form.session_price }}
+                            </div>
+                            {% if form.session_price.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.session_price.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Certifications -->
+                    <div class="sm:col-span-6">
+                        <label for="{{ form.certifications_text.id_for_label }}" class="block text-sm font-medium leading-6 text-gray-900">
+                            {{ form.certifications_text.label }}
+                        </label>
+                        <div class="mt-2">
+                            {{ form.certifications_text }}
+                            {% if form.certifications_text.help_text %}
+                            <p class="mt-2 text-sm text-gray-500">{{ form.certifications_text.help_text }}</p>
+                            {% endif %}
+                            {% if form.certifications_text.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.certifications_text.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Specialties -->
+                    <div class="sm:col-span-6">
+                        <label for="{{ form.specialties_text.id_for_label }}" class="block text-sm font-medium leading-6 text-gray-900">
+                            {{ form.specialties_text.label }}
+                        </label>
+                        <div class="mt-2">
+                            {{ form.specialties_text }}
+                            {% if form.specialties_text.help_text %}
+                            <p class="mt-2 text-sm text-gray-500">{{ form.specialties_text.help_text }}</p>
+                            {% endif %}
+                            {% if form.specialties_text.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.specialties_text.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Active Status -->
+                    <div class="sm:col-span-6">
+                        <div class="relative flex items-start">
+                            <div class="flex h-6 items-center">
+                                {{ form.is_active }}
+                            </div>
+                            <div class="ml-3 text-sm leading-6">
+                                <label for="{{ form.is_active.id_for_label }}" class="font-medium text-gray-900">
+                                    {{ form.is_active.label }}
+                                </label>
+                                <p class="text-gray-500">{% trans "Uncheck to deactivate your trainer profile." %}</p>
+                            </div>
+                        </div>
+                        {% if form.is_active.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.is_active.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-5">
+            <div class="flex justify-end gap-x-3">
+                <a href="{% if trainer.pk %}{% url 'trainers:detail' trainer.pk %}{% else %}{% url 'trainers:list' %}{% endif %}"
+                   hx-get="{% if trainer.pk %}{% url 'trainers:detail' trainer.pk %}{% else %}{% url 'trainers:list' %}{% endif %}"
+                   hx-target="#main-content"
+                   hx-push-url="true"
+                   class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                    {% trans "Cancel" %}
+                </a>
+                <button type="submit"
+                        class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+                    {% trans "Save" %}
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
