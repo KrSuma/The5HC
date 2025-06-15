@@ -1,4 +1,3 @@
-{% load i18n %}
 <nav class="bg-white shadow-lg" x-data="{ mobileMenuOpen: false }">
     <div class="container mx-auto px-4">
         <div class="flex justify-between items-center py-4">
@@ -12,30 +11,30 @@
             <div class="hidden md:flex items-center space-x-10">
                 <a href="{% url 'dashboard' %}" 
                    class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                    {% trans "Dashboard" %}
+                    대시보드
                 </a>
                 <a href="{% url 'clients:list' %}"
                    class="nav-link {% if request.resolver_match.app_name == 'clients' %}active{% endif %}">
-                    {% trans "Client Management" %}
+                    회원 관리
                 </a>
                 <a href="{% url 'assessments:list' %}"
                    class="nav-link {% if request.resolver_match.app_name == 'assessments' %}active{% endif %}">
-                    {% trans "Assessment Management" %}
+                    평가 관리
                 </a>
                 <a href="{% url 'sessions:package_list' %}"
                    class="nav-link {% if request.resolver_match.app_name == 'sessions' %}active{% endif %}">
-                    {% trans "Session Management" %}
+                    세션 관리
                 </a>
                 {% if request.trainer and request.trainer.role == 'owner' or request.trainer.role == 'senior' %}
                 <a href="{% url 'trainers:list' %}"
                    class="nav-link {% if request.resolver_match.app_name == 'trainers' %}active{% endif %}">
-                    {% trans "Trainers" %}
+                    트레이너
                 </a>
                 {% endif %}
                 {% if request.trainer and request.trainer.role == 'owner' %}
                 <a href="{% url 'trainers:organization_dashboard' %}"
                    class="nav-link {% if request.resolver_match.url_name == 'organization_dashboard' %}active{% endif %}">
-                    {% trans "Organization" %}
+                    조직
                 </a>
                 {% endif %}
                 {% comment %}
@@ -103,13 +102,13 @@
                          @click.away="userMenuOpen = false"
                          class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                         <a href="{% url 'accounts:profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            {% trans "Profile" %}
+                            프로필
                         </a>
                         <a href="{% url 'accounts:logout' %}" 
                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                            hx-post="{% url 'accounts:logout' %}"
-                           hx-confirm="{% trans 'Are you sure you want to logout?' %}">
-                            {% trans "Logout" %}
+                           hx-confirm="로그아웃 하시겠습니까?">
+                            로그아웃
                         </a>
                     </div>
                 </div>
@@ -129,17 +128,17 @@
         <div x-show="mobileMenuOpen" 
              x-transition
              class="md:hidden border-t border-gray-200 py-2">
-            <a href="{% url 'dashboard' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{% trans "Dashboard" %}</a>
-            <a href="{% url 'clients:list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{% trans "Client Management" %}</a>
-            <a href="{% url 'assessments:list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{% trans "Assessment Management" %}</a>
-            <a href="{% url 'sessions:package_list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{% trans "Session Management" %}</a>
+            <a href="{% url 'dashboard' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">대시보드</a>
+            <a href="{% url 'clients:list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">회원 관리</a>
+            <a href="{% url 'assessments:list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">평가 관리</a>
+            <a href="{% url 'sessions:package_list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">세션 관리</a>
             {% if request.trainer and request.trainer.role == 'owner' or request.trainer.role == 'senior' %}
-            <a href="{% url 'trainers:list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{% trans "Trainers" %}</a>
+            <a href="{% url 'trainers:list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">트레이너</a>
             {% endif %}
             {% if request.trainer and request.trainer.role == 'owner' %}
-            <a href="{% url 'trainers:organization_dashboard' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{% trans "Organization" %}</a>
+            <a href="{% url 'trainers:organization_dashboard' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">조직</a>
             {% endif %}
-            {% comment %}<a href="{% url 'reports:list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{% trans "Reports" %}</a>{% endcomment %}
+            {% comment %}<a href="{% url 'reports:list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">보고서</a>{% endcomment %}
         </div>
     </div>
 </nav>
