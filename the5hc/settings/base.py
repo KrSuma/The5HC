@@ -56,6 +56,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # CORS middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',  # For i18n support
+    'apps.accounts.middleware_force_korean.ForceKoreanMiddleware',  # Force Korean language
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -143,7 +144,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-LANGUAGE_CODE = 'en-us'  # Temporarily use English to avoid translation errors
+LANGUAGE_CODE = 'ko'  # Korean as default language
 TIME_ZONE = 'Asia/Seoul'
 USE_I18N = True  # Enable internationalization for l10n template tags
 USE_L10N = False  # Disable automatic localization to prevent comma formatting in numbers

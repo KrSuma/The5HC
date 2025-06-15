@@ -9,7 +9,7 @@
             </div>
             
             <!-- Desktop Menu -->
-            <div class="hidden md:flex items-center space-x-4">
+            <div class="hidden md:flex items-center space-x-10">
                 <a href="{% url 'dashboard' %}" 
                    class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     {% trans "Dashboard" %}
