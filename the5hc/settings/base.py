@@ -56,7 +56,6 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # CORS middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',  # For i18n support
-    'apps.accounts.middleware_force_korean.ForceKoreanMiddleware',  # Force Korean language
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -153,12 +152,15 @@ USE_TZ = True
 # Languages and locale paths
 LANGUAGES = [
     ('ko', '한국어'),
-    ('en', 'English'),
 ]
 
 LOCALE_PATHS = [
     BASE_DIR / 'locale',
 ]
+
+# Force Korean language
+LANGUAGE_COOKIE_NAME = 'django_language'
+LANGUAGE_COOKIE_AGE = 365 * 24 * 60 * 60  # 1 year
 
 # Number and date formatting
 USE_THOUSAND_SEPARATOR = True
