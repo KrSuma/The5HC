@@ -1,5 +1,38 @@
 # Feature Changelog
 
+## 2025-06-16: Critical Django Fixes and UI Improvements
+
+### Summary
+Fixed multiple critical issues affecting core functionality including trainer instance assignments, form rendering, and data visualization.
+
+### Key Fixes
+1. **Trainer Instance Assignment**
+   - Fixed ValueError across assessments, sessions, and clients apps
+   - Changed request.user to request.trainer throughout
+   - Added missing @requires_trainer decorators
+
+2. **Assessment Form Rendering**
+   - Fixed missing input fields in assessment registration
+   - Replaced manual HTML inputs with Django form fields
+   - Preserved Alpine.js functionality for dynamic scoring
+
+3. **Data Visualization**
+   - Fixed assessment scores showing out of bounds (e.g., 25.0/5)
+   - Recognized scores are on 0-100% scale
+   - Replaced radar chart with progress bars and bar chart
+   - Updated all displays to show percentages
+
+4. **UI/UX Improvements**
+   - Fixed trainer invite duplicate role options
+   - Fixed client edit HTMX response error
+   - Improved assessment list filter alignment
+   - Added Korean labels to date filters
+
+### Technical Details
+- **Files Modified**: 12 files across views, templates, and forms
+- **New Documentation**: `docs/TRAINER_ROLE_PERMISSIONS.md`
+- **Testing**: All fixes tested locally and working correctly
+
 ## 2025-06-14: Trainers App Phase 4 Implementation
 
 ### Summary
