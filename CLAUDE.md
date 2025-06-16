@@ -50,6 +50,12 @@ python run_api_tests.py
 
 # Recalculate assessment scores
 python manage.py recalculate_scores [--dry-run] [--assessment-id ID]
+
+# Create new trainer account
+python manage.py create_trainer <username> <email> [--role owner|senior|trainer]
+
+# List all trainers and organizations
+python manage.py list_trainers [--organization SLUG] [--role ROLE] [--active-only]
 ```
 
 ### Key Technologies
@@ -240,10 +246,11 @@ python manage.py recalculate_scores [--dry-run] [--assessment-id ID]
 - `logs/maintenance/SESSION_5_SUMMARY_2025_06_15.md` - Trainer invite fix and limit updates
 - `logs/maintenance/SESSION_6_FIXES_2025_06_16.md` - Critical Django fixes and UI improvements
 - `docs/TRAINER_ROLE_PERMISSIONS.md` - Comprehensive trainer role and permissions guide
+- `docs/TRAINER_ACCOUNT_CREATION_GUIDE.md` - Guide for creating trainer accounts
 
 ## Complete Project File Structure
 
-**Updated**: 2025-06-16 (Session 6 - Assessment templates and documentation updated)
+**Updated**: 2025-06-16 (Session 7 - Added trainer account creation management commands)
 
 ```
 The5HC/
@@ -256,7 +263,7 @@ The5HC/
 │   ├── clients/                   # Client management
 │   ├── reports/                   # PDF report generation
 │   ├── sessions/                  # Session & payment tracking
-│   └── trainers/                  # Trainer management (models, admin, views, forms, templates, middleware, decorators, audit, notifications)
+│   └── trainers/                  # Trainer management (models, admin, views, forms, templates, middleware, decorators, audit, notifications, management commands)
 ├── the5hc/                        # Django project settings
 │   ├── __init__.py
 │   ├── asgi.py

@@ -264,7 +264,7 @@ def calculate_balance_score_ajax(request):
             right_open, left_open, right_closed, left_closed
         )
         
-        return JsonResponse({'score': round(score, 1)})
+        return JsonResponse({'score': int(round(score))})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
@@ -296,7 +296,7 @@ def calculate_farmer_score_ajax(request):
         
         score = calculate_farmers_carry_score(gender, weight, distance, time)
         
-        return JsonResponse({'score': round(score, 1)})
+        return JsonResponse({'score': int(round(score))})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
