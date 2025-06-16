@@ -159,7 +159,7 @@ def assessment_add_view(request):
         form = AssessmentForm(request.POST)
         if form.is_valid():
             assessment = form.save(commit=False)
-            assessment.trainer = request.trainer.user
+            assessment.trainer = request.trainer
             
             # Convert date to datetime if needed
             if assessment.date and not hasattr(assessment.date, 'hour'):
@@ -177,9 +177,9 @@ def assessment_add_view(request):
                 'single_leg_balance_left_open': form.cleaned_data.get('single_leg_balance_left_eyes_open'),
                 'single_leg_balance_right_closed': form.cleaned_data.get('single_leg_balance_right_eyes_closed'),
                 'single_leg_balance_left_closed': form.cleaned_data.get('single_leg_balance_left_eyes_closed'),
-                'step_test_hr1': form.cleaned_data.get('harvard_step_test_heart_rate', 90),
-                'step_test_hr2': 80,  # Default values as we only collect one HR
-                'step_test_hr3': 70
+                'step_test_hr1': form.cleaned_data.get('harvard_step_test_hr1', 90),
+                'step_test_hr2': form.cleaned_data.get('harvard_step_test_hr2', 80),
+                'step_test_hr3': form.cleaned_data.get('harvard_step_test_hr3', 70)
             }
             
             client_details = {

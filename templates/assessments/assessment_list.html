@@ -50,9 +50,11 @@
     
     <!-- Search and Filters -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <form method="get" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="md:col-span-2">
+        <form method="get">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <!-- Search Field -->
+                <div class="md:col-span-4">
+                    <label class="block text-xs text-gray-600 mb-1">회원 검색</label>
                     {{ form.search }}
                     <span id="search-indicator" class="htmx-indicator ml-2">
                         <svg class="inline-block w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -61,16 +63,30 @@
                         </svg>
                     </span>
                 </div>
-                <div>
-                    {{ form.date_from }}
+                
+                <!-- Date Range Fields - grouped together -->
+                <div class="md:col-span-4 grid grid-cols-2 gap-1">
+                    <div class="pr-0.5">
+                        <label class="block text-xs text-gray-600 mb-1">시작 날짜</label>
+                        {{ form.date_from }}
+                    </div>
+                    <div class="pl-0.5">
+                        <label class="block text-xs text-gray-600 mb-1">종료 날짜</label>
+                        {{ form.date_to }}
+                    </div>
                 </div>
-                <div>
-                    {{ form.date_to }}
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
+                
+                <!-- Score Range -->
+                <div class="md:col-span-3">
+                    <label class="block text-xs text-gray-600 mb-1">점수 범위</label>
                     {{ form.score_range }}
+                </div>
+                
+                <!-- Clear Filters Button -->
+                <div class="md:col-span-1">
+                    <a href="{% url 'assessments:list' %}" class="block text-center px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition duration-200">
+                        초기화
+                    </a>
                 </div>
             </div>
         </form>

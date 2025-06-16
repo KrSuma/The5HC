@@ -269,9 +269,11 @@ def session_add_view(request):
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def session_complete_view(request, pk):
     """Mark session as completed"""
-    session = get_object_or_404(Session, pk=pk, trainer=request.user)
+    session = get_object_or_404(Session, pk=pk, trainer=request.trainer)
     
     if request.method == 'POST':
         session.status = 'completed'
@@ -290,15 +292,17 @@ def session_complete_view(request, pk):
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def payment_add_view(request):
     """Add new payment"""
     client_id = request.GET.get('client')
     
     if request.method == 'POST':
-        form = PaymentForm(request.POST, user=request.user)
+        form = PaymentForm(request.POST, user=request.trainer)
         if form.is_valid():
             payment = form.save(commit=False)
-            payment.trainer = request.user
+            payment.trainer = request.trainer
             payment.save()
             
             messages.success(request, '결제가 성공적으로 기록되었습니다.')
@@ -313,7 +317,7 @@ def payment_add_view(request):
         initial = {}
         if client_id:
             initial['client'] = client_id
-        form = PaymentForm(initial=initial, user=request.user)
+        form = PaymentForm(initial=initial, user=request.trainer)
     
     context = {
         'form': form,
@@ -323,6 +327,7 @@ def payment_add_view(request):
 
 
 @login_required
+@requires_trainer
 @require_http_methods(["GET"])
 def get_client_packages_ajax(request):
     """AJAX endpoint to get packages for a specific client"""
@@ -332,7 +337,7 @@ def get_client_packages_ajax(request):
     
     packages = SessionPackage.objects.filter(
         client_id=client_id,
-        trainer=request.user,
+        trainer=request.trainer,
         is_active=True,
         remaining_sessions__gt=0
     ).values('id', 'package_name', 'session_price', 'remaining_sessions')
@@ -341,6 +346,7 @@ def get_client_packages_ajax(request):
 
 
 @login_required
+@requires_trainer
 @require_http_methods(["GET"])
 def calculate_package_fees_ajax(request):
     """AJAX endpoint to calculate package fees"""
@@ -379,6 +385,8 @@ def calculate_package_fees_ajax(request):
 
 
 @login_required
+@requires_trainer
+@organization_member_required
 def session_calendar_view(request):
     """Calendar view for sessions"""
     # Get current month's sessions
@@ -395,7 +403,7 @@ def session_calendar_view(request):
     
     # Get sessions for the month
     sessions = Session.objects.filter(
-        trainer=request.user,
+        trainer=request.trainer,
         session_date__year=year,
         session_date__month=month
     ).select_related('client', 'package')

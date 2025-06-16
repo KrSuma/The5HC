@@ -79,10 +79,10 @@
                     <div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600">근력</span>
-                            <span class="font-medium">{{ assessment.strength_score|floatformat:1|default:"0.0" }}/50</span>
+                            <span class="font-medium">{{ assessment.strength_score|floatformat:0|default:"0" }}%</span>
                         </div>
                         <div class="mt-1 bg-gray-200 rounded-full h-2">
-                            <div class="bg-blue-600 h-2 rounded-full" style="width: {{ assessment.strength_score|default:0|floatformat:0 }}%"></div>
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: {{ assessment.strength_score|default:0 }}%"></div>
                         </div>
                         <p class="text-xs text-gray-500 mt-1">{{ score_descriptions.strength }}</p>
                     </div>
@@ -90,10 +90,10 @@
                     <div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600">유연성</span>
-                            <span class="font-medium">{{ assessment.mobility_score|floatformat:1|default:"0.0" }}/50</span>
+                            <span class="font-medium">{{ assessment.mobility_score|floatformat:0|default:"0" }}%</span>
                         </div>
                         <div class="mt-1 bg-gray-200 rounded-full h-2">
-                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ assessment.mobility_score|default:0|floatformat:0 }}%"></div>
+                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ assessment.mobility_score|default:0 }}%"></div>
                         </div>
                         <p class="text-xs text-gray-500 mt-1">{{ score_descriptions.mobility }}</p>
                     </div>
@@ -101,10 +101,10 @@
                     <div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600">균형</span>
-                            <span class="font-medium">{{ assessment.balance_score|floatformat:1|default:"0.0" }}/50</span>
+                            <span class="font-medium">{{ assessment.balance_score|floatformat:0|default:"0" }}%</span>
                         </div>
                         <div class="mt-1 bg-gray-200 rounded-full h-2">
-                            <div class="bg-purple-600 h-2 rounded-full" style="width: {{ assessment.balance_score|default:0|floatformat:0 }}%"></div>
+                            <div class="bg-purple-600 h-2 rounded-full" style="width: {{ assessment.balance_score|default:0 }}%"></div>
                         </div>
                         <p class="text-xs text-gray-500 mt-1">{{ score_descriptions.balance }}</p>
                     </div>
@@ -112,10 +112,10 @@
                     <div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600">심폐지구력</span>
-                            <span class="font-medium">{{ assessment.cardio_score|floatformat:1|default:"0.0" }}/40</span>
+                            <span class="font-medium">{{ assessment.cardio_score|floatformat:0|default:"0" }}%</span>
                         </div>
                         <div class="mt-1 bg-gray-200 rounded-full h-2">
-                            <div class="bg-red-600 h-2 rounded-full" style="width: {% widthratio assessment.cardio_score|default:0 40 100 %}%"></div>
+                            <div class="bg-red-600 h-2 rounded-full" style="width: {{ assessment.cardio_score|default:0 }}%"></div>
                         </div>
                         <p class="text-xs text-gray-500 mt-1">{{ score_descriptions.cardio }}</p>
                     </div>
@@ -283,54 +283,110 @@
         </div>
     </div>
     
-    <!-- Radar Chart -->
+    <!-- Score Visualization -->
     <div class="bg-white rounded-lg shadow p-6 mt-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">능력치 차트</h2>
-        <div class="max-w-md mx-auto">
-            <canvas id="radarChart"></canvas>
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">능력치 평가</h2>
+        
+        <!-- Progress Bars -->
+        <div class="space-y-4 max-w-2xl mx-auto mb-8">
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-700">근력</span>
+                    <span class="text-sm text-gray-600">{{ assessment.strength_score|default:0|floatformat:0 }}%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-blue-600 h-3 rounded-full transition-all duration-500" style="width: {{ assessment.strength_score|default:0 }}%"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-700">유연성</span>
+                    <span class="text-sm text-gray-600">{{ assessment.mobility_score|default:0|floatformat:0 }}%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-green-600 h-3 rounded-full transition-all duration-500" style="width: {{ assessment.mobility_score|default:0 }}%"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-700">균형</span>
+                    <span class="text-sm text-gray-600">{{ assessment.balance_score|default:0|floatformat:0 }}%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-yellow-600 h-3 rounded-full transition-all duration-500" style="width: {{ assessment.balance_score|default:0 }}%"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-700">심폐지구력</span>
+                    <span class="text-sm text-gray-600">{{ assessment.cardio_score|default:0|floatformat:0 }}%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-red-600 h-3 rounded-full transition-all duration-500" style="width: {{ assessment.cardio_score|default:0 }}%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bar Chart -->
+        <div class="max-w-2xl mx-auto">
+            <canvas id="barChart"></canvas>
         </div>
     </div>
 </div>
 
 <script>
-// Radar Chart
-const ctx = document.getElementById('radarChart').getContext('2d');
-const radarChart = new Chart(ctx, {
-    type: 'radar',
+// Bar Chart
+const ctx = document.getElementById('barChart').getContext('2d');
+const barChart = new Chart(ctx, {
+    type: 'bar',
     data: {
         labels: ['근력', '유연성', '균형', '심폐지구력'],
         datasets: [{
-            label: '평가 점수',
+            label: '점수',
             data: [
                 {{ assessment.strength_score|default:0 }},
                 {{ assessment.mobility_score|default:0 }},
                 {{ assessment.balance_score|default:0 }},
-                {% widthratio assessment.cardio_score|default:0 40 50 %}
+                {{ assessment.cardio_score|default:0 }}
             ],
-            backgroundColor: 'rgba(59, 130, 246, 0.2)',
-            borderColor: 'rgba(59, 130, 246, 1)',
-            borderWidth: 2,
-            pointBackgroundColor: 'rgba(59, 130, 246, 1)',
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+            backgroundColor: [
+                'rgba(59, 130, 246, 0.8)',
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(245, 158, 11, 0.8)',
+                'rgba(239, 68, 68, 0.8)'
+            ],
+            borderColor: [
+                'rgba(59, 130, 246, 1)',
+                'rgba(16, 185, 129, 1)',
+                'rgba(245, 158, 11, 1)',
+                'rgba(239, 68, 68, 1)'
+            ],
+            borderWidth: 1
         }]
     },
     options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
+        aspectRatio: 2,
         scales: {
-            r: {
+            y: {
                 beginAtZero: true,
-                max: 50,
+                max: 100,
                 ticks: {
-                    stepSize: 10
+                    stepSize: 20
                 }
             }
         },
         plugins: {
             legend: {
                 display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.dataset.label + ': ' + context.parsed.y.toFixed(0) + '%';
+                    }
+                }
             }
         }
     }

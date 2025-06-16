@@ -41,7 +41,7 @@
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
                         {% for value, label in form.role.field.choices %}
                             <option value="{{ value }}" {% if form.role.value == value %}selected{% endif %}>
-                                {% if value == 'admin' %}관리자{% elif value == 'senior' %}시니어 트레이너{% else %}트레이너{% endif %}
+                                {% if value == 'owner' %}소유자{% elif value == 'senior' %}시니어 트레이너{% elif value == 'trainer' %}트레이너{% elif value == 'assistant' %}어시스턴트{% endif %}
                             </option>
                         {% endfor %}
                     </select>
@@ -111,9 +111,10 @@
                             {{ invitation.email }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {% if invitation.role == 'admin' %}관리자
+                            {% if invitation.role == 'owner' %}소유자
                             {% elif invitation.role == 'senior' %}시니어 트레이너
-                            {% else %}트레이너{% endif %}
+                            {% elif invitation.role == 'trainer' %}트레이너
+                            {% elif invitation.role == 'assistant' %}어시스턴트{% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ invitation.created_at|date:"Y-m-d" }}

@@ -6,6 +6,7 @@ from django.db.models import Q, Count
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.urls import reverse
+from django.template.loader import render_to_string
 import csv
 
 from .models import Client
@@ -181,12 +182,10 @@ def client_edit_view(request, pk):
             log_client_action('client_updated', client, request)
             
             if request.headers.get('HX-Request'):
-                response = HttpResponse()
-                response['X-Message'] = "회원 정보가 수정되었습니다."
-                response['X-Message-Type'] = 'success'
-                return render(request, 'clients/client_info_partial.html', {
-                    'client': client,
-                }, headers=response.headers)
+                # For HTMX requests, redirect to the detail page
+                response = HttpResponse(status=204)
+                response['HX-Redirect'] = reverse('clients:detail', kwargs={'pk': client.pk})
+                return response
             
             messages.success(request, "회원 정보가 수정되었습니다.")
             return redirect('clients:detail', pk=client.pk)

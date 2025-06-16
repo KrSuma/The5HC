@@ -1,0 +1,233 @@
+<!-- Alternative Chart Visualizations for Assessment Scores -->
+
+<!-- Option 1: Horizontal Bar Chart -->
+<div class="bg-white rounded-lg shadow p-6 mt-6">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">능력치 평가 - 막대 차트</h2>
+    <div class="max-w-2xl mx-auto">
+        <canvas id="barChart"></canvas>
+    </div>
+</div>
+
+<!-- Option 2: Progress Bars -->
+<div class="bg-white rounded-lg shadow p-6 mt-6">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">능력치 평가 - 진행 막대</h2>
+    <div class="space-y-4 max-w-2xl mx-auto">
+        <div>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium text-gray-700">근력</span>
+                <span class="text-sm text-gray-600">{{ assessment.strength_score|default:0 }}/5</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {% widthratio assessment.strength_score|default:0 5 100 %}%"></div>
+            </div>
+        </div>
+        <div>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium text-gray-700">유연성</span>
+                <span class="text-sm text-gray-600">{{ assessment.mobility_score|default:0 }}/5</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-green-600 h-2.5 rounded-full" style="width: {% widthratio assessment.mobility_score|default:0 5 100 %}%"></div>
+            </div>
+        </div>
+        <div>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium text-gray-700">균형</span>
+                <span class="text-sm text-gray-600">{{ assessment.balance_score|default:0 }}/5</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-yellow-600 h-2.5 rounded-full" style="width: {% widthratio assessment.balance_score|default:0 5 100 %}%"></div>
+            </div>
+        </div>
+        <div>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium text-gray-700">심폐지구력</span>
+                <span class="text-sm text-gray-600">{{ assessment.cardio_score|default:0 }}/5</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-red-600 h-2.5 rounded-full" style="width: {% widthratio assessment.cardio_score|default:0 5 100 %}%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Option 3: Gauge Charts -->
+<div class="bg-white rounded-lg shadow p-6 mt-6">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">능력치 평가 - 게이지 차트</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+        <div class="text-center">
+            <canvas id="gaugeStrength" width="150" height="150"></canvas>
+            <p class="mt-2 text-sm font-medium text-gray-700">근력</p>
+        </div>
+        <div class="text-center">
+            <canvas id="gaugeMobility" width="150" height="150"></canvas>
+            <p class="mt-2 text-sm font-medium text-gray-700">유연성</p>
+        </div>
+        <div class="text-center">
+            <canvas id="gaugeBalance" width="150" height="150"></canvas>
+            <p class="mt-2 text-sm font-medium text-gray-700">균형</p>
+        </div>
+        <div class="text-center">
+            <canvas id="gaugeCardio" width="150" height="150"></canvas>
+            <p class="mt-2 text-sm font-medium text-gray-700">심폐지구력</p>
+        </div>
+    </div>
+</div>
+
+<!-- Option 4: Polar Area Chart -->
+<div class="bg-white rounded-lg shadow p-6 mt-6">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">능력치 평가 - 극좌표 차트</h2>
+    <div class="max-w-md mx-auto">
+        <canvas id="polarChart"></canvas>
+    </div>
+</div>
+
+<script>
+// Option 1: Horizontal Bar Chart
+const barCtx = document.getElementById('barChart').getContext('2d');
+new Chart(barCtx, {
+    type: 'bar',
+    data: {
+        labels: ['근력', '유연성', '균형', '심폐지구력'],
+        datasets: [{
+            label: '점수',
+            data: [
+                {{ assessment.strength_score|default:0 }},
+                {{ assessment.mobility_score|default:0 }},
+                {{ assessment.balance_score|default:0 }},
+                {{ assessment.cardio_score|default:0 }}
+            ],
+            backgroundColor: [
+                'rgba(59, 130, 246, 0.8)',
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(245, 158, 11, 0.8)',
+                'rgba(239, 68, 68, 0.8)'
+            ],
+            borderColor: [
+                'rgba(59, 130, 246, 1)',
+                'rgba(16, 185, 129, 1)',
+                'rgba(245, 158, 11, 1)',
+                'rgba(239, 68, 68, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        scales: {
+            x: {
+                beginAtZero: true,
+                max: 5,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Option 3: Gauge Charts (using Chart.js doughnut as gauge)
+function createGauge(canvasId, value, color) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    const percentage = (value / 5) * 100;
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [percentage, 100 - percentage],
+                backgroundColor: [color, '#E5E7EB'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: false,
+            rotation: -90,
+            circumference: 180,
+            cutout: '75%',
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    enabled: false
+                }
+            }
+        },
+        plugins: [{
+            afterDraw: function(chart) {
+                const ctx = chart.ctx;
+                const centerX = chart.width / 2;
+                const centerY = chart.height - 20;
+                
+                ctx.font = 'bold 24px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = color;
+                ctx.fillText(value.toFixed(1), centerX, centerY);
+                
+                ctx.font = '12px sans-serif';
+                ctx.fillStyle = '#6B7280';
+                ctx.fillText('/ 5', centerX, centerY + 15);
+            }
+        }]
+    });
+}
+
+createGauge('gaugeStrength', {{ assessment.strength_score|default:0 }}, '#3B82F6');
+createGauge('gaugeMobility', {{ assessment.mobility_score|default:0 }}, '#10B981');
+createGauge('gaugeBalance', {{ assessment.balance_score|default:0 }}, '#F59E0B');
+createGauge('gaugeCardio', {{ assessment.cardio_score|default:0 }}, '#EF4444');
+
+// Option 4: Polar Area Chart
+const polarCtx = document.getElementById('polarChart').getContext('2d');
+new Chart(polarCtx, {
+    type: 'polarArea',
+    data: {
+        labels: ['근력', '유연성', '균형', '심폐지구력'],
+        datasets: [{
+            data: [
+                {{ assessment.strength_score|default:0 }},
+                {{ assessment.mobility_score|default:0 }},
+                {{ assessment.balance_score|default:0 }},
+                {{ assessment.cardio_score|default:0 }}
+            ],
+            backgroundColor: [
+                'rgba(59, 130, 246, 0.5)',
+                'rgba(16, 185, 129, 0.5)',
+                'rgba(245, 158, 11, 0.5)',
+                'rgba(239, 68, 68, 0.5)'
+            ],
+            borderColor: [
+                'rgba(59, 130, 246, 1)',
+                'rgba(16, 185, 129, 1)',
+                'rgba(245, 158, 11, 1)',
+                'rgba(239, 68, 68, 1)'
+            ],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            r: {
+                beginAtZero: true,
+                max: 5,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>

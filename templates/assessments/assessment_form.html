@@ -178,18 +178,12 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">반복 횟수</label>
-                                <input type="number" name="push_up_reps" id="id_push_up_reps" 
-                                       x-model="pushUpReps" 
-                                       @input="calculatePushUpScore()"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                {{ form.push_up_reps }}
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">점수 (자동 계산)</label>
                                 <div class="relative">
-                                    <input type="number" name="push_up_score" id="id_push_up_score" 
-                                           x-model="pushUpScore" 
-                                           readonly
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100">
+                                    {{ form.push_up_score }}
                                     <div x-show="pushUpScore !== null" class="absolute right-3 top-2">
                                         <span class="text-xs font-medium px-2 py-1 rounded"
                                               :class="{'bg-green-100 text-green-800': pushUpScore >= 4,
@@ -213,32 +207,20 @@
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">무게 (kg)</label>
-                                <input type="number" name="farmer_carry_weight" id="id_farmer_carry_weight" 
-                                       x-model="farmerWeight" 
-                                       @input="calculateFarmerScore()"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                {{ form.farmer_carry_weight }}
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">거리 (m)</label>
-                                <input type="number" name="farmer_carry_distance" id="id_farmer_carry_distance" 
-                                       x-model="farmerDistance" 
-                                       @input="calculateFarmerScore()"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                {{ form.farmer_carry_distance }}
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">시간 (초)</label>
-                                <input type="number" name="farmer_carry_time" id="id_farmer_carry_time" 
-                                       x-model="farmerTime" 
-                                       @input="calculateFarmerScore()"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                {{ form.farmer_carry_time }}
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">점수 (자동 계산)</label>
                                 <div class="relative">
-                                    <input type="number" name="farmer_carry_score" id="id_farmer_carry_score" 
-                                           x-model="farmerScore" 
-                                           readonly
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100">
+                                    {{ form.farmer_carry_score }}
                                     <div x-show="farmerScore !== null" class="absolute right-3 top-2">
                                         <span class="text-xs font-medium px-2 py-1 rounded"
                                               :class="{'bg-green-100 text-green-800': farmerScore >= 4,
@@ -272,17 +254,11 @@
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">오른발 (초)</label>
-                                    <input type="number" name="single_leg_balance_right_eyes_open" id="id_single_leg_balance_right_eyes_open" 
-                                           x-model="balanceRightOpen" 
-                                           @input="calculateBalanceScore()"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    {{ form.single_leg_balance_right_eyes_open }}
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">왼발 (초)</label>
-                                    <input type="number" name="single_leg_balance_left_eyes_open" id="id_single_leg_balance_left_eyes_open" 
-                                           x-model="balanceLeftOpen" 
-                                           @input="calculateBalanceScore()"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    {{ form.single_leg_balance_left_eyes_open }}
                                 </div>
                             </div>
                         </div>
@@ -293,17 +269,11 @@
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">오른발 (초)</label>
-                                    <input type="number" name="single_leg_balance_right_eyes_closed" id="id_single_leg_balance_right_eyes_closed" 
-                                           x-model="balanceRightClosed" 
-                                           @input="calculateBalanceScore()"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    {{ form.single_leg_balance_right_eyes_closed }}
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">왼발 (초)</label>
-                                    <input type="number" name="single_leg_balance_left_eyes_closed" id="id_single_leg_balance_left_eyes_closed" 
-                                           x-model="balanceLeftClosed" 
-                                           @input="calculateBalanceScore()"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    {{ form.single_leg_balance_left_eyes_closed }}
                                 </div>
                             </div>
                         </div>
@@ -343,19 +313,13 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">거리 (cm)</label>
-                                <input type="number" name="toe_touch_distance" id="id_toe_touch_distance" 
-                                       x-model="toeTouchDistance" 
-                                       @input="calculateToeTouchScore()"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                {{ form.toe_touch_distance }}
                                 <p class="text-xs text-gray-500 mt-1">바닥 위는 +, 아래는 -</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">점수 (자동 계산)</label>
                                 <div class="relative">
-                                    <input type="number" name="toe_touch_score" id="id_toe_touch_score" 
-                                           x-model="toeTouchScore" 
-                                           readonly
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100">
+                                    {{ form.toe_touch_score }}
                                     <div x-show="toeTouchScore !== null" class="absolute right-3 top-2">
                                         <span class="text-xs font-medium px-2 py-1 rounded"
                                               :class="{'bg-green-100 text-green-800': toeTouchScore >= 4,
@@ -407,24 +371,15 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">1-1.5분 후 심박수 (bpm)</label>
-                            <input type="number" name="harvard_step_test_hr1" id="id_harvard_step_test_hr1" 
-                                   x-model="harvardHR1" 
-                                   @input="calculateHarvardScore()"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            {{ form.harvard_step_test_hr1 }}
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">2-2.5분 후 심박수 (bpm)</label>
-                            <input type="number" name="harvard_step_test_hr2" id="id_harvard_step_test_hr2" 
-                                   x-model="harvardHR2" 
-                                   @input="calculateHarvardScore()"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            {{ form.harvard_step_test_hr2 }}
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">3-3.5분 후 심박수 (bpm)</label>
-                            <input type="number" name="harvard_step_test_hr3" id="id_harvard_step_test_hr3" 
-                                   x-model="harvardHR3" 
-                                   @input="calculateHarvardScore()"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            {{ form.harvard_step_test_hr3 }}
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">지속 시간 (초)</label>
@@ -672,10 +627,11 @@ function assessmentForm() {
             
             // Balance score is already calculated from the balance test
             
-            // Calculate overall score
+            // Calculate overall score (normalized to 0-100 scale)
             const categoryScores = [this.strengthScore, this.mobilityScore, this.balanceScore, this.cardioScore].filter(s => s !== null);
             if (categoryScores.length > 0) {
-                this.overallScore = Math.round(categoryScores.reduce((a, b) => a + b) / categoryScores.length * 20) / 10;
+                // Average the scores and multiply by 20 to get 0-100 scale
+                this.overallScore = Math.round(categoryScores.reduce((a, b) => a + b) / categoryScores.length * 20);
             }
             
             // Update chart if on step 5
