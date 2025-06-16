@@ -4,7 +4,6 @@
 {% block title %}평가 등록 - The5HC{% endblock %}
 
 {% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
     .step-indicator {
         display: flex;
@@ -405,42 +404,6 @@
             </div>
         </div>
         
-        <!-- Score Summary (shown when on step 5) -->
-        <div x-show="currentStep === 5 && hasAnyScore()" class="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">점수 요약</h3>
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div class="text-center">
-                    <p class="text-sm text-gray-600">근력</p>
-                    <p class="text-2xl font-bold text-gray-800" x-text="strengthScore || '-'"></p>
-                </div>
-                <div class="text-center">
-                    <p class="text-sm text-gray-600">유연성</p>
-                    <p class="text-2xl font-bold text-gray-800" x-text="mobilityScore || '-'"></p>
-                </div>
-                <div class="text-center">
-                    <p class="text-sm text-gray-600">균형</p>
-                    <p class="text-2xl font-bold text-gray-800" x-text="balanceScore || '-'"></p>
-                </div>
-                <div class="text-center">
-                    <p class="text-sm text-gray-600">심폐</p>
-                    <p class="text-2xl font-bold text-gray-800" x-text="cardioScore || '-'"></p>
-                </div>
-                <div class="text-center">
-                    <p class="text-sm text-gray-600 font-semibold">총점</p>
-                    <p class="text-3xl font-bold" 
-                       :class="{'text-green-600': overallScore >= 80,
-                                'text-blue-600': overallScore >= 70 && overallScore < 80,
-                                'text-yellow-600': overallScore >= 60 && overallScore < 70,
-                                'text-orange-600': overallScore >= 50 && overallScore < 60,
-                                'text-red-600': overallScore < 50}"
-                       x-text="overallScore || '-'"></p>
-                </div>
-            </div>
-            <div class="mt-4 text-center">
-                <canvas id="scoreChart" width="300" height="300" class="mx-auto"></canvas>
-            </div>
-        </div>
-        
         <!-- Navigation Buttons -->
         <div class="flex justify-between mt-8">
             <button type="button" 
@@ -514,7 +477,6 @@ function assessmentForm() {
         mobilityScore: null,
         cardioScore: null,
         overallScore: null,
-        scoreChart: null,
         
         selectClient(clientId) {
             if (!clientId) return;
@@ -634,67 +596,12 @@ function assessmentForm() {
                 this.overallScore = Math.round(categoryScores.reduce((a, b) => a + b) / categoryScores.length * 20);
             }
             
-            // Update chart if on step 5
-            if (this.currentStep === 5) {
-                this.updateScoreChart();
-            }
         },
         
         hasAnyScore() {
             return this.pushUpScore !== null || this.farmerScore !== null || 
                    this.balanceScore !== null || this.toeTouchScore !== null || 
                    this.harvardScore !== null;
-        },
-        
-        updateScoreChart() {
-            const canvas = document.getElementById('scoreChart');
-            if (!canvas) return;
-            
-            if (this.scoreChart) {
-                this.scoreChart.destroy();
-            }
-            
-            const ctx = canvas.getContext('2d');
-            this.scoreChart = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: ['근력', '유연성', '균형', '심폐'],
-                    datasets: [{
-                        label: '평가 점수',
-                        data: [
-                            this.strengthScore || 0,
-                            this.mobilityScore || 0,
-                            this.balanceScore || 0,
-                            this.cardioScore || 0
-                        ],
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 2,
-                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
-                    }]
-                },
-                options: {
-                    responsive: false,
-                    maintainAspectRatio: true,
-                    scales: {
-                        r: {
-                            beginAtZero: true,
-                            max: 5,
-                            ticks: {
-                                stepSize: 1
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
         }
     }
 }
