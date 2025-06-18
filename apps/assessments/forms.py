@@ -11,10 +11,13 @@ class AssessmentForm(forms.ModelForm):
         model = Assessment
         fields = [
             'client', 'date',
+            # Test Variations
+            'test_environment', 'temperature',
             # Overhead Squat
-            'overhead_squat_score', 'overhead_squat_notes',
+            'overhead_squat_score', 'overhead_squat_knee_valgus', 'overhead_squat_forward_lean', 
+            'overhead_squat_heel_lift', 'overhead_squat_notes',
             # Push-up
-            'push_up_reps', 'push_up_score', 'push_up_notes',
+            'push_up_reps', 'push_up_type', 'push_up_score', 'push_up_notes',
             # Single Leg Balance
             'single_leg_balance_right_eyes_open', 'single_leg_balance_left_eyes_open',
             'single_leg_balance_right_eyes_closed', 'single_leg_balance_left_eyes_closed',
@@ -23,9 +26,10 @@ class AssessmentForm(forms.ModelForm):
             'toe_touch_distance', 'toe_touch_score', 'toe_touch_notes',
             # Shoulder Mobility
             'shoulder_mobility_right', 'shoulder_mobility_left', 
-            'shoulder_mobility_score', 'shoulder_mobility_notes',
+            'shoulder_mobility_score', 'shoulder_mobility_pain', 'shoulder_mobility_asymmetry',
+            'shoulder_mobility_notes',
             # Farmer's Carry
-            'farmer_carry_weight', 'farmer_carry_distance', 'farmer_carry_time',
+            'farmer_carry_weight', 'farmer_carry_percentage', 'farmer_carry_distance', 'farmer_carry_time',
             'farmer_carry_score', 'farmer_carry_notes',
             # Harvard Step Test
             'harvard_step_test_hr1', 'harvard_step_test_hr2', 'harvard_step_test_hr3',
@@ -42,10 +46,51 @@ class AssessmentForm(forms.ModelForm):
             ),
             'client': forms.HiddenInput(),
             
+            # Test Variations
+            'test_environment': forms.Select(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'x-model': 'testEnvironment',
+                    '@change': 'updateTemperatureVisibility()'
+                }
+            ),
+            'temperature': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '온도 (°C)',
+                    'step': '0.1',
+                    'min': -10,
+                    'max': 50,
+                    'x-show': "testEnvironment === 'outdoor'",
+                    'x-transition': True
+                }
+            ),
+            
             # Overhead Squat
             'overhead_squat_score': forms.Select(
                 choices=[(None, '선택'), (0, '0 - 통증'), (1, '1 - 불가'), (2, '2 - 보정동작'), (3, '3 - 완벽')],
                 attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}
+            ),
+            'overhead_squat_knee_valgus': forms.CheckboxInput(
+                attrs={
+                    'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded',
+                    'x-model': 'overheadSquatKneeValgus',
+                    '@change': 'calculateOverheadSquatScore()'
+                }
+            ),
+            'overhead_squat_forward_lean': forms.CheckboxInput(
+                attrs={
+                    'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded',
+                    'x-model': 'overheadSquatForwardLean',
+                    '@change': 'calculateOverheadSquatScore()'
+                }
+            ),
+            'overhead_squat_heel_lift': forms.CheckboxInput(
+                attrs={
+                    'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded',
+                    'x-model': 'overheadSquatHeelLift',
+                    '@change': 'calculateOverheadSquatScore()'
+                }
             ),
             'overhead_squat_notes': forms.Textarea(
                 attrs={
@@ -63,6 +108,13 @@ class AssessmentForm(forms.ModelForm):
                     'min': 0,
                     'x-model': 'pushUpReps',
                     '@input': 'calculatePushUpScore()'
+                }
+            ),
+            'push_up_type': forms.Select(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'x-model': 'pushUpType',
+                    '@change': 'calculatePushUpScore()'
                 }
             ),
             'push_up_score': forms.NumberInput(
@@ -175,6 +227,19 @@ class AssessmentForm(forms.ModelForm):
                 choices=[(None, '선택'), (0, '0 - 통증'), (1, '1 - 2주먹 이상'), (2, '2 - 1.5주먹'), (3, '3 - 1주먹 이내')],
                 attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}
             ),
+            'shoulder_mobility_pain': forms.CheckboxInput(
+                attrs={
+                    'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+                }
+            ),
+            'shoulder_mobility_asymmetry': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '좌우 차이 (cm)',
+                    'step': '0.1',
+                    'min': 0
+                }
+            ),
             'shoulder_mobility_notes': forms.Textarea(
                 attrs={
                     'rows': 2,
@@ -191,6 +256,17 @@ class AssessmentForm(forms.ModelForm):
                     'step': '0.5',
                     'min': 0,
                     'x-model': 'farmerWeight',
+                    '@input': 'calculateFarmerScore()'
+                }
+            ),
+            'farmer_carry_percentage': forms.NumberInput(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'placeholder': '체중 대비 % (선택사항)',
+                    'step': '1',
+                    'min': 0,
+                    'max': 200,
+                    'x-model': 'farmerPercentage',
                     '@input': 'calculateFarmerScore()'
                 }
             ),

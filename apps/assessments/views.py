@@ -125,9 +125,22 @@ def assessment_detail_view(request, pk):
         'cardio': get_score_description(assessment.cardio_score or 0, 40)
     }
     
+    # Get percentile rankings
+    percentile_rankings = assessment.get_percentile_rankings()
+    
+    # Get performance age
+    performance_age_data = assessment.calculate_performance_age()
+    
+    # Translate primary concerns to Korean if available
+    if assessment.risk_factors and 'summary' in assessment.risk_factors:
+        from apps.assessments.risk_calculator_korean import get_korean_primary_concerns
+        assessment.risk_factors['summary']['primary_concerns'] = get_korean_primary_concerns(assessment.risk_factors)
+    
     context = {
         'assessment': assessment,
         'score_descriptions': score_descriptions,
+        'percentile_rankings': percentile_rankings,
+        'performance_age': performance_age_data,
         'weasyprint_available': WEASYPRINT_AVAILABLE
     }
     

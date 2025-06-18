@@ -106,10 +106,10 @@ def session_package_add_view(request):
     client_id = request.GET.get('client')
     
     if request.method == 'POST':
-        form = SessionPackageForm(request.POST, user=request.trainer.user)
+        form = SessionPackageForm(request.POST, user=request.trainer)
         if form.is_valid():
             package = form.save(commit=False)
-            package.trainer = request.trainer.user
+            package.trainer = request.trainer
             package.remaining_sessions = package.total_sessions
             package.remaining_credits = package.total_amount
             
@@ -151,7 +151,7 @@ def session_package_add_view(request):
         initial = {}
         if client_id:
             initial['client'] = client_id
-        form = SessionPackageForm(initial=initial, user=request.trainer.user)
+        form = SessionPackageForm(initial=initial, user=request.trainer)
     
     context = {
         'form': form,

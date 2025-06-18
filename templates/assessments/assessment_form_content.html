@@ -85,6 +85,19 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">평가 날짜</label>
                             {{ form.date }}
                         </div>
+                        
+                        <!-- Test Environment -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">테스트 환경</label>
+                            {{ form.test_environment }}
+                        </div>
+                        
+                        <!-- Temperature (shown only for outdoor) -->
+                        <div x-show="testEnvironment === 'outdoor'" x-transition>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">온도 (°C)</label>
+                            {{ form.temperature }}
+                            <p class="mt-1 text-sm text-gray-500">실외 테스트 시 기온을 입력해주세요</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -102,6 +115,26 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">점수</label>
                                 {{ form.overhead_squat_score }}
                             </div>
+                            
+                            <!-- Movement Quality Checkboxes -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">동작 보상</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        {{ form.overhead_squat_knee_valgus }}
+                                        <span class="ml-2 text-sm text-gray-600">무릎이 안쪽으로 모임</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        {{ form.overhead_squat_forward_lean }}
+                                        <span class="ml-2 text-sm text-gray-600">과도한 전방 기울임</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        {{ form.overhead_squat_heel_lift }}
+                                        <span class="ml-2 text-sm text-gray-600">발뒤꿈치 들림</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
                                 {{ form.overhead_squat_notes }}
@@ -112,10 +145,14 @@
                     <!-- Push-up Test -->
                     <div class="mb-8">
                         <h3 class="text-lg font-medium text-gray-700 mb-4">푸시업 테스트</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">반복 횟수</label>
                                 {{ form.push_up_reps }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">푸시업 타입</label>
+                                {{ form.push_up_type }}
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">점수 (자동 계산)</label>
@@ -141,11 +178,17 @@
                     <!-- Farmer's Carry -->
                     <div>
                         <h3 class="text-lg font-medium text-gray-700 mb-4">파머스 캐리</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">무게 (kg)</label>
                                 {{ form.farmer_carry_weight }}
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">체중 대비 %</label>
+                                {{ form.farmer_carry_percentage }}
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">거리 (m)</label>
                                 {{ form.farmer_carry_distance }}
@@ -291,6 +334,21 @@
                                 {{ form.shoulder_mobility_score }}
                             </div>
                         </div>
+                        
+                        <!-- Movement Quality Fields -->
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="flex items-center">
+                                    {{ form.shoulder_mobility_pain }}
+                                    <span class="ml-2 text-sm text-gray-600">클리어링 테스트 시 통증</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">좌우 차이</label>
+                                {{ form.shoulder_mobility_asymmetry }}
+                            </div>
+                        </div>
+                        
                         <div class="mt-4">
                             <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
                             {{ form.shoulder_mobility_notes }}
@@ -473,6 +531,16 @@ function assessmentForm() {
         cardioScore: null,
         overallScore: null,
         
+        // Movement quality fields
+        overheadSquatKneeValgus: false,
+        overheadSquatForwardLean: false,
+        overheadSquatHeelLift: false,
+        
+        // Test variation fields
+        testEnvironment: 'indoor',
+        pushUpType: 'standard',
+        farmerPercentage: null,
+        
         selectClient(clientId) {
             if (!clientId) return;
             
@@ -493,6 +561,30 @@ function assessmentForm() {
         previousStep() {
             if (this.currentStep > 1) {
                 this.currentStep--;
+            }
+        },
+        
+        calculateOverheadSquatScore() {
+            // Count compensations
+            let compensations = 0;
+            if (this.overheadSquatKneeValgus) compensations++;
+            if (this.overheadSquatForwardLean) compensations++;
+            if (this.overheadSquatHeelLift) compensations++;
+            
+            // Calculate score based on compensations
+            let score;
+            if (compensations === 0) {
+                score = 3; // Perfect form
+            } else if (compensations === 1) {
+                score = 2; // Minor compensations
+            } else {
+                score = 1; // Major compensations
+            }
+            
+            // Update the select field
+            const selectElement = document.querySelector('[name="overhead_squat_score"]');
+            if (selectElement) {
+                selectElement.value = score;
             }
         },
         

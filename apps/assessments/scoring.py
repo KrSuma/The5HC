@@ -1,6 +1,7 @@
 # assessment_scoring.py - Functions for scoring and evaluating fitness tests with improved validation
 
 from typing import Dict, Tuple, Any, Union, Optional
+from django.core.cache import cache
 
 # Scoring threshold constants
 PUSHUP_THRESHOLDS = {
@@ -54,6 +55,195 @@ STEP_TEST_THRESHOLDS = {
 }
 
 
+def get_test_standard(test_type: str, gender: str = 'A', age: int = 30, 
+                     variation_type: str = None, conditions: str = None):
+    """
+    Get test standard from database with caching and fallback to hardcoded values.
+    
+    Args:
+        test_type: Type of test (push_up, farmer_carry, etc.)
+        gender: Gender ('M', 'F', or 'A')
+        age: Age in years
+        variation_type: Optional variation type
+        conditions: Optional conditions
+        
+    Returns:
+        TestStandard instance or None
+    """
+    # Import here to avoid circular imports
+    try:
+        from .models import TestStandard
+    except ImportError:
+        return None
+    
+    # Create cache key
+    cache_key = f"test_standard_{test_type}_{gender}_{age}_{variation_type}_{conditions}"
+    
+    # Try to get from cache first
+    standard = cache.get(cache_key)
+    if standard is not None:
+        return standard
+    
+    # Get from database
+    try:
+        standard = TestStandard.get_standard(
+            test_type=test_type,
+            gender=gender,
+            age=age,
+            variation_type=variation_type,
+            conditions=conditions
+        )
+        
+        # Cache for 1 hour
+        cache.set(cache_key, standard, 3600)
+        return standard
+        
+    except Exception:
+        # Database error or model not available - return None for fallback
+        return None
+
+
+def get_score_from_standard_or_fallback(test_type: str, value: float, gender: str = 'A', 
+                                       age: int = 30, variation_type: str = None, 
+                                       conditions: str = None) -> int:
+    """
+    Get score using database standard or fallback to hardcoded thresholds.
+    
+    Args:
+        test_type: Type of test
+        value: Test result value
+        gender: Gender ('M', 'F', or 'A')
+        age: Age in years
+        variation_type: Optional variation type
+        conditions: Optional conditions
+        
+    Returns:
+        int: Score from 1-4
+    """
+    # Try to get from database first
+    standard = get_test_standard(test_type, gender, age, variation_type, conditions)
+    
+    if standard:
+        return standard.get_score_for_value(value)
+    
+    # Fallback to hardcoded values
+    return _get_fallback_score(test_type, value, gender, age, variation_type, conditions)
+
+
+def _get_fallback_score(test_type: str, value: float, gender: str = 'A', 
+                       age: int = 30, variation_type: str = None, 
+                       conditions: str = None) -> int:
+    """
+    Fallback scoring using hardcoded thresholds.
+    """
+    if test_type == 'push_up':
+        return _fallback_pushup_score(gender, age, int(value), variation_type or 'standard')
+    elif test_type == 'balance':
+        return _fallback_balance_score(value, conditions or 'eyes_open')
+    elif test_type == 'farmer_carry':
+        return _fallback_farmers_carry_score(gender, value)
+    elif test_type == 'step_test':
+        return _fallback_step_test_score(value)
+    else:
+        # Generic fallback based on percentages
+        if value >= 4:
+            return 4
+        elif value >= 3:
+            return 3
+        elif value >= 2:
+            return 2
+        else:
+            return 1
+
+
+def _fallback_pushup_score(gender: str, age: int, reps: int, push_up_type: str) -> int:
+    """Fallback push-up scoring using hardcoded thresholds."""
+    # Convert gender format
+    gender_map = {'M': 'Male', 'F': 'Female', 'A': 'Male'}
+    gender_key = gender_map.get(gender, gender)
+    
+    # Find age range
+    age_range = None
+    thresholds_dict = PUSHUP_THRESHOLDS.get(gender_key, PUSHUP_THRESHOLDS['Male'])
+    
+    for age_range_tuple in thresholds_dict:
+        if age_range_tuple[0] <= age <= age_range_tuple[1]:
+            age_range = age_range_tuple
+            break
+    
+    if age_range is None:
+        age_range = max(thresholds_dict.keys())
+    
+    thresholds = thresholds_dict[age_range]
+    
+    # Calculate base score
+    if reps >= thresholds['excellent']:
+        base_score = 4
+    elif reps >= thresholds['good']:
+        base_score = 3
+    elif reps >= thresholds['average']:
+        base_score = 2
+    else:
+        base_score = 1
+    
+    # Apply variation adjustments
+    if push_up_type == 'modified':
+        base_score = max(1, min(4, round(base_score * 0.7)))
+    elif push_up_type == 'wall':
+        base_score = max(1, min(4, round(base_score * 0.4)))
+    
+    return base_score
+
+
+def _fallback_balance_score(time_seconds: float, conditions: str) -> int:
+    """Fallback balance scoring using hardcoded thresholds."""
+    if conditions == 'eyes_closed':
+        thresholds = BALANCE_THRESHOLDS['closed']
+    else:
+        thresholds = BALANCE_THRESHOLDS['open']
+    
+    if time_seconds >= thresholds['excellent']:
+        return 4
+    elif time_seconds >= thresholds['good']:
+        return 3
+    elif time_seconds >= thresholds['average']:
+        return 2
+    else:
+        return 1
+
+
+def _fallback_farmers_carry_score(gender: str, time_seconds: float) -> int:
+    """Fallback farmer's carry scoring using hardcoded thresholds."""
+    gender_map = {'M': 'Male', 'F': 'Female', 'A': 'Male'}
+    gender_key = gender_map.get(gender, gender)
+    
+    thresholds = FARMERS_CARRY_THRESHOLDS['time'].get(gender_key, 
+                                                     FARMERS_CARRY_THRESHOLDS['time']['Male'])
+    
+    if time_seconds >= thresholds['excellent']:
+        return 4
+    elif time_seconds >= thresholds['good']:
+        return 3
+    elif time_seconds >= thresholds['average']:
+        return 2
+    else:
+        return 1
+
+
+def _fallback_step_test_score(pfi: float) -> int:
+    """Fallback step test scoring using hardcoded thresholds."""
+    thresholds = STEP_TEST_THRESHOLDS['pfi']
+    
+    if pfi >= thresholds['excellent']:
+        return 4
+    elif pfi >= thresholds['good']:
+        return 3
+    elif pfi >= thresholds['average']:
+        return 2
+    else:
+        return 1
+
+
 def get_score_description(score: float, max_score: float = 100) -> str:
     """
     Convert numerical score to descriptive rating
@@ -83,33 +273,51 @@ def get_score_description(score: float, max_score: float = 100) -> str:
         return "Needs Improvement"
 
 
-def calculate_overhead_squat_score(form_quality: int) -> int:
+def calculate_overhead_squat_score(form_quality=None, knee_valgus=False, 
+                                   forward_lean=False, heel_lift=False, pain=False):
     """
-    Calculate score for overhead squat test
+    Calculate score for overhead squat test with movement quality
     
     Args:
-        form_quality: Quality of form (0-3)
-            3 - Perfect form
-            2 - Compensatory movements
-            1 - Unable to perform deep squat
-            0 - Pain reported
+        form_quality: Quality of form (0-3) - for backward compatibility
+        knee_valgus: Boolean - knees cave inward during squat
+        forward_lean: Boolean - excessive forward lean
+        heel_lift: Boolean - heels lift off ground
+        pain: Boolean - pain during test
             
     Returns:
         int: Score from 0-3
     """
-    # Validate input
-    form_quality = max(0, min(3, form_quality))
-    return form_quality
+    if pain:
+        return 0
+    
+    # If form_quality provided (backward compatibility)
+    if form_quality is not None:
+        return max(0, min(3, form_quality))
+    
+    # Calculate based on compensations
+    compensations = sum([knee_valgus, forward_lean, heel_lift])
+    
+    if compensations == 0:
+        return 3  # Perfect form
+    elif compensations == 1:
+        return 2  # Minor compensations
+    elif compensations >= 2:
+        return 1  # Major compensations
+    
+    return 1
 
 
-def calculate_pushup_score(gender: str, age: int, reps: int) -> int:
+def calculate_pushup_score(gender: str, age: int, reps: int, push_up_type: str = 'standard') -> int:
     """
-    Calculate score for push-up test based on gender, age and repetitions
+    Calculate score for push-up test based on gender, age, repetitions, and type.
+    Uses database standards with fallback to hardcoded values.
     
     Args:
         gender: 'Male'/'남성' or 'Female'/'여성'
         age: Age in years
         reps: Number of repetitions completed
+        push_up_type: Type of push-up performed ('standard', 'modified', 'wall')
         
     Returns:
         int: Score from 1-4
@@ -117,35 +325,32 @@ def calculate_pushup_score(gender: str, age: int, reps: int) -> int:
     # Validate inputs
     age = max(0, min(120, age))
     reps = max(0, reps)
-
-    # Find the appropriate age range
-    age_range = None
-    for age_range_tuple in PUSHUP_THRESHOLDS.get(gender, PUSHUP_THRESHOLDS['Male']):
-        if age_range_tuple[0] <= age <= age_range_tuple[1]:
-            age_range = age_range_tuple
-            break
     
-    if age_range is None:
-        # Fallback to the highest age range if not found
-        age_range = max(PUSHUP_THRESHOLDS.get(gender, PUSHUP_THRESHOLDS['Male']).keys())
-
-    # Get thresholds for the age range
-    thresholds = PUSHUP_THRESHOLDS.get(gender, PUSHUP_THRESHOLDS['Male'])[age_range]
+    # Convert gender to database format
+    gender_map = {
+        'Male': 'M', 'Female': 'F', '남성': 'M', '여성': 'F'
+    }
+    db_gender = gender_map.get(gender, 'M')
     
-    # Calculate score
-    if reps >= thresholds['excellent']:
-        return 4  # Excellent
-    elif reps >= thresholds['good']:
-        return 3  # Good
-    elif reps >= thresholds['average']:
-        return 2  # Average
-    else:
-        return 1  # Needs improvement
+    # Try to get score from database standard first
+    try:
+        score = get_score_from_standard_or_fallback(
+            test_type='push_up',
+            value=reps,
+            gender=db_gender,
+            age=age,
+            variation_type=push_up_type
+        )
+        return score
+    except Exception:
+        # Fallback to original logic if database fails
+        return _fallback_pushup_score(db_gender, age, reps, push_up_type)
 
 
 def calculate_single_leg_balance_score(right_open: int, left_open: int, right_closed: int, left_closed: int) -> float:
     """
-    Calculate single leg balance score based on time in seconds
+    Calculate single leg balance score based on time in seconds.
+    Uses database standards with fallback to hardcoded values.
     
     Args:
         right_open: Time in seconds for right leg with eyes open
@@ -166,6 +371,35 @@ def calculate_single_leg_balance_score(right_open: int, left_open: int, right_cl
     open_eyes_avg = (right_open + left_open) / 2
     closed_eyes_avg = (right_closed + left_closed) / 2
 
+    try:
+        # Score for eyes open using database standards
+        open_score = get_score_from_standard_or_fallback(
+            test_type='balance',
+            value=open_eyes_avg,
+            gender='A',  # Balance standards are generally gender-neutral
+            age=30,
+            conditions='eyes_open'
+        )
+        
+        # Score for eyes closed using database standards
+        closed_score = get_score_from_standard_or_fallback(
+            test_type='balance',
+            value=closed_eyes_avg,
+            gender='A',
+            age=30,
+            conditions='eyes_closed'
+        )
+        
+        # Combined score (weighted slightly towards the more challenging eyes-closed test)
+        return (float(open_score) * 0.4) + (float(closed_score) * 0.6)
+        
+    except Exception:
+        # Fallback to original logic if database fails
+        return _fallback_balance_combined_score(open_eyes_avg, closed_eyes_avg)
+
+
+def _fallback_balance_combined_score(open_eyes_avg: float, closed_eyes_avg: float) -> float:
+    """Fallback balance scoring using original logic."""
     # Score for eyes open
     if open_eyes_avg >= BALANCE_THRESHOLDS['open']['excellent']:
         open_score = 4  # Excellent
@@ -230,15 +464,17 @@ def calculate_shoulder_mobility_score(fist_distance: int) -> int:
     return max(0, min(3, fist_distance))
 
 
-def calculate_farmers_carry_score(gender: str, weight: float, distance: float, time: int) -> float:
+def calculate_farmers_carry_score(gender: str, weight: float, distance: float, time: int, body_weight_percentage: float = None) -> float:
     """
-    Calculate Farmer's Carry score based on distance, time, and form
+    Calculate Farmer's Carry score based on distance, time, and form.
+    Uses database standards with fallback to hardcoded values.
     
     Args:
         gender: 'Male'/'남성' or 'Female'/'여성'
         weight: Weight carried in kg
         distance: Distance carried in meters
         time: Time carrying the weight in seconds
+        body_weight_percentage: Percentage of body weight used (optional)
         
     Returns:
         float: Score from 1.0-4.0
@@ -247,7 +483,46 @@ def calculate_farmers_carry_score(gender: str, weight: float, distance: float, t
     weight = max(0, weight)
     distance = max(0, distance)
     time = max(0, time)
+    
+    # Convert gender to database format
+    gender_map = {
+        'Male': 'M', 'Female': 'F', '남성': 'M', '여성': 'F'
+    }
+    db_gender = gender_map.get(gender, 'M')
+    
+    # Try to get score from database standard first (using time as primary metric)
+    try:
+        time_score = get_score_from_standard_or_fallback(
+            test_type='farmer_carry',
+            value=time,
+            gender=db_gender,
+            age=30  # Default age since farmer carry standards are generally age-independent
+        )
+        
+        # Convert to float score
+        base_score = float(time_score)
+        
+        # Apply body weight percentage adjustment if provided
+        if body_weight_percentage is not None and body_weight_percentage > 0:
+            # Apply variation scoring for different weights
+            if body_weight_percentage < 50:
+                # Lighter weight - reduce score
+                adjustment = body_weight_percentage / 50
+                base_score = base_score * max(0.5, adjustment)
+            elif body_weight_percentage > 100:
+                # Heavier weight - increase score (up to 20% bonus)
+                adjustment = min(1.2, 1 + (body_weight_percentage - 100) / 500)
+                base_score = base_score * adjustment
+        
+        return max(1.0, min(4.0, base_score))
+        
+    except Exception:
+        # Fallback to original logic if database fails
+        return _fallback_farmers_carry_combined_score(gender, distance, time, body_weight_percentage)
 
+
+def _fallback_farmers_carry_combined_score(gender: str, distance: float, time: int, body_weight_percentage: float = None) -> float:
+    """Fallback farmer's carry scoring using original logic."""
     # Score based on distance
     if distance >= FARMERS_CARRY_THRESHOLDS['distance']['excellent']:
         distance_score = 4  # Excellent
@@ -271,7 +546,23 @@ def calculate_farmers_carry_score(gender: str, weight: float, distance: float, t
         time_score = 1  # Needs improvement
 
     # Combined score
-    return (distance_score + time_score) / 2
+    base_score = (distance_score + time_score) / 2
+    
+    # Apply adjustment based on body weight percentage if provided
+    if body_weight_percentage is not None and body_weight_percentage > 0:
+        # Normalize score based on body weight percentage
+        # Standard is 50% body weight for males, 40% for females
+        standard_percentage = 50 if gender in ['Male', '남성'] else 40
+        
+        # Calculate adjustment factor (higher percentage = harder = higher score)
+        adjustment_factor = body_weight_percentage / standard_percentage
+        
+        # Apply adjustment with reasonable limits (0.5x to 1.5x)
+        adjusted_score = base_score * max(0.5, min(1.5, adjustment_factor))
+        
+        return max(1.0, min(4.0, adjusted_score))
+    
+    return base_score
 
 
 def calculate_step_test_score(hr1: int, hr2: int, hr3: int) -> Tuple[int, float]:
@@ -375,6 +666,40 @@ def calculate_category_scores(assessment_data: Dict[str, Any], client_details: D
         'cardio_score': cardio_score,
         'pfi': pfi  # Return PFI for display
     }
+
+
+def apply_temperature_adjustment(score: float, temperature: float, test_environment: str) -> float:
+    """
+    Apply temperature adjustment to test scores for outdoor testing.
+    
+    Args:
+        score: Base score to adjust
+        temperature: Temperature in Celsius
+        test_environment: 'indoor' or 'outdoor'
+        
+    Returns:
+        float: Adjusted score
+    """
+    if test_environment != 'outdoor' or temperature is None:
+        return score
+    
+    # Optimal temperature range is 15-25°C
+    if 15 <= temperature <= 25:
+        return score  # No adjustment needed
+    
+    # Calculate adjustment based on temperature deviation
+    if temperature < 15:
+        # Cold weather adjustment (harder conditions)
+        deviation = 15 - temperature
+        # Max 10% bonus for extreme cold (< 5°C)
+        adjustment_factor = 1 + min(0.1, deviation * 0.01)
+    else:  # temperature > 25
+        # Hot weather adjustment (harder conditions)
+        deviation = temperature - 25
+        # Max 10% bonus for extreme heat (> 35°C)
+        adjustment_factor = 1 + min(0.1, deviation * 0.01)
+    
+    return min(score * adjustment_factor, 100)  # Cap at max score
 
 
 def calculate_scores(client, assessment_data):

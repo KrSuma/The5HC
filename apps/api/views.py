@@ -108,7 +108,34 @@ class AssessmentViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Filter assessments by current trainer's clients"""
-        return Assessment.objects.filter(client__trainer=self.request.user)
+        from apps.trainers.models import Trainer
+        trainer = Trainer.objects.get(user=self.request.user)
+        queryset = Assessment.objects.filter(trainer=trainer)
+        
+        # Allow filtering by test variations
+        push_up_type = self.request.query_params.get('push_up_type', None)
+        if push_up_type:
+            queryset = queryset.filter(push_up_type=push_up_type)
+        
+        test_environment = self.request.query_params.get('test_environment', None)
+        if test_environment:
+            queryset = queryset.filter(test_environment=test_environment)
+        
+        # Filter by has variations (assessments with any variation data)
+        has_variations = self.request.query_params.get('has_variations', None)
+        if has_variations is not None:
+            if has_variations.lower() == 'true':
+                queryset = queryset.exclude(
+                    push_up_type='standard'
+                ) | queryset.exclude(
+                    farmer_carry_percentage__isnull=True
+                ) | queryset.exclude(
+                    test_environment='indoor'
+                ) | queryset.exclude(
+                    temperature__isnull=True
+                )
+        
+        return queryset
     
     def get_serializer_class(self):
         """Use different serializers for list vs detail views"""

@@ -53,39 +53,100 @@ class ClientListSerializer(serializers.ModelSerializer):
 class AssessmentSerializer(serializers.ModelSerializer):
     """Serializer for Assessment model"""
     client_name = serializers.CharField(source='client.name', read_only=True)
-    total_score = serializers.ReadOnlyField()
-    fitness_score = serializers.ReadOnlyField()
-    posture_score = serializers.ReadOnlyField()
+    trainer_name = serializers.CharField(source='trainer.get_full_name', read_only=True)
+    
+    # Computed properties
+    harvard_step_test_score = serializers.ReadOnlyField()
+    harvard_step_test_pfi = serializers.ReadOnlyField()
+    single_leg_balance_score = serializers.ReadOnlyField()
+    
+    # Test variation fields with help text
+    push_up_type = serializers.ChoiceField(
+        choices=[('standard', '표준'), ('modified', '수정된'), ('wall', '벽')],
+        default='standard',
+        required=False,
+        help_text="Type of push-up performed (standard/modified/wall)"
+    )
+    farmer_carry_percentage = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        min_value=0,
+        max_value=200,
+        help_text="Percentage of body weight used for farmer's carry"
+    )
+    test_environment = serializers.ChoiceField(
+        choices=[('indoor', '실내'), ('outdoor', '실외')],
+        default='indoor',
+        required=False,
+        help_text="Environment where tests were conducted"
+    )
+    temperature = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        min_value=-10,
+        max_value=50,
+        help_text="Ambient temperature in Celsius during testing"
+    )
     
     class Meta:
         model = Assessment
-        fields = ['id', 'client', 'client_name', 'date', 
+        fields = ['id', 'client', 'client_name', 'trainer', 'trainer_name', 'date',
+                  # FMS Tests
+                  'overhead_squat_score', 'overhead_squat_notes',
+                  'overhead_squat_knee_valgus', 'overhead_squat_forward_lean', 
+                  'overhead_squat_heel_lift',
+                  # Push-up Test
+                  'push_up_reps', 'push_up_score', 'push_up_notes',
+                  'push_up_type',  # Test variation field
+                  # Single Leg Balance
+                  'single_leg_balance_left_eyes_open', 'single_leg_balance_right_eyes_open',
+                  'single_leg_balance_left_eyes_closed', 'single_leg_balance_right_eyes_closed',
+                  'single_leg_balance_score', 'single_leg_balance_notes',
+                  # Toe Touch Test
+                  'toe_touch_distance', 'toe_touch_score', 'toe_touch_notes',
+                  # Shoulder Mobility
+                  'shoulder_mobility_left', 'shoulder_mobility_right', 
+                  'shoulder_mobility_score', 'shoulder_mobility_notes',
+                  'shoulder_mobility_pain', 'shoulder_mobility_asymmetry',
+                  # Farmer's Carry
+                  'farmer_carry_weight', 'farmer_carry_distance', 'farmer_carry_time',
+                  'farmer_carry_score', 'farmer_carry_notes',
+                  'farmer_carry_percentage',  # Test variation field
+                  # Harvard Step Test
+                  'harvard_step_test_hr1', 'harvard_step_test_hr2', 'harvard_step_test_hr3',
+                  'harvard_step_test_score', 'harvard_step_test_pfi', 'harvard_step_test_notes',
+                  # Test Environment
+                  'test_environment', 'temperature',  # Test variation fields
                   # Category scores
-                  'endurance', 'strength', 'flexibility', 'balance', 'coordination',
-                  'agility', 'power', 'reaction_time', 'cardiovascular', 'core_stability',
-                  # Posture assessment
-                  'posture_score', 'head_forward', 'shoulder_internal_rotation',
-                  'shoulder_elevation', 'trunk_flexion', 'pelvic_anterior_tilt',
-                  'knee_hyperextension', 'foot_arch', 'c_curve', 's_curve',
-                  # Movement tests
-                  'squat_heel_raise', 'squat_knee_valgus', 'lunge_knee_valgus',
-                  'shoulder_flexion_rom', 'shoulder_extension_rom', 'trunk_rotation_rom',
-                  'hip_flexion_rom',
-                  # Calculated scores
-                  'fitness_score', 'total_score',
+                  'overall_score', 'strength_score', 'mobility_score', 
+                  'balance_score', 'cardio_score',
+                  # Risk Assessment
+                  'injury_risk_score', 'risk_factors',
                   # Metadata
-                  'notes', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+                  'created_at']
+        read_only_fields = ['id', 'trainer', 'created_at', 'overall_score', 
+                           'strength_score', 'mobility_score', 'balance_score', 
+                           'cardio_score', 'injury_risk_score', 'risk_factors']
+    
+    def create(self, validated_data):
+        """Create assessment with current user's trainer"""
+        # Get the trainer associated with the current user
+        from apps.trainers.models import Trainer
+        trainer = Trainer.objects.get(user=self.context['request'].user)
+        validated_data['trainer'] = trainer
+        return super().create(validated_data)
 
 
 class AssessmentListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for assessment listings"""
     client_name = serializers.CharField(source='client.name', read_only=True)
     overall_score = serializers.ReadOnlyField()
+    injury_risk_score = serializers.ReadOnlyField()
     
     class Meta:
         model = Assessment
-        fields = ['id', 'client', 'client_name', 'date', 'overall_score', 'created_at']
+        fields = ['id', 'client', 'client_name', 'date', 'overall_score', 
+                  'injury_risk_score', 'created_at']
 
 
 class SessionPackageSerializer(serializers.ModelSerializer):

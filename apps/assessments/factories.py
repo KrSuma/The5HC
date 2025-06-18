@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from apps.assessments.models import Assessment
 from apps.clients.factories import ClientFactory
-from apps.accounts.factories import UserFactory
+from apps.trainers.factories import TrainerFactory
 
 fake = Faker('ko_KR')
 
@@ -24,7 +24,7 @@ class AssessmentFactory(DjangoModelFactory):
     
     # Relationships
     client = factory.SubFactory(ClientFactory)
-    trainer = factory.SubFactory(UserFactory)
+    trainer = factory.LazyAttribute(lambda obj: obj.client.trainer if hasattr(obj, 'client') and obj.client else TrainerFactory())
     
     # Assessment metadata
     date = factory.LazyFunction(lambda: fake.date_time_this_month(tzinfo=timezone.get_current_timezone()))
@@ -265,7 +265,7 @@ def create_assessment_timeline(client, trainer=None, months=6):
     Returns assessments with dates spread across the timeline.
     """
     if not trainer:
-        trainer = UserFactory()
+        trainer = TrainerFactory()
     
     assessments = []
     for i in range(months):
@@ -290,7 +290,7 @@ def create_performance_progression(client, trainer=None, stages=3):
     Returns assessments with improving scores over time.
     """
     if not trainer:
-        trainer = UserFactory()
+        trainer = TrainerFactory()
     
     assessments = []
     score_multipliers = [0.6, 0.8, 1.0]  # Progression from 60% to 100% of good scores

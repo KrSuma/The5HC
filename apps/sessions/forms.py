@@ -32,7 +32,7 @@ class SessionPackageForm(forms.ModelForm):
             ),
             'total_amount': forms.NumberInput(
                 attrs={
-                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'class': 'w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'placeholder': '원',
                     'step': '1000',
                     'min': '0',
@@ -42,7 +42,7 @@ class SessionPackageForm(forms.ModelForm):
             ),
             'session_price': forms.NumberInput(
                 attrs={
-                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'class': 'w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'placeholder': '원',
                     'step': '1000',
                     'min': '0',
@@ -272,7 +272,7 @@ class PaymentForm(forms.ModelForm):
             ),
             'amount': forms.NumberInput(
                 attrs={
-                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'class': 'w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'placeholder': '원',
                     'step': '1000',
                     'min': '0'

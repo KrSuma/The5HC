@@ -49,6 +49,7 @@ class Command(BaseCommand):
                         'mobility': assessment.mobility_score,
                         'balance': assessment.balance_score,
                         'cardio': assessment.cardio_score,
+                        'injury_risk': assessment.injury_risk_score,
                     }
                     
                     # Recalculate scores
@@ -61,6 +62,7 @@ class Command(BaseCommand):
                         old_scores['mobility'] != assessment.mobility_score,
                         old_scores['balance'] != assessment.balance_score,
                         old_scores['cardio'] != assessment.cardio_score,
+                        old_scores['injury_risk'] != assessment.injury_risk_score,
                     ])
                     
                     if scores_changed:
@@ -73,10 +75,11 @@ class Command(BaseCommand):
                             self.stdout.write(f"  Mobility: {old_scores['mobility']} → {assessment.mobility_score}")
                             self.stdout.write(f"  Balance: {old_scores['balance']} → {assessment.balance_score}")
                             self.stdout.write(f"  Cardio: {old_scores['cardio']} → {assessment.cardio_score}")
+                            self.stdout.write(f"  Injury Risk: {old_scores['injury_risk']} → {assessment.injury_risk_score}")
                         else:
                             assessment.save(update_fields=[
                                 'overall_score', 'strength_score', 'mobility_score',
-                                'balance_score', 'cardio_score'
+                                'balance_score', 'cardio_score', 'injury_risk_score', 'risk_factors'
                             ])
                             self.stdout.write(
                                 self.style.SUCCESS(
