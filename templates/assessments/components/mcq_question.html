@@ -30,8 +30,8 @@
                         <span class="text-red-500">*</span>
                     {% endif %}
                 </label>
-                {% if question.help_text_ko or question.help_text or question.example_answer_ko or question.example_answer %}
-                    {% with help_text=question.help_text_ko|default:question.help_text example=question.example_answer_ko|default:question.example_answer scoring_info=question.scoring_info_ko|default:question.scoring_info %}
+                {% if question.help_text_ko or question.help_text %}
+                    {% with help_text=question.help_text_ko|default:question.help_text %}
                         {% include "assessments/components/mcq_help_tooltip.html" %}
                     {% endwith %}
                 {% endif %}
