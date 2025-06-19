@@ -51,6 +51,10 @@ class TrainerContextMiddleware(MiddlewareMixin):
         """
         # Check if view has requires_trainer attribute
         if hasattr(view_func, 'requires_trainer') and view_func.requires_trainer:
+            # Allow superusers to bypass trainer requirement
+            if request.user.is_superuser:
+                return None
+                
             if not request.trainer:
                 raise PermissionDenied("Trainer profile required to access this resource.")
         

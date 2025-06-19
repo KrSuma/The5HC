@@ -24,7 +24,7 @@
         <div class="flex-1">
             <div class="flex items-center">
                 {% include "assessments/components/mcq_question_icon.html" with question=question %}
-                <label class="block text-sm font-medium text-gray-700 ml-2">
+                <label class="block {% if question.question_type == 'scale' %}text-base font-semibold{% else %}text-sm font-medium{% endif %} text-gray-700 ml-2">
                     {{ question.question_text_ko|default:question.question_text }}
                     {% if question.is_required %}
                         <span class="text-red-500">*</span>
@@ -90,6 +90,11 @@
         {% elif question.question_type == 'scale' %}
             <!-- Scale/Rating - Mobile Optimized -->
             <div class="mcq-scale-container">
+                {% if question.help_text_ko or question.help_text %}
+                    <p class="text-sm text-gray-600 mb-3 italic">
+                        {{ question.help_text_ko|default:question.help_text }}
+                    </p>
+                {% endif %}
                 <div class="mcq-scale-labels">
                     <span>매우 낮음</span>
                     <span>보통</span>

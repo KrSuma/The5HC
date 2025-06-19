@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}종합 건강 평가 - {{ client.name }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/mcq-styles.css' %}">
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update scale values dynamically
+    const scaleInputs = document.querySelectorAll('input[type="range"]');
+    scaleInputs.forEach(input => {
+        const output = input.parentElement.querySelector('output');
+        if (output) {
+            // Set initial value
+            output.textContent = input.value;
+            
+            // Update on change
+            input.addEventListener('input', function() {
+                output.textContent = this.value;
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">종합 건강 평가</h1>
+        <p class="text-gray-600 mt-1">
+            <span class="font-medium">{{ client.name }}</span>님의 지식, 생활습관, 준비도 평가
+        </p>
+    </div>
+    
+    <!-- Simple Form without Alpine.js -->
+    <form method="post" action="{% url 'assessments:mcq_save' assessment.id %}">
+        {% csrf_token %}
+        
+        {% for category in categories %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4">{{ category.name_ko|default:category.name }}</h2>
+                
+                {% for question in questions %}
+                    {% if question.category.id == category.id %}
+                        <div class="mb-6 p-4 border border-gray-200 rounded {% if question.question_type == 'scale' %}border-blue-200 bg-blue-50{% endif %}">
+                            <label class="block {% if question.question_type == 'scale' %}text-base font-semibold text-blue-900{% else %}text-sm font-medium text-gray-700{% endif %} mb-2">
+                                {{ question.question_text_ko|default:question.question_text }}
+                                {% if question.is_required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            
+                            {% if question.question_type == 'single' %}
+                                <div class="space-y-2">
+                                    {% for choice in question.choices.all %}
+                                        <label class="flex items-center">
+                                            <input type="radio" 
+                                                   name="question_{{ question.id }}" 
+                                                   value="{{ choice.id }}"
+                                                   class="mr-2">
+                                            <span>{{ choice.choice_text_ko|default:choice.choice_text }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            {% elif question.question_type == 'multiple' %}
+                                <div class="space-y-2">
+                                    {% for choice in question.choices.all %}
+                                        <label class="flex items-center">
+                                            <input type="checkbox" 
+                                                   name="question_{{ question.id }}" 
+                                                   value="{{ choice.id }}"
+                                                   class="mr-2">
+                                            <span>{{ choice.choice_text_ko|default:choice.choice_text }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            {% elif question.question_type == 'scale' %}
+                                <div class="p-4 bg-gray-50 rounded-lg">
+                                    {% if question.help_text_ko or question.help_text %}
+                                        <p class="text-sm text-gray-600 mb-3 italic">
+                                            {{ question.help_text_ko|default:question.help_text }}
+                                        </p>
+                                    {% endif %}
+                                    <div class="flex justify-between text-sm text-gray-600 mb-2">
+                                        <span>1 - 매우 낮음</span>
+                                        <span>5 - 보통</span>
+                                        <span>10 - 매우 높음</span>
+                                    </div>
+                                    <input type="range" 
+                                           name="question_{{ question.id }}" 
+                                           id="scale_{{ question.id }}"
+                                           min="1" 
+                                           max="10" 
+                                           value="5"
+                                           class="w-full"
+                                           oninput="document.getElementById('output_{{ question.id }}').textContent = this.value">
+                                    <div class="text-center mt-2">
+                                        <output id="output_{{ question.id }}" class="text-lg font-semibold text-blue-600">5</output>
+                                        <span class="text-sm text-gray-500">/10</span>
+                                    </div>
+                                </div>
+                            {% elif question.question_type == 'text' %}
+                                <textarea name="question_{{ question.id }}" 
+                                          rows="3" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md"></textarea>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endfor %}
+        
+        <div class="flex justify-end">
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                평가 저장
+            </button>
+        </div>
+    </form>
+    
+    <div class="mt-4">
+        <a href="{% url 'assessments:detail' assessment.id %}" class="text-blue-600 hover:underline">
+            ← 평가 상세로 돌아가기
+        </a>
+    </div>
+</div>
+{% endblock %}

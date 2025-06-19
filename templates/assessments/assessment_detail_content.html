@@ -1,0 +1,591 @@
+<!-- Content-only template for HTMX navigation - does not extend base.html -->
+{% load humanize %}
+{% load assessment_tags %}
+
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-start">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">평가 결과</h1>
+            <p class="text-gray-600 mt-2">
+                <a href="{% url 'clients:detail' assessment.client.pk %}" 
+                   class="text-blue-600 hover:text-blue-800"
+                   hx-get="{% url 'clients:detail' assessment.client.pk %}"
+                   hx-target="#main-content"
+                   hx-push-url="true">
+                    {{ assessment.client.name }}
+                </a> 
+                | {{ assessment.date|date:"Y년 m월 d일" }}
+            </p>
+        </div>
+        <div class="flex space-x-2">
+            {% if weasyprint_available %}
+            <a href="{% url 'reports:generate' assessment.pk %}" 
+               class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200">
+                <svg class="inline-block w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                PDF 리포트
+            </a>
+            {% else %}
+            <span class="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed" 
+                  title="PDF 생성 기능을 사용할 수 없습니다. WeasyPrint가 설치되지 않았습니다.">
+                <svg class="inline-block w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                PDF 리포트 (사용 불가)
+            </span>
+            {% endif %}
+            <button class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200"
+                    hx-delete="{% url 'assessments:delete' assessment.pk %}"
+                    hx-confirm="정말로 이 평가를 삭제하시겠습니까?"
+                    hx-target="#main-content">
+                <svg class="inline-block w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                삭제
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column -->
+        <div class="space-y-6">
+            <!-- Overall Score Card -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">종합 점수</h2>
+                <div class="text-center">
+                    <div class="relative inline-flex items-center justify-center">
+                        <svg class="w-32 h-32">
+                            <circle cx="64" cy="64" r="56" stroke="#e5e7eb" stroke-width="12" fill="none"></circle>
+                            <circle cx="64" cy="64" r="56" 
+                                    stroke="{% if assessment.overall_score >= 80 %}#10b981{% elif assessment.overall_score >= 60 %}#3b82f6{% elif assessment.overall_score >= 40 %}#f59e0b{% else %}#ef4444{% endif %}" 
+                                    stroke-width="12" 
+                                    fill="none"
+                                    stroke-linecap="round"
+                                    stroke-dasharray="{{ assessment.overall_score|default:0|floatformat:0|mul:3.52 }} 352"
+                                    transform="rotate(-90 64 64)"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div>
+                                <div class="text-3xl font-bold {% if assessment.overall_score >= 80 %}text-green-600{% elif assessment.overall_score >= 60 %}text-blue-600{% elif assessment.overall_score >= 40 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                    {{ assessment.overall_score|default:0|floatformat:0 }}%
+                                </div>
+                                <div class="text-xs text-gray-500">종합</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 text-sm">
+                        <span class="font-medium text-gray-700">평가 등급:</span>
+                        <span class="ml-2 px-3 py-1 rounded-full text-sm font-medium
+                            {% if assessment.overall_score >= 80 %}bg-green-100 text-green-800
+                            {% elif assessment.overall_score >= 60 %}bg-blue-100 text-blue-800
+                            {% elif assessment.overall_score >= 40 %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if assessment.overall_score >= 80 %}우수
+                            {% elif assessment.overall_score >= 60 %}양호
+                            {% elif assessment.overall_score >= 40 %}보통
+                            {% else %}개선 필요{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Client Info -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">회원 정보</h2>
+                <dl class="space-y-3">
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">이름</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ assessment.client.name }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">나이</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ assessment.client.age }}세</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">성별</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ assessment.client.get_gender_display }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">키/몸무게</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ assessment.client.height }}cm / {{ assessment.client.weight }}kg</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-sm text-gray-600">BMI</dt>
+                        <dd class="text-sm font-medium text-gray-900">
+                            {{ assessment.client.bmi }}
+                            <span class="text-xs text-gray-500">
+                                ({% if assessment.client.bmi < 18.5 %}저체중
+                                {% elif assessment.client.bmi < 23 %}정상
+                                {% elif assessment.client.bmi < 25 %}과체중
+                                {% elif assessment.client.bmi < 30 %}비만
+                                {% else %}고도비만{% endif %})
+                            </span>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <!-- Injury Risk Assessment -->
+            {% if assessment.injury_risk_score is not None %}
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">부상 위험도 평가</h2>
+                
+                <!-- Risk Score Display -->
+                <div class="text-center mb-4">
+                    <div class="text-4xl font-bold {% if assessment.injury_risk_score <= 30 %}text-green-600{% elif assessment.injury_risk_score <= 60 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                        {{ assessment.injury_risk_score|floatformat:0 }}
+                    </div>
+                    <div class="text-sm text-gray-600">위험 점수 (0-100)</div>
+                    <div class="mt-2">
+                        <span class="px-3 py-1 rounded-full text-sm font-medium
+                            {% if assessment.injury_risk_score <= 30 %}bg-green-100 text-green-800
+                            {% elif assessment.injury_risk_score <= 60 %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if assessment.injury_risk_score <= 30 %}낮은 위험
+                            {% elif assessment.injury_risk_score <= 60 %}중간 위험
+                            {% else %}높은 위험{% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Risk Factors -->
+                {% if assessment.risk_factors and assessment.risk_factors.summary.primary_concerns %}
+                <div class="border-t pt-4">
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">주요 위험 요인</h3>
+                    <ul class="space-y-2 text-sm">
+                        {% for concern in assessment.risk_factors.summary.primary_concerns|slice:":5" %}
+                        <li class="flex items-start">
+                            <svg class="w-4 h-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">{{ concern }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Middle Column -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Category Scores -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">능력치 평가</h2>
+                
+                <!-- Bar Chart -->
+                <div class="mb-6" style="height: 300px;">
+                    <canvas id="barChart"></canvas>
+                </div>
+                
+                <!-- Score Details -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-blue-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700">근력</span>
+                            <span class="text-lg font-bold text-blue-600">{{ assessment.strength_score|default:0|floatformat:0 }}%</span>
+                        </div>
+                        <div class="mt-2 bg-blue-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: {{ assessment.strength_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-green-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700">유연성</span>
+                            <span class="text-lg font-bold text-green-600">{{ assessment.flexibility_score|default:0|floatformat:0 }}%</span>
+                        </div>
+                        <div class="mt-2 bg-green-200 rounded-full h-2">
+                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ assessment.flexibility_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-purple-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700">균형</span>
+                            <span class="text-lg font-bold text-purple-600">{{ assessment.balance_score|default:0|floatformat:0 }}%</span>
+                        </div>
+                        <div class="mt-2 bg-purple-200 rounded-full h-2">
+                            <div class="bg-purple-600 h-2 rounded-full" style="width: {{ assessment.balance_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-red-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700">심폐지구력</span>
+                            <span class="text-lg font-bold text-red-600">{{ assessment.cardio_score|default:0|floatformat:0 }}%</span>
+                        </div>
+                        <div class="mt-2 bg-red-200 rounded-full h-2">
+                            <div class="bg-red-600 h-2 rounded-full" style="width: {{ assessment.cardio_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Percentile Rankings -->
+            {% if percentile_data %}
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">백분위 순위</h2>
+                <p class="text-sm text-gray-600 mb-4">동일 연령대 및 성별 대비 상대적 위치</p>
+                
+                <div class="space-y-4">
+                    {% for test, data in percentile_data.items %}
+                    {% if data.percentile %}
+                    <div>
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="font-medium text-gray-700">{{ data.display_name }}</span>
+                            <span class="font-bold">상위 {{ 100|sub:data.percentile|floatformat:0 }}%</span>
+                        </div>
+                        
+                        <!-- Value Display -->
+                        <div class="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>측정값: {{ data.value|floatformat:data.decimal_places }} {{ data.unit }}</span>
+                            <span>
+                                {% if data.percentile >= 90 %}최상위권
+                                {% elif data.percentile >= 75 %}상위권
+                                {% elif data.percentile >= 50 %}중위권
+                                {% elif data.percentile >= 25 %}하위권
+                                {% else %}최하위권{% endif %}
+                            </span>
+                        </div>
+                        
+                        <!-- Percentile Bar -->
+                        <div class="relative">
+                            <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full transition-all duration-500
+                                    {% if data.percentile >= 75 %}bg-green-500
+                                    {% elif data.percentile >= 50 %}bg-blue-500
+                                    {% elif data.percentile >= 25 %}bg-yellow-500
+                                    {% else %}bg-red-500{% endif %}"
+                                    style="width: {{ data.percentile }}%"></div>
+                            </div>
+                            <!-- Percentile markers -->
+                            <div class="absolute top-0 left-0 w-full flex justify-between mt-2 text-xs text-gray-400">
+                                <span>0</span>
+                                <span class="ml-6">25</span>
+                                <span>50</span>
+                                <span class="mr-6">75</span>
+                                <span>100</span>
+                            </div>
+                        </div>
+                        
+                        {% if data.source %}
+                        <div class="text-xs text-gray-400 mt-4">
+                            출처: {{ data.source }} ({{ data.year }})
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Performance Age -->
+            {% if performance_age %}
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">체력 나이</h2>
+                
+                <div class="text-center mb-6">
+                    <div class="text-5xl font-bold {% if performance_age.difference <= -5 %}text-green-600{% elif performance_age.difference <= 5 %}text-blue-600{% else %}text-red-600{% endif %}">
+                        {{ performance_age.fitness_age|floatformat:0 }}세
+                    </div>
+                    <div class="text-sm text-gray-600 mt-2">
+                        실제 나이 {{ assessment.client.age }}세 대비 
+                        <span class="font-semibold {% if performance_age.difference < 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ performance_age.difference|floatformat:0|abs }}년 {% if performance_age.difference < 0 %}젊음{% else %}늙음{% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    {% for category, age_data in performance_age.category_ages.items %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">{{ age_data.name }}</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm font-medium">{{ age_data.age|floatformat:0 }}세</span>
+                            <span class="text-xs {% if age_data.difference < 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                ({% if age_data.difference < 0 %}-{% else %}+{% endif %}{{ age_data.difference|floatformat:0|abs }})
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Test Results Details -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-800">상세 테스트 결과</h2>
+                </div>
+                <div class="p-6 space-y-6">
+                    <!-- Strength Tests -->
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-3">근력 테스트</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">오버헤드 스쿼트</span>
+                                <span class="font-medium">
+                                    점수: {{ assessment.overhead_squat_score }}/3
+                                    {% if assessment.overhead_squat_notes %}
+                                    <span class="text-xs text-gray-500 ml-2">({{ assessment.overhead_squat_notes }})</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">푸시업</span>
+                                <span class="font-medium">
+                                    {{ assessment.push_up_reps }}회 (점수: {{ assessment.push_up_score }}/5)
+                                    {% if assessment.push_up_type != 'standard' %}
+                                    <span class="text-xs text-gray-500 ml-2">({{ assessment.get_push_up_type_display }})</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">파머스 캐리</span>
+                                <span class="font-medium">
+                                    {{ assessment.farmer_carry_weight }}kg, {{ assessment.farmer_carry_distance }}m, {{ assessment.farmer_carry_time }}초
+                                    (점수: {{ assessment.farmer_carry_score }}/5)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Balance Test -->
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-3">균형 테스트</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="p-3 bg-gray-50 rounded">
+                                <div class="text-xs text-gray-500 mb-1">눈 뜨고</div>
+                                <div class="text-sm">
+                                    오른발: {{ assessment.single_leg_balance_right_eyes_open }}초<br>
+                                    왼발: {{ assessment.single_leg_balance_left_eyes_open }}초
+                                </div>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded">
+                                <div class="text-xs text-gray-500 mb-1">눈 감고</div>
+                                <div class="text-sm">
+                                    오른발: {{ assessment.single_leg_balance_right_eyes_closed }}초<br>
+                                    왼발: {{ assessment.single_leg_balance_left_eyes_closed }}초
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Flexibility Tests -->
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-3">유연성 테스트</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">앞으로 굽히기</span>
+                                <span class="font-medium">
+                                    {{ assessment.toe_touch_distance }}cm (점수: {{ assessment.toe_touch_score }}/5)
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">어깨 유연성</span>
+                                <span class="font-medium">
+                                    오른쪽: {{ assessment.shoulder_mobility_right }}cm, 왼쪽: {{ assessment.shoulder_mobility_left }}cm
+                                    (점수: {{ assessment.shoulder_mobility_score }}/3)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cardio Test -->
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-3">심폐지구력 테스트</h3>
+                        <div class="p-3 bg-gray-50 rounded">
+                            <div class="text-sm text-gray-600 mb-2">하버드 스텝 테스트</div>
+                            <div class="grid grid-cols-3 gap-2 text-sm">
+                                <div>
+                                    <span class="text-gray-500">1분 후:</span> {{ assessment.harvard_step_test_hr1 }}bpm
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">2분 후:</span> {{ assessment.harvard_step_test_hr2 }}bpm
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">3분 후:</span> {{ assessment.harvard_step_test_hr3 }}bpm
+                                </div>
+                            </div>
+                            <div class="mt-2 text-sm">
+                                <span class="text-gray-500">지속시간:</span> {{ assessment.harvard_step_test_duration }}초
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MCQ Assessment Section -->
+    <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">종합 건강 평가 (MCQ)</h2>
+            <a href="{% url 'assessments:mcq' assessment.pk %}" 
+               hx-get="{% url 'assessments:mcq' assessment.pk %}"
+               hx-target="#main-content"
+               hx-push-url="true"
+               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                {% if assessment.knowledge_score or assessment.lifestyle_score or assessment.readiness_score %}
+                    MCQ 평가 수정
+                {% else %}
+                    MCQ 평가 시작
+                {% endif %}
+            </a>
+        </div>
+        
+        {% if assessment.knowledge_score or assessment.lifestyle_score or assessment.readiness_score %}
+            <!-- MCQ Scores Display -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600">
+                        {% if assessment.knowledge_score %}{{ assessment.knowledge_score|floatformat:0 }}%{% else %}--{% endif %}
+                    </div>
+                    <div class="text-sm text-gray-600 mt-1">지식 평가</div>
+                </div>
+                
+                <div class="text-center p-4 bg-green-50 rounded-lg">
+                    <div class="text-2xl font-bold text-green-600">
+                        {% if assessment.lifestyle_score %}{{ assessment.lifestyle_score|floatformat:0 }}%{% else %}--{% endif %}
+                    </div>
+                    <div class="text-sm text-gray-600 mt-1">생활습관</div>
+                </div>
+                
+                <div class="text-center p-4 bg-purple-50 rounded-lg">
+                    <div class="text-2xl font-bold text-purple-600">
+                        {% if assessment.readiness_score %}{{ assessment.readiness_score|floatformat:0 }}%{% else %}--{% endif %}
+                    </div>
+                    <div class="text-sm text-gray-600 mt-1">준비도</div>
+                </div>
+                
+                <div class="text-center p-4 bg-orange-50 rounded-lg">
+                    <div class="text-2xl font-bold text-orange-600">
+                        {% if assessment.comprehensive_score %}{{ assessment.comprehensive_score|floatformat:0 }}%{% else %}--{% endif %}
+                    </div>
+                    <div class="text-sm text-gray-600 mt-1">종합 점수</div>
+                </div>
+            </div>
+            
+            <!-- MCQ Progress Bars -->
+            <div class="space-y-3">
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-600">지식 (15%)</span>
+                        <span class="font-medium">{{ assessment.knowledge_score|floatformat:0|default:"0" }}%</span>
+                    </div>
+                    <div class="bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ assessment.knowledge_score|default:0 }}%"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-600">생활습관 (15%)</span>
+                        <span class="font-medium">{{ assessment.lifestyle_score|floatformat:0|default:"0" }}%</span>
+                    </div>
+                    <div class="bg-gray-200 rounded-full h-2">
+                        <div class="bg-green-600 h-2 rounded-full" style="width: {{ assessment.lifestyle_score|default:0 }}%"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-600">준비도 (10%)</span>
+                        <span class="font-medium">{{ assessment.readiness_score|floatformat:0|default:"0" }}%</span>
+                    </div>
+                    <div class="bg-gray-200 rounded-full h-2">
+                        <div class="bg-purple-600 h-2 rounded-full" style="width: {{ assessment.readiness_score|default:0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- No MCQ Assessment Yet -->
+            <div class="text-center py-8">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                </svg>
+                <p class="text-gray-600 mb-4">아직 MCQ 평가를 진행하지 않았습니다.</p>
+                <p class="text-sm text-gray-500">지식, 생활습관, 준비도를 평가하여 더 정확한 종합 점수를 받아보세요.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Bar Chart
+const ctx = document.getElementById('barChart').getContext('2d');
+const barChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['근력', '유연성', '균형', '심폐지구력'],
+        datasets: [{
+            label: '점수',
+            data: [
+                {{ assessment.strength_score|default:0 }},
+                {{ assessment.flexibility_score|default:0 }},
+                {{ assessment.balance_score|default:0 }},
+                {{ assessment.cardio_score|default:0 }}
+            ],
+            backgroundColor: [
+                'rgba(59, 130, 246, 0.8)',  // blue
+                'rgba(16, 185, 129, 0.8)',  // green
+                'rgba(147, 51, 234, 0.8)',  // purple
+                'rgba(239, 68, 68, 0.8)'    // red
+            ],
+            borderColor: [
+                'rgb(59, 130, 246)',
+                'rgb(16, 185, 129)',
+                'rgb(147, 51, 234)',
+                'rgb(239, 68, 68)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                    callback: function(value) {
+                        return value + '%';
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.parsed.y + '%';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Template filter implementation
+if (!Number.prototype.mul) {
+    Number.prototype.mul = function(value) {
+        return this * value;
+    };
+}
+if (!Number.prototype.sub) {
+    Number.prototype.sub = function(value) {
+        return this - value;
+    };
+}
+</script>

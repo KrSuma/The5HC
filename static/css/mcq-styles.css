@@ -124,11 +124,11 @@
 
 /* Scale Questions - Touch Friendly */
 .mcq-scale-container {
-    @apply flex flex-col space-y-4;
+    @apply flex flex-col space-y-4 p-4 bg-gray-50 rounded-lg;
 }
 
 .mcq-scale-labels {
-    @apply flex justify-between text-sm text-gray-600 px-2;
+    @apply flex justify-between text-sm text-gray-600 px-2 font-medium;
 }
 
 .mcq-scale-track {

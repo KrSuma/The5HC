@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
+from django.db.models.signals import m2m_changed
+from django.dispatch import receiver
 from datetime import date
 
 # Import scoring functions from the scoring.py file (not the scoring directory)
@@ -64,6 +66,25 @@ class Assessment(models.Model):
         help_text="Heels lift off ground"
     )
     
+    # Additional Overhead Squat Fields
+    overhead_squat_arm_drop = models.BooleanField(
+        default=False, blank=True,
+        verbose_name="팔 전방 하강",
+        help_text="Arms fall forward during movement"
+    )
+    
+    overhead_squat_quality = models.CharField(
+        max_length=30,
+        choices=[
+            ('pain', '동작 중 통증 발생'),
+            ('cannot_squat', '깊은 스쿼트 수행 불가능'),
+            ('compensations', '보상 동작 관찰됨'),
+            ('perfect', '완벽한 동작'),
+        ],
+        null=True, blank=True,
+        verbose_name="수행 품질"
+    )
+    
     # Push-up Test
     push_up_reps = models.IntegerField(
         null=True, blank=True,
@@ -105,6 +126,19 @@ class Assessment(models.Model):
     )
     toe_touch_notes = models.TextField(blank=True, null=True)
     
+    # Toe Touch Enhancement
+    toe_touch_flexibility = models.CharField(
+        max_length=30,
+        choices=[
+            ('no_reach', '손끝이 발에 닿지 않음'),
+            ('fingertips', '손끝이 발에 닿음'),
+            ('palm_cover', '손바닥이 발등을 덮음'),
+            ('palm_full', '손바닥이 발에 완전히 닿음'),
+        ],
+        null=True, blank=True,
+        verbose_name="유연성 평가"
+    )
+    
     # Shoulder Mobility Test
     shoulder_mobility_right = models.FloatField(
         null=True, blank=True,
@@ -128,6 +162,19 @@ class Assessment(models.Model):
     shoulder_mobility_asymmetry = models.FloatField(
         null=True, blank=True,
         help_text="Difference between sides in cm"
+    )
+    
+    # Shoulder Mobility Enhancement
+    shoulder_mobility_category = models.CharField(
+        max_length=30,
+        choices=[
+            ('pain', '동작 중 통증'),
+            ('over_1_5x', '손 간 거리가 신장 1.5배 이상'),
+            ('1_to_1_5x', '손 간 거리가 신장 1~1.5배'),
+            ('under_1x', '손 간 거리가 신장 1배 미만'),
+        ],
+        null=True, blank=True,
+        verbose_name="양손 간 거리 평가"
     )
     
     # Farmer's Carry Test
@@ -1345,12 +1392,26 @@ class QuestionResponse(models.Model):
     
     def save(self, *args, **kwargs):
         """Override save to calculate points before saving."""
-        # Save first to ensure M2M relationship can be accessed
-        if not self.pk:
+        # For new objects, we need to save first to get a PK for M2M relationships
+        is_new = self.pk is None
+        
+        if is_new:
+            # Save without calculating points first for new objects
             super().save(*args, **kwargs)
-        
-        # Calculate points after M2M is available
-        self.calculate_points()
-        
-        # Save again with calculated points
-        super().save(*args, **kwargs)
+        else:
+            # For existing objects, calculate points before saving
+            self.calculate_points()
+            super().save(*args, **kwargs)
+
+
+# Signal handler for M2M changes on QuestionResponse
+@receiver(m2m_changed, sender=QuestionResponse.selected_choices.through)
+def update_question_response_points(sender, instance, action, **kwargs):
+    """Update points when M2M relationships change."""
+    if action in ['post_add', 'post_remove', 'post_clear']:
+        # Calculate and save points
+        instance.calculate_points()
+        # Use update() to avoid recursion
+        QuestionResponse.objects.filter(pk=instance.pk).update(
+            points_earned=instance.points_earned
+        )

@@ -27,9 +27,13 @@ document.addEventListener('alpine:init', () => {
         questionsByCategory: {},
         
         init() {
+            console.log('MCQ Assessment initializing...');
+            console.log('Existing responses:', existingResponses);
+            
             try {
                 // Initialize categories from DOM (avoid duplicates)
-                const categoryElements = document.querySelectorAll('.mcq-category[data-category-id]');
+                // Try both category tabs and category divs
+                const categoryElements = document.querySelectorAll('.mcq-category-tab[data-category-id], .mcq-category[data-category-id]');
                 const uniqueCategories = new Map();
                 
                 categoryElements.forEach(el => {
@@ -37,13 +41,18 @@ document.addEventListener('alpine:init', () => {
                     if (!uniqueCategories.has(id)) {
                         uniqueCategories.set(id, {
                             id: id,
-                            name: el.dataset.categoryName,
+                            name: el.dataset.categoryName || el.dataset.categoryNameKo || 'Category',
                             weight: parseFloat(el.dataset.categoryWeight || 0)
                         });
                     }
                 });
                 
                 this.categories = Array.from(uniqueCategories.values());
+                
+                // If no categories found from DOM, create a default empty array
+                if (this.categories.length === 0) {
+                    console.warn('No categories found in DOM');
+                }
                 
                 // Count total questions
                 this.totalQuestions = document.querySelectorAll('[data-question-id]').length;
@@ -64,6 +73,8 @@ document.addEventListener('alpine:init', () => {
                 
             } catch (error) {
                 console.error('Error initializing MCQ Assessment component:', error);
+                console.error('Stack trace:', error.stack);
+                alert('MCQ 평가 페이지 초기화 중 오류가 발생했습니다: ' + error.message);
             }
         },
         

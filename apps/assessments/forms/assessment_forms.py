@@ -15,7 +15,8 @@ class AssessmentForm(forms.ModelForm):
             'test_environment', 'temperature',
             # Overhead Squat
             'overhead_squat_score', 'overhead_squat_knee_valgus', 'overhead_squat_forward_lean', 
-            'overhead_squat_heel_lift', 'overhead_squat_notes',
+            'overhead_squat_heel_lift', 'overhead_squat_arm_drop', 'overhead_squat_quality', 
+            'overhead_squat_notes',
             # Push-up
             'push_up_reps', 'push_up_type', 'push_up_score', 'push_up_notes',
             # Single Leg Balance
@@ -23,11 +24,11 @@ class AssessmentForm(forms.ModelForm):
             'single_leg_balance_right_eyes_closed', 'single_leg_balance_left_eyes_closed',
             'single_leg_balance_notes',
             # Toe Touch
-            'toe_touch_distance', 'toe_touch_score', 'toe_touch_notes',
+            'toe_touch_distance', 'toe_touch_score', 'toe_touch_flexibility', 'toe_touch_notes',
             # Shoulder Mobility
             'shoulder_mobility_right', 'shoulder_mobility_left', 
             'shoulder_mobility_score', 'shoulder_mobility_pain', 'shoulder_mobility_asymmetry',
-            'shoulder_mobility_notes',
+            'shoulder_mobility_category', 'shoulder_mobility_notes',
             # Farmer's Carry
             'farmer_carry_weight', 'farmer_carry_percentage', 'farmer_carry_distance', 'farmer_carry_time',
             'farmer_carry_score', 'farmer_carry_notes',
@@ -89,6 +90,20 @@ class AssessmentForm(forms.ModelForm):
                 attrs={
                     'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded',
                     'x-model': 'overheadSquatHeelLift',
+                    '@change': 'calculateOverheadSquatScore()'
+                }
+            ),
+            'overhead_squat_arm_drop': forms.CheckboxInput(
+                attrs={
+                    'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded',
+                    'x-model': 'overheadSquatArmDrop',
+                    '@change': 'calculateOverheadSquatScore()'
+                }
+            ),
+            'overhead_squat_quality': forms.Select(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'x-model': 'overheadSquatQuality',
                     '@change': 'calculateOverheadSquatScore()'
                 }
             ),
@@ -198,6 +213,13 @@ class AssessmentForm(forms.ModelForm):
                     'readonly': True
                 }
             ),
+            'toe_touch_flexibility': forms.Select(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'x-model': 'toeTouchFlexibility',
+                    '@change': 'updateToeTouchScore()'
+                }
+            ),
             'toe_touch_notes': forms.Textarea(
                 attrs={
                     'rows': 2,
@@ -238,6 +260,12 @@ class AssessmentForm(forms.ModelForm):
                     'placeholder': '좌우 차이 (cm)',
                     'step': '0.1',
                     'min': 0
+                }
+            ),
+            'shoulder_mobility_category': forms.Select(
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'x-model': 'shoulderMobilityCategory'
                 }
             ),
             'shoulder_mobility_notes': forms.Textarea(

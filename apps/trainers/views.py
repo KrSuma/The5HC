@@ -22,14 +22,23 @@ def trainer_list_view(request):
         trainer = request.user.trainer_profile
         organization = trainer.organization
     except Trainer.DoesNotExist:
-        messages.error(request, _('You need to have a trainer profile to access this page.'))
-        return redirect('accounts:profile')
-    
-    # Get trainers in the same organization
-    trainers = Trainer.objects.filter(
-        organization=organization,
-        is_active=True
-    ).select_related('user').order_by('role', 'user__first_name')
+        # Allow superusers to view all trainers
+        if request.user.is_superuser:
+            trainer = None
+            organization = None
+            # For superusers, show all trainers from all organizations
+            trainers = Trainer.objects.filter(
+                is_active=True
+            ).select_related('user', 'organization').order_by('organization__name', 'role', 'user__first_name')
+        else:
+            messages.error(request, _('You need to have a trainer profile to access this page.'))
+            return redirect('accounts:profile')
+    else:
+        # Get trainers in the same organization
+        trainers = Trainer.objects.filter(
+            organization=organization,
+            is_active=True
+        ).select_related('user').order_by('role', 'user__first_name')
     
     # Apply search if provided
     search_query = request.GET.get('search', '')
@@ -51,7 +60,8 @@ def trainer_list_view(request):
         'trainers': trainers,
         'organization': organization,
         'search_query': search_query,
-        'can_manage': trainer.can_manage_trainers(),
+        'can_manage': trainer.can_manage_trainers() if trainer else request.user.is_superuser,
+        'trainer': trainer,  # Add trainer to context for template checks
     }
     
     return render(request, template, context)
@@ -72,19 +82,34 @@ def trainer_detail_view(request, pk):
             messages.error(request, _('You cannot view trainers from other organizations.'))
             return redirect('trainers:list')
     except Trainer.DoesNotExist:
-        messages.error(request, _('You need to have a trainer profile to access this page.'))
-        return redirect('accounts:profile')
+        # If user doesn't have a trainer profile, check if they're superuser
+        if request.user.is_superuser:
+            # Allow superusers to view any trainer
+            current_trainer = None
+        else:
+            messages.error(request, _('You need to have a trainer profile to access this page.'))
+            return redirect('accounts:profile')
     
-    # Get trainer statistics
-    stats = {
-        'total_clients': trainer.clients.count(),
-        'active_packages': trainer.session_packages.filter(
-            remaining_sessions__gt=0,
-            expire_date__gte=timezone.now().date()
-        ).count(),
-        'total_sessions': trainer.sessions.count(),
-        'assessments': trainer.assessments.count(),
-    }
+    # Get trainer statistics with error handling
+    try:
+        stats = {
+            'total_clients': trainer.clients.count(),
+            'active_packages': trainer.session_packages.filter(
+                remaining_sessions__gt=0,
+                expire_date__gte=timezone.now().date()
+            ).count(),
+            'total_sessions': trainer.sessions.count(),
+            'assessments': trainer.assessments_conducted.count(),
+        }
+    except Exception as e:
+        # If there's an error getting stats, use defaults
+        print(f"Error getting trainer stats: {e}")
+        stats = {
+            'total_clients': 0,
+            'active_packages': 0,
+            'total_sessions': 0,
+            'assessments': 0,
+        }
     
     # Check for HTMX request
     if request.headers.get('HX-Request') and request.headers.get('HX-Target') == 'main-content':
@@ -96,7 +121,7 @@ def trainer_detail_view(request, pk):
         'trainer': trainer,
         'stats': stats,
         'is_own_profile': trainer.user == request.user,
-        'can_manage': current_trainer.can_manage_trainers(),
+        'can_manage': current_trainer.can_manage_trainers() if current_trainer else False,
     }
     
     return render(request, template, context)

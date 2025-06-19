@@ -68,6 +68,10 @@ python manage.py load_mcq_questions [--file FILE] [--format json|csv|yaml] [--dr
 python manage.py export_mcq_questions [--output FILE] [--format json|csv|yaml] [--category NAME] [--include-responses]
 python manage.py validate_mcq_data [--fix] [--check-dependencies] [--verbose]
 python manage.py mcq_statistics [--category NAME] [--trainer ID] [--start-date YYYY-MM-DD] [--end-date YYYY-MM-DD] [--export FILE] [--detailed]
+
+# Trainer profile management commands
+python manage.py check_trainer_profile [--username USERNAME] [--fix]
+python manage.py fix_trainer_profile <username> [--role owner|senior|trainer|assistant] [--organization SLUG]
 ```
 
 ### Key Technologies
@@ -91,7 +95,50 @@ python manage.py mcq_statistics [--category NAME] [--trainer ID] [--start-date Y
 
 ### Recent Completed Features
 
-#### 2025-06-19 (Session 12 - Current)
+#### 2025-06-19 (Session 16 - Current)
+- ✅ **Trainer Profile Access Fixes for Superusers**
+  - Fixed "보기" (view) link error in trainer page for admin users
+  - Updated trainer list and detail views to allow superuser access without trainer profile
+  - Fixed Assessment model related_name issue (`assessments_conducted` vs `assessments`)
+  - Added error handling for trainer statistics calculation
+  - Created management commands for checking and fixing trainer profiles
+  - Enhanced templates to show all organizations for superusers
+  - See `logs/maintenance/TRAINER_SUPERUSER_ACCESS_FIX_2025_06_19.md` for details
+
+#### 2025-06-19 (Session 15)
+- ✅ **MCQ Score Persistence and UI Consistency Fixes**
+  - Fixed MCQ scores not being saved after calculation
+  - Added `assessment.save()` after `calculate_scores()` in mcq_save_view
+  - Fixed category name mismatch in MCQScoringEngine ("Knowledge Assessment" vs "knowledge")
+  - Updated scoring engine to handle both category name formats
+  - Fixed assessment detail page showing different views (radar vs bar chart)
+  - Removed outdated `assessment_detail_partial.html` template
+  - Created `assessment_detail_content.html` for HTMX navigation pattern
+  - Fixed double header/footer issue on assessment detail page
+  - Added debug logging for MCQ score troubleshooting
+  - See `logs/maintenance/MCQ_SCORE_FIX_SESSION_2025_06_19.md` for details
+
+#### 2025-06-19 (Session 14)
+- ✅ **Movement Quality Assessment Enhancement**
+  - Added detailed movement quality fields to main physical assessment form
+  - Created 4 new fields: overhead_squat_arm_drop, overhead_squat_quality, toe_touch_flexibility, shoulder_mobility_category
+  - Updated assessment form with Korean labels and Alpine.js integration
+  - Enhanced JavaScript scoring logic to incorporate quality assessments
+  - All fields are optional to maintain backward compatibility
+  - See `logs/feature/MOVEMENT_QUALITY_ASSESSMENT_IMPLEMENTATION_LOG.md` for details
+
+#### 2025-06-19 (Session 13)
+- ✅ **MCQ System Debug and Fixes**
+  - Fixed critical "hard broken" MCQ assessment page issues
+  - Resolved UNIQUE constraint failed error in QuestionResponse model
+  - Fixed double-save bug in model's save() method
+  - Reverted problematic JavaScript/Alpine.js changes
+  - Cleaned up test data (removed placeholder categories)
+  - Enhanced scale question UI with dynamic value updates
+  - Created simplified template for reliable operation
+  - See `logs/maintenance/MCQ_DEBUG_SESSION_2025_06_19.md` for details
+
+#### 2025-06-19 (Session 12)
 - ✅ **MCQ System Implementation - Phase 1-8 COMPLETE** 🎉
   - **Phase 1: Database Schema Design** (COMPLETED)
     - Created 4 new models: QuestionCategory, MultipleChoiceQuestion, QuestionChoice, QuestionResponse
@@ -385,6 +432,9 @@ python manage.py mcq_statistics [--category NAME] [--trainer ID] [--start-date Y
 - **Django Template Syntax Error**: ✅ FIXED - Resolved invalid 'multiply' filter error in assessment detail template.
 - **Risk Calculator Data Structure**: ✅ FIXED - Fixed 'dict' object has no attribute 'append' error in movement_compensations.
 - **API Trainer Assignment**: ✅ FIXED - Resolved User vs Trainer instance confusion in API serializers and views.
+- **MCQ UNIQUE Constraint Error**: ✅ FIXED - Fixed double-save bug in QuestionResponse model that caused UNIQUE constraint violations.
+- **MCQ Alpine.js Conflicts**: ✅ FIXED - Reverted to simplified template without Alpine.js to avoid initialization conflicts.
+- **Trainer View Access for Superusers**: ✅ FIXED - Admin users can now view trainer pages without having a trainer profile.
 
 ### Important Notes
 
@@ -444,10 +494,14 @@ python manage.py mcq_statistics [--category NAME] [--trainer ID] [--start-date Y
 - `docs/MCQ_PHASE5_PLANNING.md` - MCQ Phase 5: API Implementation planning
 - `docs/MCQ_IMPLEMENTATION_STATUS.md` - Current MCQ implementation status and progress
 - `docs/MCQ_MANAGEMENT_COMMANDS.md` - MCQ management commands documentation
+- `logs/maintenance/MCQ_DEBUG_SESSION_2025_06_19.md` - MCQ critical bug fixes and debugging session
+- `logs/feature/MOVEMENT_QUALITY_ASSESSMENT_IMPLEMENTATION_LOG.md` - Movement quality fields implementation
+- `tasks/movement-quality-assessment-plan.md` - Implementation plan for movement quality enhancements
+- `logs/maintenance/MCQ_SCORE_FIX_SESSION_2025_06_19.md` - MCQ score persistence and UI consistency fixes
 
 ## Complete Project File Structure
 
-**Updated**: 2025-06-19 (Session 12 - MCQ Phase 1, 2, 3 & 4 implementation)
+**Updated**: 2025-06-19 (Session 16 - Trainer superuser access fixes)
 
 ```
 The5HC/

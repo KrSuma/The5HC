@@ -7,9 +7,14 @@ from django.contrib import messages
 def requires_trainer(view_func):
     """
     Decorator to ensure user has a trainer profile.
+    Allows superusers to bypass this requirement.
     """
     @wraps(view_func)
     def wrapped_view(request, *args, **kwargs):
+        # Allow superusers to bypass trainer requirement
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+            
         if not hasattr(request, 'trainer') or not request.trainer:
             messages.error(request, "트레이너 프로필이 필요합니다.")
             return redirect('accounts:login')
@@ -68,10 +73,19 @@ def can_manage_trainers(view_func):
 def organization_member_required(view_func):
     """
     Decorator to ensure user belongs to an organization.
+    Allows superusers to bypass this requirement.
     """
     @wraps(view_func)
-    @requires_trainer
     def wrapped_view(request, *args, **kwargs):
+        # Allow superusers to bypass organization requirement
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+            
+        # Check trainer profile first
+        if not hasattr(request, 'trainer') or not request.trainer:
+            messages.error(request, "트레이너 프로필이 필요합니다.")
+            return redirect('accounts:login')
+            
         if not request.organization:
             messages.error(request, "조직에 소속되어 있지 않습니다.")
             return redirect('trainers:list')

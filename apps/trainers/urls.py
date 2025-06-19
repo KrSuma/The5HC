@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views_debug import debug_trainer_view
 
 app_name = 'trainers'
 
@@ -26,4 +27,7 @@ urlpatterns = [
     path('notifications/', views.notification_list_view, name='notifications'),
     path('notifications/<int:pk>/read/', views.notification_mark_read_view, name='notification_mark_read'),
     path('notifications/badge/', views.notification_badge_view, name='notification_badge'),
+    
+    # Debug
+    path('debug/', debug_trainer_view, name='debug'),
 ]

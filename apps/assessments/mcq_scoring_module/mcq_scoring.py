@@ -65,10 +65,14 @@ class MCQScoringEngine:
                 category_name, cat_responses
             )
         
+        # Debug: Print category names and scores
+        print(f"DEBUG - MCQ Category scores: {scores}")
+        
         # Store individual category scores
-        self.assessment.knowledge_score = scores.get('knowledge', 0)
-        self.assessment.lifestyle_score = scores.get('lifestyle', 0)
-        self.assessment.readiness_score = scores.get('readiness', 0)
+        # Handle both with and without "assessment" suffix
+        self.assessment.knowledge_score = scores.get('knowledge', scores.get('knowledge assessment', 0))
+        self.assessment.lifestyle_score = scores.get('lifestyle', scores.get('lifestyle assessment', 0))
+        self.assessment.readiness_score = scores.get('readiness', scores.get('readiness assessment', 0))
         
         # Calculate comprehensive score
         comprehensive_score = self._calculate_comprehensive_score(scores)
@@ -159,7 +163,8 @@ class MCQScoringEngine:
         for category, weight in self.CATEGORY_WEIGHTS.items():
             if category == 'physical':
                 continue
-            score = mcq_scores.get(category, 0)
+            # Try both with and without "assessment" suffix
+            score = mcq_scores.get(category, mcq_scores.get(f"{category} assessment", 0))
             mcq_contribution += score * weight
         
         # Calculate weighted physical contribution

@@ -35,11 +35,22 @@ except ImportError:
 @organization_member_required
 def assessment_list_view(request):
     """List all assessments with search and filter functionality"""
+    # Debug logging
+    print(f"DEBUG - Assessment list view accessed by: {request.user}")
+    print(f"DEBUG - Is superuser: {request.user.is_superuser}")
+    print(f"DEBUG - Has trainer attr: {hasattr(request, 'trainer')}")
+    print(f"DEBUG - Has organization attr: {hasattr(request, 'organization')}")
+    
     form = AssessmentSearchForm(request.GET)
-    # Filter assessments by organization
-    assessments = Assessment.objects.filter(
-        trainer__organization=request.organization
-    ).select_related('client', 'trainer')
+    
+    # For superusers, show all assessments
+    if request.user.is_superuser:
+        assessments = Assessment.objects.all().select_related('client', 'trainer')
+    else:
+        # Filter assessments by organization
+        assessments = Assessment.objects.filter(
+            trainer__organization=request.organization
+        ).select_related('client', 'trainer')
     
     # Apply filters
     if form.is_valid():
@@ -110,12 +121,19 @@ def assessment_list_view(request):
 @organization_member_required
 def assessment_detail_view(request, pk):
     """View detailed assessment results"""
-    # Ensure assessment belongs to the same organization
-    assessment = get_object_or_404(
-        Assessment.objects.select_related('client', 'trainer'),
-        pk=pk,
-        trainer__organization=request.organization
-    )
+    # For superusers, allow viewing any assessment
+    if request.user.is_superuser:
+        assessment = get_object_or_404(
+            Assessment.objects.select_related('client', 'trainer'),
+            pk=pk
+        )
+    else:
+        # Ensure assessment belongs to the same organization
+        assessment = get_object_or_404(
+            Assessment.objects.select_related('client', 'trainer'),
+            pk=pk,
+            trainer__organization=request.organization
+        )
     
     # Get score descriptions
     score_descriptions = {
@@ -147,10 +165,11 @@ def assessment_detail_view(request, pk):
     
     # Check if this is an HTMX request
     if request.headers.get('HX-Request'):
-        # Create a partial template for HTMX requests
-        return render(request, 'assessments/assessment_detail_partial.html', context)
-    
-    return render(request, 'assessments/assessment_detail.html', context)
+        # HTMX request - return content only
+        return render(request, 'assessments/assessment_detail_content.html', context)
+    else:
+        # Regular request - return full page with base template
+        return render(request, 'assessments/assessment_detail.html', context)
 
 
 @login_required
@@ -162,18 +181,27 @@ def assessment_add_view(request):
     client = None
     
     if client_id:
-        # Ensure client belongs to the same organization
-        client = get_object_or_404(
-            Client, 
-            pk=client_id, 
-            trainer__organization=request.organization
-        )
+        # For superusers, allow accessing any client
+        if request.user.is_superuser:
+            client = get_object_or_404(Client, pk=client_id)
+        else:
+            # Ensure client belongs to the same organization
+            client = get_object_or_404(
+                Client, 
+                pk=client_id, 
+                trainer__organization=request.organization
+            )
     
     if request.method == 'POST':
         form = AssessmentForm(request.POST)
         if form.is_valid():
             assessment = form.save(commit=False)
-            assessment.trainer = request.trainer
+            # For superusers, we need to get the trainer from the client
+            if request.user.is_superuser and not hasattr(request, 'trainer'):
+                # Use the client's trainer
+                assessment.trainer = assessment.client.trainer
+            else:
+                assessment.trainer = request.trainer
             
             # Convert date to datetime if needed
             if assessment.date and not hasattr(assessment.date, 'hour'):
@@ -234,9 +262,10 @@ def assessment_add_view(request):
     context = {
         'form': form,
         'client': client,
-        'clients': Client.objects.filter(
-            trainer__organization=request.organization
-        ) if not client else None
+        'clients': Client.objects.all() if request.user.is_superuser and not client 
+                   else Client.objects.filter(
+                       trainer__organization=request.organization
+                   ) if not client else None
     }
     
     # Check for HTMX navigation request
@@ -337,12 +366,16 @@ def calculate_harvard_score_ajax(request):
 @organization_member_required
 def assessment_delete_view(request, pk):
     """Delete assessment"""
-    # Ensure assessment belongs to the same organization
-    assessment = get_object_or_404(
-        Assessment, 
-        pk=pk, 
-        trainer__organization=request.organization
-    )
+    # For superusers, allow deleting any assessment
+    if request.user.is_superuser:
+        assessment = get_object_or_404(Assessment, pk=pk)
+    else:
+        # Ensure assessment belongs to the same organization
+        assessment = get_object_or_404(
+            Assessment, 
+            pk=pk, 
+            trainer__organization=request.organization
+        )
     
     if request.method == 'POST':
         assessment.delete()
@@ -367,6 +400,10 @@ def mcq_assessment_view(request, assessment_id):
         pk=assessment_id,
         trainer__organization=request.organization
     )
+    
+    # Debug mode - use simpler template if debug parameter is present
+    if request.GET.get('debug'):
+        return mcq_assessment_debug_view(request, assessment_id)
     
     # Get active categories
     categories = QuestionCategory.objects.filter(
@@ -402,10 +439,11 @@ def mcq_assessment_view(request, assessment_id):
         'client': assessment.client,
         'categories': categories,
         'questions': questions,
-        'existing_responses': response_data
+        'existing_responses': json.dumps(response_data) if response_data else '{}'
     }
     
-    return render(request, 'assessments/mcq_assessment.html', context)
+    # Temporarily use simple template to avoid Alpine.js issues
+    return render(request, 'assessments/mcq_assessment_simple.html', context)
 
 
 @login_required
@@ -420,22 +458,69 @@ def mcq_save_view(request, assessment_id):
         trainer__organization=request.organization
     )
     
-    # Get categories for form processing
-    categories = QuestionCategory.objects.filter(is_active=True)
-    
-    # Create formset with POST data
-    formset = CategoryMCQFormSet(
-        data=request.POST,
-        assessment=assessment,
-        categories=categories
-    )
-    
-    if formset.is_valid():
-        # Save all responses
-        formset.save()
+    try:
+        # Get all questions
+        questions = MultipleChoiceQuestion.objects.filter(
+            is_active=True,
+            category__is_active=True
+        ).prefetch_related('choices')
+        
+        # Process each question
+        for question in questions:
+            field_name = f'question_{question.id}'
+            
+            if field_name in request.POST:
+                # Get or create response (update existing instead of delete/create)
+                response, created = QuestionResponse.objects.get_or_create(
+                    assessment=assessment,
+                    question=question,
+                    defaults={'points_earned': 0}
+                )
+                
+                # Clear existing choices before adding new ones
+                response.selected_choices.clear()
+                
+                if question.question_type == 'text':
+                    response.response_text = request.POST.get(field_name, '')
+                    response.save()
+                elif question.question_type == 'multiple':
+                    # Handle multiple checkboxes
+                    choice_ids = request.POST.getlist(field_name)
+                    for choice_id in choice_ids:
+                        try:
+                            choice = question.choices.get(id=choice_id)
+                            response.selected_choices.add(choice)
+                        except QuestionChoice.DoesNotExist:
+                            pass
+                else:
+                    # Single choice or scale
+                    choice_id = request.POST.get(field_name)
+                    if choice_id:
+                        try:
+                            if question.question_type == 'scale':
+                                # For scale, save as text
+                                response.response_text = choice_id
+                                response.save()
+                            else:
+                                choice = question.choices.get(id=choice_id)
+                                response.selected_choices.add(choice)
+                        except (QuestionChoice.DoesNotExist, ValueError):
+                            pass
+        
+        # Debug: Check if responses exist
+        response_count = assessment.question_responses.count()
+        print(f"DEBUG - Total responses saved: {response_count}")
         
         # Calculate MCQ scores
         assessment.calculate_scores()
+        assessment.save()  # Save the calculated MCQ scores to database
+        
+        # Debug: Check if scores were actually saved
+        assessment.refresh_from_db()
+        print(f"DEBUG - After save: knowledge_score={assessment.knowledge_score}, "
+              f"lifestyle_score={assessment.lifestyle_score}, "
+              f"readiness_score={assessment.readiness_score}, "
+              f"comprehensive_score={assessment.comprehensive_score}")
         
         messages.success(request, 'MCQ 평가가 성공적으로 저장되었습니다.')
         
@@ -444,22 +529,9 @@ def mcq_save_view(request, assessment_id):
             return mcq_result_partial(request, assessment)
         
         return redirect('assessments:detail', pk=assessment.pk)
-    else:
-        # Return form with errors
-        if request.headers.get('HX-Request'):
-            context = {
-                'assessment': assessment,
-                'formset': formset,
-                'categories': categories
-            }
-            html = render_to_string(
-                'assessments/components/mcq_form_errors.html',
-                context,
-                request=request
-            )
-            return HttpResponse(html)
         
-        messages.error(request, '평가 저장 중 오류가 발생했습니다.')
+    except Exception as e:
+        messages.error(request, f'평가 저장 중 오류가 발생했습니다: {str(e)}')
         return redirect('assessments:mcq', assessment_id=assessment.pk)
 
 
@@ -519,6 +591,54 @@ def mcq_quick_form_view(request, assessment_id):
 @login_required
 @requires_trainer
 @organization_member_required
+def mcq_assessment_debug_view(request, assessment_id):
+    """Debug view for MCQ assessment"""
+    assessment = get_object_or_404(
+        Assessment,
+        pk=assessment_id,
+        trainer__organization=request.organization
+    )
+    
+    # Get active categories
+    categories = QuestionCategory.objects.filter(
+        is_active=True
+    ).order_by('order')
+    
+    # Get all active questions
+    questions = MultipleChoiceQuestion.objects.filter(
+        is_active=True,
+        category__in=categories
+    ).select_related('category').order_by('category__order', 'order')
+    
+    # Get existing responses
+    existing_responses = QuestionResponse.objects.filter(
+        assessment=assessment
+    ).select_related('question').prefetch_related('selected_choices')
+    
+    # Build response data for form initialization
+    response_data = {}
+    for response in existing_responses:
+        field_name = f'question_{response.question.id}'
+        if response.question.question_type == 'text':
+            response_data[field_name] = response.response_text
+        elif response.question.question_type == 'multiple':
+            response_data[field_name] = list(response.selected_choices.values_list('id', flat=True))
+        else:
+            choice = response.selected_choices.first()
+            if choice:
+                response_data[field_name] = choice.id
+    
+    context = {
+        'assessment': assessment,
+        'client': assessment.client,
+        'categories': categories,
+        'questions': questions,
+        'existing_responses': json.dumps(response_data) if response_data else '{}'
+    }
+    
+    return render(request, 'assessments/mcq_assessment_debug.html', context)
+
+
 def mcq_print_view(request, assessment_id):
     """Print-friendly view of MCQ assessment with all questions and responses"""
     assessment = get_object_or_404(

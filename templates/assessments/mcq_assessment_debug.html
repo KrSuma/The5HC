@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}MCQ Debug - {{ client.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-4">MCQ Assessment Debug Page</h1>
+    
+    <div class="bg-white rounded-lg shadow p-6 mb-4">
+        <h2 class="text-xl font-semibold mb-2">Assessment Info</h2>
+        <p>Assessment ID: {{ assessment.id }}</p>
+        <p>Client: {{ assessment.client.name }}</p>
+        <p>Date: {{ assessment.date }}</p>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6 mb-4">
+        <h2 class="text-xl font-semibold mb-2">Categories ({{ categories|length }})</h2>
+        <ul class="list-disc list-inside">
+            {% for category in categories %}
+                <li>{{ category.name_ko|default:category.name }} (ID: {{ category.id }}, Weight: {{ category.weight }})</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6 mb-4">
+        <h2 class="text-xl font-semibold mb-2">Questions ({{ questions|length }})</h2>
+        <ul class="list-disc list-inside">
+            {% for question in questions %}
+                <li>
+                    Category: {{ question.category.name_ko|default:question.category.name }} | 
+                    Type: {{ question.question_type }} | 
+                    Text: {{ question.question_text_ko|default:question.question_text|truncatewords:10 }}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6 mb-4">
+        <h2 class="text-xl font-semibold mb-2">Existing Responses</h2>
+        <pre>{{ existing_responses }}</pre>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{% url 'assessments:detail' assessment.id %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Back to Assessment
+        </a>
+    </div>
+</div>
+{% endblock %}
