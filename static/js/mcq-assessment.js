@@ -86,7 +86,7 @@ document.addEventListener('alpine:init', () => {
         }
     });
     
-    Alpine.data('mcqAssessment', () => ({
+    Alpine.data('mcqAssessment', (existingResponses = {}) => ({
         // Current state
         currentCategory: 0,
         categories: [],
@@ -123,8 +123,14 @@ document.addEventListener('alpine:init', () => {
                 };
             });
             
-            // Load saved responses if any
+            // Load existing responses from server
+            this.responses = { ...existingResponses };
+            
+            // Load saved responses from session storage (for recovery)
             this.loadSavedResponses();
+            
+            // Update progress after loading responses
+            this.updateProgress();
             
             // Initialize mobile swipe support
             if (this.isMobile) {
@@ -386,7 +392,9 @@ document.addEventListener('alpine:init', () => {
             const saved = sessionStorage.getItem('mcq_responses');
             if (saved) {
                 try {
-                    this.responses = JSON.parse(saved);
+                    const sessionResponses = JSON.parse(saved);
+                    // Merge session storage responses with existing server responses
+                    this.responses = { ...this.responses, ...sessionResponses };
                     this.updateProgress();
                 } catch (e) {
                     console.error('Error loading saved responses:', e);

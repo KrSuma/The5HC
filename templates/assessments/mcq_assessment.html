@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="mcq-container" x-data="mcqAssessment">
+<div class="mcq-container" x-data="mcqAssessment({{ existing_responses|default:'{}'|safe }})">
     <!-- Header -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <div class="flex items-center justify-between">
