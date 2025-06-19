@@ -9,8 +9,9 @@ from django.views.decorators.http import require_http_methods
 from django.template.loader import render_to_string
 import json
 
-from .models import Assessment
+from .models import Assessment, QuestionCategory, MultipleChoiceQuestion, QuestionResponse
 from .forms import AssessmentForm, AssessmentSearchForm
+from .forms.mcq_forms import MCQResponseForm, CategoryMCQFormSet
 from apps.clients.models import Client
 from apps.trainers.decorators import requires_trainer, organization_member_required
 
@@ -354,3 +355,211 @@ def assessment_delete_view(request, pk):
     return render(request, 'assessments/assessment_confirm_delete.html', {
         'assessment': assessment
     })
+
+
+@login_required
+@requires_trainer
+@organization_member_required
+def mcq_assessment_view(request, assessment_id):
+    """Display MCQ assessment form with progressive disclosure"""
+    assessment = get_object_or_404(
+        Assessment,
+        pk=assessment_id,
+        trainer__organization=request.organization
+    )
+    
+    # Get active categories
+    categories = QuestionCategory.objects.filter(
+        is_active=True
+    ).order_by('order')
+    
+    # Get all active questions
+    questions = MultipleChoiceQuestion.objects.filter(
+        is_active=True,
+        category__in=categories
+    ).select_related('category', 'depends_on').prefetch_related('choices').order_by('category__order', 'order')
+    
+    # Get existing responses
+    existing_responses = QuestionResponse.objects.filter(
+        assessment=assessment
+    ).select_related('question').prefetch_related('selected_choices')
+    
+    # Build response data for form initialization
+    response_data = {}
+    for response in existing_responses:
+        field_name = f'question_{response.question.id}'
+        if response.question.question_type == 'text':
+            response_data[field_name] = response.response_text
+        elif response.question.question_type == 'multiple':
+            response_data[field_name] = list(response.selected_choices.values_list('id', flat=True))
+        else:
+            choice = response.selected_choices.first()
+            if choice:
+                response_data[field_name] = choice.id
+    
+    context = {
+        'assessment': assessment,
+        'client': assessment.client,
+        'categories': categories,
+        'questions': questions,
+        'existing_responses': response_data
+    }
+    
+    return render(request, 'assessments/mcq_assessment.html', context)
+
+
+@login_required
+@requires_trainer
+@organization_member_required
+@require_http_methods(["POST"])
+def mcq_save_view(request, assessment_id):
+    """Save MCQ responses and calculate scores"""
+    assessment = get_object_or_404(
+        Assessment,
+        pk=assessment_id,
+        trainer__organization=request.organization
+    )
+    
+    # Get categories for form processing
+    categories = QuestionCategory.objects.filter(is_active=True)
+    
+    # Create formset with POST data
+    formset = CategoryMCQFormSet(
+        data=request.POST,
+        assessment=assessment,
+        categories=categories
+    )
+    
+    if formset.is_valid():
+        # Save all responses
+        formset.save()
+        
+        # Calculate MCQ scores
+        assessment.calculate_scores()
+        
+        messages.success(request, 'MCQ 평가가 성공적으로 저장되었습니다.')
+        
+        # Return result view for HTMX
+        if request.headers.get('HX-Request'):
+            return mcq_result_partial(request, assessment)
+        
+        return redirect('assessments:detail', pk=assessment.pk)
+    else:
+        # Return form with errors
+        if request.headers.get('HX-Request'):
+            context = {
+                'assessment': assessment,
+                'formset': formset,
+                'categories': categories
+            }
+            html = render_to_string(
+                'assessments/components/mcq_form_errors.html',
+                context,
+                request=request
+            )
+            return HttpResponse(html)
+        
+        messages.error(request, '평가 저장 중 오류가 발생했습니다.')
+        return redirect('assessments:mcq', assessment_id=assessment.pk)
+
+
+def mcq_result_partial(request, assessment):
+    """Render MCQ result partial for HTMX response"""
+    # Get MCQ insights
+    insights = assessment.get_mcq_insights()
+    
+    # Get completion status
+    completion_status = assessment.get_mcq_completion_status()
+    
+    context = {
+        'assessment': assessment,
+        'insights': insights,
+        'completion_status': completion_status,
+        'knowledge_score': assessment.knowledge_score,
+        'lifestyle_score': assessment.lifestyle_score,
+        'readiness_score': assessment.readiness_score,
+        'comprehensive_score': assessment.comprehensive_score
+    }
+    
+    html = render_to_string(
+        'assessments/components/mcq_result.html',
+        context,
+        request=request
+    )
+    
+    return HttpResponse(html)
+
+
+@login_required
+@requires_trainer
+@organization_member_required
+def mcq_quick_form_view(request, assessment_id):
+    """Quick MCQ entry form for basic questions during assessment"""
+    assessment = get_object_or_404(
+        Assessment,
+        pk=assessment_id,
+        trainer__organization=request.organization
+    )
+    
+    if request.method == 'POST':
+        # Process quick form
+        # This would map the simplified form to actual MCQ questions
+        # For now, we'll just redirect back
+        messages.info(request, 'Quick MCQ 저장 기능은 준비 중입니다.')
+        return redirect('assessments:detail', pk=assessment.pk)
+    
+    context = {
+        'assessment': assessment,
+        'client': assessment.client
+    }
+    
+    return render(request, 'assessments/mcq_quick_form.html', context)
+
+
+@login_required
+@requires_trainer
+@organization_member_required
+def mcq_print_view(request, assessment_id):
+    """Print-friendly view of MCQ assessment with all questions and responses"""
+    assessment = get_object_or_404(
+        Assessment,
+        pk=assessment_id,
+        trainer__organization=request.organization
+    )
+    
+    # Get all categories with questions
+    categories = QuestionCategory.objects.filter(
+        is_active=True
+    ).prefetch_related(
+        'multiplechoicequestion_set__choices',
+        'multiplechoicequestion_set__questionresponse_set__selected_choices'
+    ).order_by('order')
+    
+    # Get all responses for this assessment
+    responses = {}
+    for response in QuestionResponse.objects.filter(assessment=assessment).select_related('question'):
+        responses[response.question.id] = response
+    
+    # Get MCQ insights and risk factors
+    insights = assessment.get_mcq_insights()
+    mcq_scoring = assessment.get_mcq_risk_factors()
+    
+    context = {
+        'assessment': assessment,
+        'categories': categories,
+        'responses': responses,
+        'category_insights': insights,
+        'mcq_risk_factors': mcq_scoring.get('risk_factors', []) if mcq_scoring else []
+    }
+    
+    # Create a custom template tag filter to get items from dict
+    from django import template
+    register = template.Library()
+    
+    @register.filter
+    def get_item(dictionary, key):
+        return dictionary.get(key)
+    
+    # Note: In production, this filter should be in a templatetags file
+    
+    return render(request, 'assessments/mcq_print.html', context)

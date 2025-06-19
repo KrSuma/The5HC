@@ -4,8 +4,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from datetime import date
 
-# Import scoring functions
-from .scoring import (
+# Import scoring functions from the scoring.py file (not the scoring directory)
+from apps.assessments.scoring import (
     calculate_overhead_squat_score,
     calculate_pushup_score,
     calculate_single_leg_balance_score,
@@ -233,6 +233,28 @@ class Assessment(models.Model):
         help_text="Detailed risk factors identified in the assessment"
     )
     
+    # MCQ Score Fields
+    knowledge_score = models.FloatField(
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Knowledge assessment score (0-100)"
+    )
+    lifestyle_score = models.FloatField(
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Lifestyle assessment score (0-100)"
+    )
+    readiness_score = models.FloatField(
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Readiness assessment score (0-100)"
+    )
+    comprehensive_score = models.FloatField(
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Comprehensive score combining physical and MCQ assessments"
+    )
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -416,6 +438,27 @@ class Assessment(models.Model):
             
             # Calculate risk score and factors
             self.injury_risk_score, self.risk_factors = calculate_injury_risk(risk_data)
+            
+            # Calculate MCQ scores if responses exist
+            if self.pk and self.question_responses.exists():
+                from .mcq_scoring_module.mcq_scoring import MCQScoringEngine, integrate_mcq_risk_factors
+                
+                # Calculate MCQ scores
+                mcq_engine = MCQScoringEngine(self)
+                mcq_scores = mcq_engine.calculate_mcq_scores()
+                
+                # Update risk factors with MCQ risk factors
+                self.risk_factors = integrate_mcq_risk_factors(
+                    self.risk_factors,
+                    mcq_scores.get('mcq_risk_factors', [])
+                )
+                
+                # Add MCQ risk contribution to overall risk score
+                mcq_risk_contribution = mcq_engine.calculate_mcq_risk_contribution()
+                if mcq_risk_contribution > 0:
+                    # Weight MCQ risk at 20% of total risk score
+                    self.injury_risk_score = (self.injury_risk_score * 0.8) + (mcq_risk_contribution * 0.2)
+                    self.injury_risk_score = round(self.injury_risk_score, 1)
             
         except Exception as e:
             # Log the error but don't prevent saving
@@ -795,6 +838,72 @@ class NormativeData(models.Model):
         ]
         
         return all(getattr(self, field) is not None for field in required_fields)
+    
+    def get_mcq_insights(self):
+        """
+        Get insights from MCQ responses.
+        
+        Returns:
+            Dictionary with category insights or None if no MCQ responses
+        """
+        if not self.pk or not self.question_responses.exists():
+            return None
+        
+        from .mcq_scoring_module.mcq_scoring import MCQScoringEngine
+        
+        engine = MCQScoringEngine(self)
+        # Ensure scores are calculated first
+        if not all([self.knowledge_score, self.lifestyle_score, self.readiness_score]):
+            engine.calculate_mcq_scores()
+        
+        return engine.get_category_insights()
+    
+    def has_mcq_responses(self):
+        """Check if assessment has MCQ responses."""
+        return self.pk and self.question_responses.exists()
+    
+    def get_mcq_completion_status(self):
+        """
+        Get MCQ completion status by category.
+        
+        Returns:
+            Dict with completion percentage per category
+        """
+        if not self.pk:
+            return {}
+        
+        # Import here to avoid circular imports
+        from django.apps import apps
+        QuestionCategory = apps.get_model('assessments', 'QuestionCategory')
+        MultipleChoiceQuestion = apps.get_model('assessments', 'MultipleChoiceQuestion')
+        
+        status = {}
+        categories = QuestionCategory.objects.filter(is_active=True)
+        
+        for category in categories:
+            total_questions = MultipleChoiceQuestion.objects.filter(
+                category=category,
+                is_active=True,
+                is_required=True
+            ).count()
+            
+            answered_questions = self.question_responses.filter(
+                question__category=category,
+                question__is_required=True
+            ).count()
+            
+            if total_questions > 0:
+                completion_percentage = (answered_questions / total_questions) * 100
+            else:
+                completion_percentage = 0
+            
+            status[category.name.lower()] = {
+                'total': total_questions,
+                'answered': answered_questions,
+                'percentage': round(completion_percentage, 1)
+            }
+        
+        return status
 
 
 class TestStandard(models.Model):
@@ -1042,4 +1151,206 @@ class TestStandard(models.Model):
     def save(self, *args, **kwargs):
         """Override save to validate data."""
         self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class QuestionCategory(models.Model):
+    """
+    Categories for multiple choice questions.
+    Each category has a weight that contributes to the overall assessment score.
+    """
+    name = models.CharField(max_length=100, unique=True)
+    name_ko = models.CharField(max_length=100, help_text="Korean name")
+    description = models.TextField(blank=True)
+    description_ko = models.TextField(blank=True, help_text="Korean description")
+    weight = models.DecimalField(
+        max_digits=3, 
+        decimal_places=2, 
+        default=1.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        help_text="Weight factor for scoring (0.0-1.0)"
+    )
+    order = models.IntegerField(default=0, help_text="Display order")
+    is_active = models.BooleanField(default=True)
+    
+    # Timestamps
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name_plural = "Question Categories"
+    
+    def __str__(self):
+        return f"{self.name} (Weight: {self.weight})"
+
+
+class MultipleChoiceQuestion(models.Model):
+    """
+    Multiple choice questions for knowledge, lifestyle, and readiness assessments.
+    Supports single choice, multiple choice, and scale/rating questions.
+    """
+    QUESTION_TYPES = [
+        ('single', 'Single Choice'),
+        ('multiple', 'Multiple Choice'),
+        ('scale', 'Scale/Rating'),
+    ]
+    
+    category = models.ForeignKey(
+        QuestionCategory, 
+        on_delete=models.CASCADE,
+        related_name='questions'
+    )
+    question_text = models.TextField()
+    question_text_ko = models.TextField(help_text="Korean translation")
+    question_type = models.CharField(
+        max_length=20, 
+        choices=QUESTION_TYPES, 
+        default='single'
+    )
+    points = models.IntegerField(
+        default=1, 
+        help_text="Maximum points for this question"
+    )
+    is_required = models.BooleanField(default=True)
+    help_text = models.TextField(blank=True)
+    help_text_ko = models.TextField(blank=True, help_text="Korean help text")
+    order = models.IntegerField(default=0, help_text="Display order within category")
+    is_active = models.BooleanField(default=True)
+    
+    # For conditional questions
+    depends_on = models.ForeignKey(
+        'self', 
+        null=True, 
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='dependent_questions',
+        help_text="Show this question only if another question is answered"
+    )
+    depends_on_answer = models.ForeignKey(
+        'QuestionChoice',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        help_text="Show this question only if this specific answer is selected"
+    )
+    
+    # Timestamps
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['category', 'order', 'id']
+    
+    def __str__(self):
+        return f"{self.category.name}: {self.question_text[:50]}..."
+
+
+class QuestionChoice(models.Model):
+    """
+    Answer choices for multiple choice questions.
+    Each choice can have points and contribute to risk factors.
+    """
+    question = models.ForeignKey(
+        MultipleChoiceQuestion,
+        on_delete=models.CASCADE,
+        related_name='choices'
+    )
+    choice_text = models.CharField(max_length=200)
+    choice_text_ko = models.CharField(max_length=200, help_text="Korean translation")
+    points = models.IntegerField(
+        default=0,
+        help_text="Points awarded for this choice"
+    )
+    is_correct = models.BooleanField(
+        default=False,
+        help_text="For knowledge questions - is this the correct answer?"
+    )
+    order = models.IntegerField(default=0, help_text="Display order")
+    
+    # Risk factors (similar to existing physical assessment system)
+    contributes_to_risk = models.BooleanField(
+        default=False,
+        help_text="Does this choice indicate increased injury risk?"
+    )
+    risk_weight = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        help_text="How much this choice contributes to risk (0.0-1.0)"
+    )
+    
+    # Timestamps
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['order', 'id']
+    
+    def __str__(self):
+        return f"{self.choice_text} ({self.points} points)"
+
+
+class QuestionResponse(models.Model):
+    """
+    Stores user responses to multiple choice questions.
+    Links assessments to their MCQ responses.
+    """
+    assessment = models.ForeignKey(
+        'Assessment',
+        on_delete=models.CASCADE,
+        related_name='question_responses'
+    )
+    question = models.ForeignKey(
+        MultipleChoiceQuestion,
+        on_delete=models.CASCADE
+    )
+    selected_choices = models.ManyToManyField(
+        QuestionChoice,
+        related_name='responses'
+    )
+    response_text = models.TextField(
+        blank=True,
+        help_text="For open-ended follow-ups or additional comments"
+    )
+    points_earned = models.IntegerField(
+        default=0,
+        help_text="Total points earned for this question"
+    )
+    
+    # Timestamps
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['assessment', 'question']
+        ordering = ['question__category__order', 'question__order']
+    
+    def __str__(self):
+        return f"Response to {self.question} for {self.assessment}"
+    
+    def calculate_points(self):
+        """Calculate points earned based on selected choices."""
+        if self.question.question_type == 'multiple':
+            # For multiple choice, sum all selected choice points
+            self.points_earned = sum(
+                choice.points for choice in self.selected_choices.all()
+            )
+        else:
+            # For single choice and scale, use the points from the single selected choice
+            choice = self.selected_choices.first()
+            self.points_earned = choice.points if choice else 0
+        return self.points_earned
+    
+    def save(self, *args, **kwargs):
+        """Override save to calculate points before saving."""
+        # Save first to ensure M2M relationship can be accessed
+        if not self.pk:
+            super().save(*args, **kwargs)
+        
+        # Calculate points after M2M is available
+        self.calculate_points()
+        
+        # Save again with calculated points
         super().save(*args, **kwargs)

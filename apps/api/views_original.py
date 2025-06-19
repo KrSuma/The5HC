@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from apps.clients.models import Client
 from apps.assessments.models import Assessment
 from apps.sessions.models import SessionPackage, Session, Payment
-from .serializers import (
+from .serializers_original import (
     UserSerializer, ClientSerializer, ClientListSerializer,
     AssessmentSerializer, AssessmentListSerializer,
     SessionPackageSerializer, SessionSerializer, PaymentSerializer,

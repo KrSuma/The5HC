@@ -43,6 +43,7 @@ djangorestframework==3.14.0
 django-cors-headers==4.3.1
 drf-spectacular==0.27.0    # OpenAPI/Swagger documentation
 djangorestframework-simplejwt==5.3.1  # JWT authentication
+django-filter==24.3        # Filtering for DRF
 
 # Background Tasks (Future)
 # celery==5.3.4

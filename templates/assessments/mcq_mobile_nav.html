@@ -1,0 +1,57 @@
+<!-- MCQ Mobile Navigation -->
+<div class="mcq-mobile-nav md:hidden" x-show="isMobile" x-cloak>
+    <div class="mcq-mobile-nav-buttons">
+        <!-- Previous Button -->
+        <button type="button"
+                @click="previousCategory()"
+                :disabled="currentCategory === 0"
+                class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed mcq-touch-target">
+            <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            이전
+        </button>
+        
+        <!-- Progress Indicator -->
+        <div class="flex-1 flex items-center justify-center">
+            <span class="text-sm text-gray-600">
+                <span x-text="currentCategory + 1"></span> / <span x-text="categories.length"></span>
+            </span>
+        </div>
+        
+        <!-- Next/Submit Button -->
+        <button type="button"
+                @click="currentCategory === categories.length - 1 ? submitAssessment() : nextCategory()"
+                class="flex-1 px-4 py-3 rounded-lg mcq-touch-target"
+                :class="currentCategory === categories.length - 1 ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'">
+            <span x-show="currentCategory < categories.length - 1">
+                다음
+                <svg class="w-5 h-5 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </span>
+            <span x-show="currentCategory === categories.length - 1">
+                <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                제출
+            </span>
+        </button>
+    </div>
+    
+    <!-- Category Progress Bar -->
+    <div class="mt-3 flex space-x-1">
+        <template x-for="(category, index) in categories" :key="category.id">
+            <div class="flex-1 h-1 rounded-full transition-colors"
+                 :class="{
+                     'bg-blue-600': index <= currentCategory,
+                     'bg-gray-300': index > currentCategory
+                 }"></div>
+        </template>
+    </div>
+    
+    <!-- Swipe Hint -->
+    <p class="mcq-swipe-hint">
+        좌우로 스와이프하여 카테고리 이동
+    </p>
+</div>

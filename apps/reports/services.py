@@ -20,6 +20,7 @@ except (ImportError, OSError):
 
 from apps.assessments.models import Assessment
 from apps.reports.models import AssessmentReport
+from apps.assessments.mcq_scoring_module.mcq_scoring import MCQScoringEngine
 
 logger = logging.getLogger(__name__)
 
@@ -66,8 +67,11 @@ class ReportGenerator:
             # Get test results formatted for display
             test_results = self._format_test_results(assessment)
             
-            # Get suggestions
-            suggestions = self._get_suggestions(scores)
+            # Get MCQ data
+            mcq_data = self._get_mcq_data(assessment)
+            
+            # Get suggestions (including MCQ-based suggestions)
+            suggestions = self._get_suggestions(scores, mcq_data)
             
             # Get training program
             training_program = self._get_training_program(assessment.client, scores)
@@ -93,6 +97,13 @@ class ReportGenerator:
                 'training_program': training_program,
                 'intermediate_check': intermediate_check,
                 'next_assessment': next_assessment,
+                # MCQ-related context
+                'mcq_data': mcq_data,
+                'has_mcq_data': mcq_data['has_responses'],
+                'mcq_scores': mcq_data['scores'],
+                'mcq_insights': mcq_data['insights'],
+                'mcq_risk_factors': mcq_data['risk_factors'],
+                'comprehensive_score': mcq_data['comprehensive_score'],
             }
             
             # Render HTML
@@ -248,11 +259,77 @@ class ReportGenerator:
         else:
             return "개선필요", "improvement"
     
-    def _get_suggestions(self, scores: Dict[str, float]) -> Dict[str, List[str]]:
-        """Get improvement suggestions based on scores"""
+    def _get_mcq_data(self, assessment: Assessment) -> Dict[str, Any]:
+        """
+        Get MCQ-related data for the assessment.
+        
+        Args:
+            assessment: Assessment instance
+            
+        Returns:
+            Dictionary containing MCQ scores, insights, and risk factors
+        """
+        try:
+            # Check if assessment has MCQ responses
+            has_responses = assessment.question_responses.exists()
+            
+            if has_responses:
+                # Use MCQ scoring engine to get data
+                mcq_engine = MCQScoringEngine(assessment)
+                mcq_scores = mcq_engine.calculate_mcq_scores()
+                mcq_insights = mcq_engine.get_category_insights()
+                risk_factors = mcq_engine.get_mcq_risk_factors()
+                
+                return {
+                    'has_responses': True,
+                    'scores': {
+                        'knowledge': mcq_scores.get('knowledge_score', 0),
+                        'lifestyle': mcq_scores.get('lifestyle_score', 0),
+                        'readiness': mcq_scores.get('readiness_score', 0),
+                    },
+                    'comprehensive_score': mcq_scores.get('comprehensive_score', assessment.overall_score or 0),
+                    'insights': mcq_insights,
+                    'risk_factors': risk_factors,
+                    'mcq_score_percentages': {
+                        'knowledge_pct': mcq_scores.get('knowledge_score', 0),
+                        'lifestyle_pct': mcq_scores.get('lifestyle_score', 0),
+                        'readiness_pct': mcq_scores.get('readiness_score', 0),
+                    }
+                }
+            else:
+                return {
+                    'has_responses': False,
+                    'scores': {'knowledge': 0, 'lifestyle': 0, 'readiness': 0},
+                    'comprehensive_score': assessment.overall_score or 0,
+                    'insights': {},
+                    'risk_factors': [],
+                    'mcq_score_percentages': {
+                        'knowledge_pct': 0,
+                        'lifestyle_pct': 0,
+                        'readiness_pct': 0,
+                    }
+                }
+        except Exception as e:
+            logger.warning(f"Error getting MCQ data for assessment {assessment.id}: {str(e)}")
+            return {
+                'has_responses': False,
+                'scores': {'knowledge': 0, 'lifestyle': 0, 'readiness': 0},
+                'comprehensive_score': assessment.overall_score or 0,
+                'insights': {},
+                'risk_factors': [],
+                'mcq_score_percentages': {
+                    'knowledge_pct': 0,
+                    'lifestyle_pct': 0,
+                    'readiness_pct': 0,
+                }
+            }
+    
+    def _get_suggestions(self, scores: Dict[str, float], mcq_data: Dict[str, Any] = None) -> Dict[str, List[str]]:
+        """Get improvement suggestions based on physical scores and MCQ insights"""
         
         suggestions = {}
         
+        # Physical fitness suggestions based on scores
         # Strength suggestions
         if scores['strength'] < 3:
             suggestions['strength'] = [
@@ -284,6 +361,22 @@ class ReportGenerator:
                 "인터벌 트레이닝 도입",
                 "점진적 강도 증가"
             ]
+        
+        # Add MCQ-based suggestions if available
+        if mcq_data and mcq_data.get('has_responses') and mcq_data.get('insights'):
+            insights = mcq_data['insights']
+            
+            # Knowledge-based suggestions
+            if 'knowledge' in insights and insights['knowledge'].get('recommendations'):
+                suggestions['knowledge'] = insights['knowledge']['recommendations']
+            
+            # Lifestyle-based suggestions
+            if 'lifestyle' in insights and insights['lifestyle'].get('recommendations'):
+                suggestions['lifestyle'] = insights['lifestyle']['recommendations']
+            
+            # Readiness-based suggestions  
+            if 'readiness' in insights and insights['readiness'].get('recommendations'):
+                suggestions['readiness'] = insights['readiness']['recommendations']
         
         return suggestions
     

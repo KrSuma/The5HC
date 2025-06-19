@@ -1,0 +1,100 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>{{ title }}</h1>
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <fieldset class="module aligned">
+            <h2>파일 업로드</h2>
+            
+            <div class="form-row">
+                <label for="id_file">파일 선택:</label>
+                {% if 'csv' in request.path %}
+                    <input type="file" name="csv_file" id="id_file" accept=".csv" required>
+                    <p class="help">UTF-8 인코딩된 CSV 파일을 선택하세요.</p>
+                {% else %}
+                    <input type="file" name="json_file" id="id_file" accept=".json" required>
+                    <p class="help">JSON 형식의 파일을 선택하세요.</p>
+                {% endif %}
+            </div>
+        </fieldset>
+        
+        {% if 'csv' in request.path %}
+        <fieldset class="module aligned">
+            <h2>CSV 형식 안내</h2>
+            <p>CSV 파일은 다음 컬럼을 포함해야 합니다:</p>
+            <ul>
+                <li><strong>category_name</strong>: 카테고리 영문명 (필수)</li>
+                <li><strong>category_name_ko</strong>: 카테고리 한글명</li>
+                <li><strong>category_weight</strong>: 카테고리 가중치 (0.0-1.0)</li>
+                <li><strong>category_order</strong>: 카테고리 순서</li>
+                <li><strong>question_text</strong>: 질문 영문</li>
+                <li><strong>question_text_ko</strong>: 질문 한글</li>
+                <li><strong>question_type</strong>: single, multiple, scale, text 중 하나</li>
+                <li><strong>is_required</strong>: True 또는 False</li>
+                <li><strong>points</strong>: 점수 (숫자)</li>
+                <li><strong>help_text</strong>: 도움말 영문 (선택)</li>
+                <li><strong>help_text_ko</strong>: 도움말 한글 (선택)</li>
+                <li><strong>order</strong>: 정렬 순서 (숫자)</li>
+                <li><strong>is_active</strong>: True 또는 False</li>
+            </ul>
+            <p>선택지 (최대 5개):</p>
+            <ul>
+                <li><strong>choice_1_text</strong> ~ <strong>choice_5_text</strong>: 선택지 영문</li>
+                <li><strong>choice_1_text_ko</strong> ~ <strong>choice_5_text_ko</strong>: 선택지 한글</li>
+                <li><strong>choice_1_points</strong> ~ <strong>choice_5_points</strong>: 선택지 점수</li>
+                <li><strong>choice_1_risk_factor</strong> ~ <strong>choice_5_risk_factor</strong>: 위험 요인</li>
+                <li><strong>choice_1_is_correct</strong> ~ <strong>choice_5_is_correct</strong>: 정답 여부</li>
+            </ul>
+        </fieldset>
+        {% else %}
+        <fieldset class="module aligned">
+            <h2>JSON 형식 안내</h2>
+            <p>JSON 파일은 다음 구조를 따라야 합니다:</p>
+            <pre style="background: #f8f8f8; padding: 10px; border: 1px solid #ddd;">
+[
+  {
+    "category": {
+      "name": "Knowledge Assessment",
+      "name_ko": "지식 평가",
+      "weight": 0.15,
+      "order": 1
+    },
+    "question_text": "How often do you exercise?",
+    "question_text_ko": "얼마나 자주 운동하시나요?",
+    "question_type": "single",
+    "is_required": true,
+    "points": 5,
+    "help_text": "Include all forms of physical activity",
+    "help_text_ko": "모든 형태의 신체 활동을 포함하세요",
+    "order": 1,
+    "is_active": true,
+    "choices": [
+      {
+        "choice_text": "Daily",
+        "choice_text_ko": "매일",
+        "points": 5,
+        "risk_factor": "",
+        "order": 1,
+        "is_correct": false
+      }
+    ]
+  }
+]
+            </pre>
+        </fieldset>
+        {% endif %}
+        
+        <div class="submit-row">
+            <input type="submit" value="가져오기" class="default">
+            <a href="{% url 'admin:assessments_multiplechoicequestion_changelist' %}" class="button">취소</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

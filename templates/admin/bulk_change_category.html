@@ -1,0 +1,38 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>{{ title }}</h1>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <fieldset class="module aligned">
+            <h2>선택된 질문들</h2>
+            <p>{{ queryset.count }}개의 질문이 선택되었습니다.</p>
+            
+            <div class="form-row">
+                <label for="id_category">새 카테고리:</label>
+                <select name="category" id="id_category" required>
+                    <option value="">---------</option>
+                    {% for category in categories %}
+                        <option value="{{ category.pk }}">{{ category.name_ko }} ({{ category.name }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </fieldset>
+        
+        {% for obj in queryset %}
+            <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">
+        {% endfor %}
+        
+        <div class="submit-row">
+            <input type="submit" name="apply" value="적용" class="default">
+            <a href="{% url 'admin:assessments_multiplechoicequestion_changelist' %}" class="button">취소</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,313 @@
+/* MCQ Assessment Styles */
+
+/* Mobile-First Design */
+.mcq-container {
+    @apply px-4 py-6 max-w-7xl mx-auto;
+}
+
+/* Touch Target Optimization - 44px minimum */
+.mcq-touch-target {
+    min-height: 44px;
+    @apply flex items-center;
+}
+
+/* Question Type Icons */
+.question-icon {
+    @apply inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold;
+}
+
+.question-icon.single {
+    @apply bg-blue-100 text-blue-600;
+}
+
+.question-icon.multiple {
+    @apply bg-green-100 text-green-600;
+}
+
+.question-icon.scale {
+    @apply bg-purple-100 text-purple-600;
+}
+
+.question-icon.text {
+    @apply bg-gray-100 text-gray-600;
+}
+
+/* Category Navigation - Mobile Optimized */
+.mcq-category-nav {
+    @apply flex overflow-x-auto pb-2 mb-6;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.mcq-category-nav::-webkit-scrollbar {
+    height: 6px;
+}
+
+.mcq-category-nav::-webkit-scrollbar-track {
+    @apply bg-gray-200 rounded;
+}
+
+.mcq-category-nav::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded;
+}
+
+.mcq-category-tab {
+    @apply flex-shrink-0 px-4 py-2 mr-2 rounded-lg text-sm font-medium transition-colors;
+    min-width: 120px;
+}
+
+/* Progress Visualization */
+.mcq-progress-ring {
+    @apply relative inline-flex items-center justify-center;
+}
+
+.mcq-progress-ring svg {
+    @apply transform -rotate-90;
+}
+
+.mcq-progress-text {
+    @apply absolute inset-0 flex items-center justify-center text-lg font-semibold;
+}
+
+/* Help Tooltip Styles */
+.mcq-help-tooltip {
+    @apply relative inline-flex;
+}
+
+.mcq-help-content {
+    @apply absolute z-50 w-64 p-3 bg-gray-900 text-white text-sm rounded-lg shadow-lg;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.mcq-help-content::after {
+    content: '';
+    @apply absolute top-full left-1/2 transform -translate-x-1/2;
+    border-width: 6px;
+    border-style: solid;
+    border-color: theme('colors.gray.900') transparent transparent transparent;
+}
+
+/* Question Cards - Enhanced */
+.mcq-question-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 mb-4;
+    transition: all 0.2s ease-in-out;
+}
+
+.mcq-question-card:hover {
+    @apply shadow-md border-gray-300;
+}
+
+.mcq-question-card.highlighted {
+    @apply border-blue-500 shadow-md;
+}
+
+/* Response Options - Mobile Optimized */
+.mcq-option {
+    @apply flex items-start p-3 rounded-lg cursor-pointer transition-colors;
+    min-height: 44px;
+}
+
+.mcq-option:hover {
+    @apply bg-gray-50;
+}
+
+.mcq-option.selected {
+    @apply bg-blue-50 border border-blue-200;
+}
+
+.mcq-option input[type="radio"],
+.mcq-option input[type="checkbox"] {
+    @apply mt-1 mr-3 w-5 h-5 cursor-pointer;
+}
+
+/* Scale Questions - Touch Friendly */
+.mcq-scale-container {
+    @apply flex flex-col space-y-4;
+}
+
+.mcq-scale-labels {
+    @apply flex justify-between text-sm text-gray-600 px-2;
+}
+
+.mcq-scale-track {
+    @apply relative h-12 bg-gray-200 rounded-full;
+}
+
+.mcq-scale-fill {
+    @apply absolute inset-y-0 left-0 bg-blue-500 rounded-full transition-all duration-300;
+}
+
+.mcq-scale-thumb {
+    @apply absolute top-1/2 transform -translate-y-1/2 w-8 h-8 bg-white border-2 border-blue-500 rounded-full shadow-md cursor-pointer;
+    touch-action: none;
+}
+
+/* Search and Filter Bar */
+.mcq-search-bar {
+    @apply flex flex-col md:flex-row gap-3 mb-6 p-4 bg-gray-50 rounded-lg;
+}
+
+.mcq-search-input {
+    @apply flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+.mcq-filter-select {
+    @apply px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+/* Mobile Navigation Drawer */
+@media (max-width: 768px) {
+    .mcq-mobile-nav {
+        @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40;
+    }
+    
+    .mcq-mobile-nav-buttons {
+        @apply flex justify-between gap-3;
+    }
+    
+    .mcq-content-area {
+        padding-bottom: 100px; /* Space for fixed bottom nav */
+    }
+}
+
+/* Animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mcq-animate-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Print Styles */
+@media print {
+    .mcq-no-print {
+        display: none !important;
+    }
+    
+    .mcq-question-card {
+        page-break-inside: avoid;
+        border: 1px solid #000;
+        margin-bottom: 10px;
+    }
+    
+    .mcq-category-section {
+        page-break-before: always;
+    }
+    
+    .mcq-category-section:first-child {
+        page-break-before: auto;
+    }
+    
+    .mcq-print-header {
+        display: block;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+    }
+}
+
+/* Loading States */
+.mcq-skeleton {
+    @apply bg-gray-200 animate-pulse rounded;
+}
+
+.mcq-skeleton-text {
+    @apply h-4 bg-gray-200 animate-pulse rounded w-3/4 mb-2;
+}
+
+.mcq-skeleton-button {
+    @apply h-10 bg-gray-200 animate-pulse rounded w-24;
+}
+
+/* Accessibility Improvements */
+.mcq-sr-only {
+    @apply sr-only;
+}
+
+.mcq-focus-visible:focus-visible {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* Error States */
+.mcq-error {
+    @apply text-red-600 text-sm mt-1;
+}
+
+.mcq-question-card.error {
+    @apply border-red-500 bg-red-50;
+}
+
+/* Success States */
+.mcq-success {
+    @apply text-green-600 text-sm mt-1;
+}
+
+.mcq-category-complete {
+    @apply bg-green-100 text-green-800;
+}
+
+/* Responsive Grid for Categories */
+@media (min-width: 768px) {
+    .mcq-category-grid {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 2rem;
+    }
+    
+    .mcq-category-sidebar {
+        position: sticky;
+        top: 1rem;
+        height: fit-content;
+    }
+}
+
+/* Custom Scrollbar for Question Container */
+.mcq-questions-container {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    padding-right: 1rem;
+}
+
+.mcq-questions-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.mcq-questions-container::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded;
+}
+
+.mcq-questions-container::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded;
+}
+
+/* Swipe Indicators for Mobile */
+.mcq-swipe-hint {
+    @apply text-gray-500 text-xs text-center mt-2 md:hidden;
+}
+
+/* Visual Question Status Indicators */
+.mcq-status-dot {
+    @apply w-2 h-2 rounded-full inline-block mr-1;
+}
+
+.mcq-status-dot.answered {
+    @apply bg-green-500;
+}
+
+.mcq-status-dot.required {
+    @apply bg-red-500;
+}
+
+.mcq-status-dot.optional {
+    @apply bg-gray-400;
+}

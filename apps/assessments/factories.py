@@ -317,3 +317,75 @@ def create_performance_progression(client, trainer=None, stages=3):
         assessments.append(assessment)
     
     return assessments
+
+
+# MCQ Model Factories
+class QuestionCategoryFactory(DjangoModelFactory):
+    """Factory for QuestionCategory model."""
+    
+    class Meta:
+        model = 'assessments.QuestionCategory'
+    
+    name = factory.Sequence(lambda n: f"Category {n}")
+    name_ko = factory.Sequence(lambda n: f"카테고리 {n}")
+    description = factory.Faker('text', max_nb_chars=200)
+    description_ko = factory.Faker('text', max_nb_chars=200, locale='ko_KR')
+    weight = Decimal('0.15')
+    order = factory.Sequence(lambda n: n)
+    is_active = True
+
+
+class MultipleChoiceQuestionFactory(DjangoModelFactory):
+    """Factory for MultipleChoiceQuestion model."""
+    
+    class Meta:
+        model = 'assessments.MultipleChoiceQuestion'
+    
+    category = factory.SubFactory(QuestionCategoryFactory)
+    question_text = factory.Faker('sentence', nb_words=10)
+    question_text_ko = factory.Faker('sentence', nb_words=10, locale='ko_KR')
+    question_type = 'single'
+    points = 10
+    is_required = True
+    help_text = factory.Faker('sentence')
+    help_text_ko = factory.Faker('sentence', locale='ko_KR')
+    order = factory.Sequence(lambda n: n)
+    is_active = True
+
+
+class QuestionChoiceFactory(DjangoModelFactory):
+    """Factory for QuestionChoice model."""
+    
+    class Meta:
+        model = 'assessments.QuestionChoice'
+    
+    question = factory.SubFactory(MultipleChoiceQuestionFactory)
+    choice_text = factory.Faker('sentence', nb_words=5)
+    choice_text_ko = factory.Faker('sentence', nb_words=5, locale='ko_KR')
+    points = 0
+    is_correct = False
+    order = factory.Sequence(lambda n: n)
+    contributes_to_risk = False
+    risk_weight = Decimal('0.0')
+
+
+class QuestionResponseFactory(DjangoModelFactory):
+    """Factory for QuestionResponse model."""
+    
+    class Meta:
+        model = 'assessments.QuestionResponse'
+    
+    assessment = factory.SubFactory(AssessmentFactory)
+    question = factory.SubFactory(MultipleChoiceQuestionFactory)
+    response_text = ""
+    points_earned = 0
+    
+    @factory.post_generation
+    def selected_choices(self, create, extracted, **kwargs):
+        if not create:
+            return
+        
+        if extracted:
+            # Add selected choices
+            for choice in extracted:
+                self.selected_choices.add(choice)

@@ -153,6 +153,9 @@
         .progress-mobility { background: #00c9a7; }
         .progress-balance { background: #fbbc05; }
         .progress-cardio { background: #ea4335; }
+        .progress-knowledge { background: #9c27b0; }
+        .progress-lifestyle { background: #ff9800; }
+        .progress-readiness { background: #4caf50; }
 
         .category-score {
             font-size: 9px;
@@ -220,7 +223,7 @@
 
         .suggestion-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 10px;
         }
 
@@ -235,6 +238,9 @@
         .suggestion-mobility { border-color: #00c9a7; }
         .suggestion-balance { border-color: #fbbc05; }
         .suggestion-cardio { border-color: #ea4335; }
+        .suggestion-knowledge { border-color: #9c27b0; }
+        .suggestion-lifestyle { border-color: #ff9800; }
+        .suggestion-readiness { border-color: #4caf50; }
 
         .suggestion-title {
             font-weight: 600;
@@ -330,6 +336,62 @@
             color: #667eea;
         }
 
+        /* MCQ Styles */
+        .mcq-section {
+            margin-top: 15px;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid #9c27b0;
+        }
+
+        .mcq-section h2 {
+            color: #9c27b0;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .mcq-scores {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .mcq-risk-factors {
+            margin-top: 10px;
+        }
+
+        .mcq-risk-factors h3 {
+            font-size: 11px;
+            font-weight: 600;
+            color: #dc3545;
+            margin-bottom: 6px;
+        }
+
+        .risk-factor-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .risk-factor-item {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            font-size: 9px;
+            line-height: 1.3;
+        }
+
+        .risk-level {
+            color: #856404;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
         @media print {
             body {
                 background: white;
@@ -420,8 +482,13 @@
             </div>
 
             <div class="overall-score">
-                <div class="score-number">{{ scores.overall|floatformat:0 }}</div>
-                <div class="score-rating">{{ overall_rating }}</div>
+                {% if has_mcq_data and comprehensive_score %}
+                    <div class="score-number">{{ comprehensive_score|floatformat:0 }}</div>
+                    <div class="score-rating">종합 점수</div>
+                {% else %}
+                    <div class="score-number">{{ scores.overall|floatformat:0 }}</div>
+                    <div class="score-rating">{{ overall_rating }}</div>
+                {% endif %}
             </div>
         </div>
 
@@ -449,12 +516,73 @@
             </table>
         </div>
 
+        {% if has_mcq_data %}
+        <div class="mcq-section">
+            <h2>다중선택형 평가 결과</h2>
+            <div class="mcq-scores">
+                <div class="category-item">
+                    <span class="category-label">지식</span>
+                    <div class="progress-bar">
+                        <div class="progress progress-knowledge" style="width: {{ mcq_data.mcq_score_percentages.knowledge_pct }}%"></div>
+                    </div>
+                    <span class="category-score">{{ mcq_scores.knowledge|floatformat:1 }}</span>
+                </div>
+                <div class="category-item">
+                    <span class="category-label">생활습관</span>
+                    <div class="progress-bar">
+                        <div class="progress progress-lifestyle" style="width: {{ mcq_data.mcq_score_percentages.lifestyle_pct }}%"></div>
+                    </div>
+                    <span class="category-score">{{ mcq_scores.lifestyle|floatformat:1 }}</span>
+                </div>
+                <div class="category-item">
+                    <span class="category-label">준비도</span>
+                    <div class="progress-bar">
+                        <div class="progress progress-readiness" style="width: {{ mcq_data.mcq_score_percentages.readiness_pct }}%"></div>
+                    </div>
+                    <span class="category-score">{{ mcq_scores.readiness|floatformat:1 }}</span>
+                </div>
+            </div>
+            
+            {% if mcq_risk_factors %}
+            <div class="mcq-risk-factors">
+                <h3>위험 요소 식별</h3>
+                <ul class="risk-factor-list">
+                    {% for risk in mcq_risk_factors %}
+                    <li class="risk-factor-item">
+                        <strong>{{ risk.category }}</strong>: {{ risk.answer }}
+                        <span class="risk-level">(위험도: {{ risk.risk_weight|floatformat:1 }})</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <div class="suggestions">
             <h2>개선 제안사항</h2>
             <div class="suggestion-grid">
                 {% for category, items in suggestions.items %}
                 <div class="suggestion-box suggestion-{{ category }}">
-                    <div class="suggestion-title">{{ category|title }} 개선</div>
+                    <div class="suggestion-title">
+                        {% if category == 'knowledge' %}
+                            운동 지식 개선
+                        {% elif category == 'lifestyle' %}
+                            생활습관 개선
+                        {% elif category == 'readiness' %}
+                            운동 준비도 개선
+                        {% elif category == 'strength' %}
+                            근력 개선
+                        {% elif category == 'mobility' %}
+                            유연성 개선
+                        {% elif category == 'balance' %}
+                            균형 개선
+                        {% elif category == 'cardio' %}
+                            심폐지구력 개선
+                        {% else %}
+                            {{ category|title }} 개선
+                        {% endif %}
+                    </div>
                     <ul class="suggestion-list">
                         {% for item in items %}
                         <li>{{ item }}</li>

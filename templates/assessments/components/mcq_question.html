@@ -1,0 +1,139 @@
+{% load static %}
+
+<!-- MCQ Question Component -->
+<div class="mcq-question-card mcq-animate-in"
+     id="question-{{ question.id }}"
+     data-question-id="{{ question.id }}"
+     data-category-id="{{ question.category.id }}"
+     data-required="{{ question.is_required|lower }}"
+     data-depends-on="{{ question.depends_on_id|default:'' }}"
+     data-show-when="{{ question.show_when|default:'' }}"
+     data-question-type="{{ question.question_type }}"
+     data-question-text="{{ question.question_text_ko|default:question.question_text }}"
+     x-show="shouldShowQuestion('{{ question.id }}')"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 transform scale-95"
+     x-transition:enter-end="opacity-100 transform scale-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100 transform scale-100"
+     x-transition:leave-end="opacity-0 transform scale-95"
+     :class="{'error': validationErrors.question_{{ question.id }} && showValidation}">
+    
+    <!-- Question Header with Icon and Help -->
+    <div class="mb-3 flex items-start">
+        <div class="flex-1">
+            <div class="flex items-center">
+                {% include "assessments/components/mcq_question_icon.html" with question=question %}
+                <label class="block text-sm font-medium text-gray-700 ml-2">
+                    {{ question.question_text_ko|default:question.question_text }}
+                    {% if question.is_required %}
+                        <span class="text-red-500">*</span>
+                    {% endif %}
+                </label>
+                {% if question.help_text_ko or question.help_text or question.example_answer_ko or question.example_answer %}
+                    {% with help_text=question.help_text_ko|default:question.help_text example=question.example_answer_ko|default:question.example_answer scoring_info=question.scoring_info_ko|default:question.scoring_info %}
+                        {% include "assessments/components/mcq_help_tooltip.html" %}
+                    {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Question Content -->
+    <div class="question-content">
+        {% if question.question_type == 'single' %}
+            <!-- Single Choice Radio Buttons -->
+            <div class="space-y-2">
+                {% for choice in question.choices.all %}
+                    <label class="mcq-option mcq-touch-target"
+                           :class="{'selected': responses.question_{{ question.id }} == '{{ choice.id }}'}">
+                        <input type="radio"
+                               name="question_{{ question.id }}"
+                               value="{{ choice.id }}"
+                               class="mcq-focus-visible"
+                               x-model="responses.question_{{ question.id }}"
+                               @change="validateResponse($event)"
+                               data-question-id="{{ question.id }}">
+                        <div class="flex-1">
+                            <span class="text-sm">{{ choice.choice_text_ko|default:choice.choice_text }}</span>
+                            {% if choice.points > 0 %}
+                                <span class="text-xs text-gray-400 ml-1">({{ choice.points }}점)</span>
+                            {% endif %}
+                        </div>
+                    </label>
+                {% endfor %}
+            </div>
+            
+        {% elif question.question_type == 'multiple' %}
+            <!-- Multiple Choice Checkboxes -->
+            <div class="space-y-2">
+                {% for choice in question.choices.all %}
+                    <label class="mcq-option mcq-touch-target"
+                           :class="{'selected': responses.question_{{ question.id }} && responses.question_{{ question.id }}.includes('{{ choice.id }}')}">
+                        <input type="checkbox"
+                               name="question_{{ question.id }}"
+                               value="{{ choice.id }}"
+                               class="mcq-focus-visible"
+                               x-model="responses.question_{{ question.id }}"
+                               @change="validateResponse($event)"
+                               data-question-id="{{ question.id }}">
+                        <div class="flex-1">
+                            <span class="text-sm">{{ choice.choice_text_ko|default:choice.choice_text }}</span>
+                            {% if choice.points > 0 %}
+                                <span class="text-xs text-gray-400 ml-1">({{ choice.points }}점)</span>
+                            {% endif %}
+                        </div>
+                    </label>
+                {% endfor %}
+            </div>
+            
+        {% elif question.question_type == 'scale' %}
+            <!-- Scale/Rating - Mobile Optimized -->
+            <div class="mcq-scale-container">
+                <div class="mcq-scale-labels">
+                    <span>매우 낮음</span>
+                    <span>보통</span>
+                    <span>매우 높음</span>
+                </div>
+                <div class="relative mt-2">
+                    <input type="range"
+                           min="1"
+                           max="10"
+                           step="1"
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mcq-focus-visible"
+                           x-model="responses.question_{{ question.id }}"
+                           @input="validateResponse($event)"
+                           data-question-id="{{ question.id }}">
+                    <div class="flex justify-between mt-1 px-2">
+                        {% for i in "1234567890" %}
+                            <span class="text-xs text-gray-500">{{ forloop.counter }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-2">
+                        <span class="text-lg font-semibold text-blue-600" x-text="responses.question_{{ question.id }} || '5'"></span>
+                        <span class="text-sm text-gray-500">/10</span>
+                    </div>
+                </div>
+            </div>
+            
+        {% elif question.question_type == 'text' %}
+            <!-- Text Area - Mobile Optimized -->
+            <textarea name="question_{{ question.id }}"
+                      rows="4"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mcq-focus-visible resize-none"
+                      placeholder="답변을 입력하세요..."
+                      x-model="responses.question_{{ question.id }}"
+                      @input="validateResponse($event)"
+                      data-question-id="{{ question.id }}"></textarea>
+        {% endif %}
+    </div>
+    
+    <!-- Validation Error -->
+    <div class="mcq-error"
+         x-show="validationErrors.question_{{ question.id }} && showValidation"
+         x-text="validationErrors.question_{{ question.id }}"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 transform -translate-y-1"
+         x-transition:enter-end="opacity-100 transform translate-y-0">
+    </div>
+</div>

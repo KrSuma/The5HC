@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}빠른 MCQ 평가 - {{ client.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">빠른 MCQ 평가</h1>
+        <p class="text-gray-600 mt-1">
+            <span class="font-medium">{{ client.name }}</span>님의 기본 정보 입력
+        </p>
+    </div>
+    
+    <!-- Quick Form -->
+    <form method="post" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        {% csrf_token %}
+        
+        <div class="space-y-6">
+            <!-- Knowledge Section -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">운동 지식</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            운동 경험 수준
+                        </label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="exercise_knowledge" value="beginner" class="mr-2">
+                                <span>초급 (운동 경험 1년 미만)</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="exercise_knowledge" value="intermediate" class="mr-2">
+                                <span>중급 (운동 경험 1-3년)</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="exercise_knowledge" value="advanced" class="mr-2">
+                                <span>고급 (운동 경험 3년 이상)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lifestyle Section -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">생활습관</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            평균 수면 시간
+                        </label>
+                        <select name="sleep_hours" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="">선택하세요</option>
+                            <option value="less_5">5시간 미만</option>
+                            <option value="5_6">5-6시간</option>
+                            <option value="6_7">6-7시간</option>
+                            <option value="7_8">7-8시간</option>
+                            <option value="more_8">8시간 이상</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            영양 관리 수준
+                        </label>
+                        <select name="nutrition_quality" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="">선택하세요</option>
+                            <option value="poor">관리 안함</option>
+                            <option value="fair">가끔 신경씀</option>
+                            <option value="good">규칙적 식사</option>
+                            <option value="excellent">체계적 관리</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Readiness Section -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">준비도</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            운동 동기 수준 (1-10)
+                        </label>
+                        <input type="range" name="motivation_level" min="1" max="10" value="5" 
+                               class="w-full" oninput="this.nextElementSibling.textContent = this.value">
+                        <span class="text-sm text-gray-600">5</span>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            부상 이력 (해당사항 모두 선택)
+                        </label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="injury_history" value="none" class="mr-2">
+                                <span>없음</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="injury_history" value="muscle" class="mr-2">
+                                <span>근육 부상</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="injury_history" value="joint" class="mr-2">
+                                <span>관절 부상</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="injury_history" value="spine" class="mr-2">
+                                <span>척추 부상</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Submit Buttons -->
+        <div class="mt-8 flex justify-between">
+            <a href="{% url 'assessments:detail' assessment.pk %}" 
+               class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                취소
+            </a>
+            <button type="submit" 
+                    class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                저장
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

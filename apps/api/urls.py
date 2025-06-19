@@ -13,7 +13,9 @@ from drf_spectacular.views import (
 from .views import (
     ClientViewSet, AssessmentViewSet, SessionPackageViewSet,
     SessionViewSet, PaymentViewSet, UserViewSet,
-    CustomTokenObtainPairView
+    CustomTokenObtainPairView,
+    QuestionCategoryViewSet, MultipleChoiceQuestionViewSet,
+    MCQAssessmentAPIView, MCQAnalyticsViewSet
 )
 
 app_name = 'api'
@@ -27,6 +29,11 @@ router.register(r'sessions', SessionViewSet, basename='session')
 router.register(r'payments', PaymentViewSet, basename='payment')
 router.register(r'users', UserViewSet, basename='user')
 
+# MCQ endpoints
+router.register(r'mcq/categories', QuestionCategoryViewSet, basename='mcq-category')
+router.register(r'mcq/questions', MultipleChoiceQuestionViewSet, basename='mcq-question')
+router.register(r'mcq/analytics', MCQAnalyticsViewSet, basename='mcq-analytics')
+
 urlpatterns = [
     # Authentication endpoints
     path('auth/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -36,6 +43,18 @@ urlpatterns = [
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('docs/', SpectacularSwaggerView.as_view(url_name='api:schema'), name='swagger-ui'),
     path('redoc/', SpectacularRedocView.as_view(url_name='api:schema'), name='redoc'),
+    
+    # MCQ Assessment endpoints (custom viewset)
+    path('assessments/<int:pk>/mcq/', 
+         MCQAssessmentAPIView.as_view({'get': 'get_mcq_status'}), 
+         name='assessment-mcq-status'),
+    path('assessments/<int:pk>/mcq/responses/', 
+         MCQAssessmentAPIView.as_view({
+             'post': 'submit_responses',
+             'patch': 'update_responses',
+             'delete': 'clear_responses'
+         }), 
+         name='assessment-mcq-responses'),
     
     # Router URLs
     path('', include(router.urls)),

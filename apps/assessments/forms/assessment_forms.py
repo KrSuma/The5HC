@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from .models import Assessment
+from ..models import Assessment
 
 
 class AssessmentForm(forms.ModelForm):
@@ -229,7 +229,7 @@ class AssessmentForm(forms.ModelForm):
             ),
             'shoulder_mobility_pain': forms.CheckboxInput(
                 attrs={
-                    'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+                    'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded',
                 }
             ),
             'shoulder_mobility_asymmetry': forms.NumberInput(

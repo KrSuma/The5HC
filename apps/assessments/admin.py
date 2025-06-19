@@ -1,5 +1,16 @@
 from django.contrib import admin
-from .models import Assessment, NormativeData, TestStandard
+from django.urls import path
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.http import HttpResponse
+from django.db import transaction, models
+import csv
+import json
+from .models import (
+    Assessment, NormativeData, TestStandard,
+    QuestionCategory, MultipleChoiceQuestion, 
+    QuestionChoice, QuestionResponse
+)
 
 
 @admin.register(Assessment)
@@ -326,3 +337,521 @@ class TestStandardAdmin(admin.ModelAdmin):
                 f"기준이 수정되었습니다. 관련 캐시가 초기화되었습니다.",
                 level='INFO'
             )
+
+
+# MCQ Admin Classes
+
+class QuestionChoiceInline(admin.TabularInline):
+    """Inline admin for question choices."""
+    model = QuestionChoice
+    extra = 4  # Show 4 empty forms by default
+    fields = ['choice_text', 'choice_text_ko', 'points', 'risk_factor', 'order', 'is_correct']
+    ordering = ['order']
+
+
+@admin.register(QuestionCategory)
+class QuestionCategoryAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for Question Categories.
+    """
+    list_display = [
+        'name_ko', 'name', 'weight', 'order', 
+        'question_count', 'is_active', 'created'
+    ]
+    list_filter = ['is_active', 'created']
+    search_fields = ['name', 'name_ko', 'description', 'description_ko']
+    ordering = ['order', 'name']
+    list_editable = ['weight', 'order', 'is_active']
+    
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('name', 'name_ko', 'order', 'is_active')
+        }),
+        ('설명', {
+            'fields': ('description', 'description_ko')
+        }),
+        ('설정', {
+            'fields': ('weight',),
+            'description': '점수 계산 시 이 카테고리의 가중치 (0.0 ~ 1.0)'
+        }),
+    )
+    
+    def question_count(self, obj):
+        """Count of active questions in this category."""
+        return obj.questions.filter(is_active=True).count()
+    question_count.short_description = "활성 질문 수"
+    
+    def get_queryset(self, request):
+        """Optimize queryset with annotations."""
+        qs = super().get_queryset(request)
+        return qs.annotate(
+            active_question_count=models.Count(
+                'questions',
+                filter=models.Q(questions__is_active=True)
+            )
+        )
+
+
+@admin.register(MultipleChoiceQuestion)
+class MultipleChoiceQuestionAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for Multiple Choice Questions.
+    Enhanced with import/export functionality.
+    """
+    list_display = [
+        'question_text_ko_truncated', 'category', 'question_type', 
+        'is_required', 'points', 'order', 'is_active', 'depends_on'
+    ]
+    list_filter = [
+        'category', 'question_type', 'is_required', 'is_active',
+        ('depends_on', admin.RelatedOnlyFieldListFilter)
+    ]
+    search_fields = [
+        'question_text', 'question_text_ko', 'help_text', 'help_text_ko'
+    ]
+    ordering = ['category__order', 'order']
+    list_editable = ['order', 'is_active', 'is_required']
+    list_per_page = 50
+    inlines = [QuestionChoiceInline]
+    autocomplete_fields = ['depends_on']
+    
+    fieldsets = (
+        ('질문 내용', {
+            'fields': (
+                'category', 'question_text', 'question_text_ko',
+                'question_type', 'is_required', 'points', 'order'
+            )
+        }),
+        ('도움말', {
+            'fields': ('help_text', 'help_text_ko'),
+            'classes': ('collapse',)
+        }),
+        ('조건부 표시', {
+            'fields': ('depends_on', 'depends_on_answer'),
+            'classes': ('collapse',),
+            'description': '이 질문이 표시되려면 선행 질문의 특정 답변이 선택되어야 합니다.'
+        }),
+        ('상태', {
+            'fields': ('is_active',)
+        }),
+    )
+    
+    def question_text_ko_truncated(self, obj):
+        """Truncated Korean question text for list display."""
+        text = obj.question_text_ko or obj.question_text
+        return text[:50] + '...' if len(text) > 50 else text
+    question_text_ko_truncated.short_description = "질문"
+    
+    def get_urls(self):
+        """Add custom URLs for import/export."""
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                'import-csv/',
+                self.admin_site.admin_view(self.import_csv_view),
+                name='assessments_multiplechoicequestion_import_csv',
+            ),
+            path(
+                'export-csv/',
+                self.admin_site.admin_view(self.export_csv_view),
+                name='assessments_multiplechoicequestion_export_csv',
+            ),
+            path(
+                'import-json/',
+                self.admin_site.admin_view(self.import_json_view),
+                name='assessments_multiplechoicequestion_import_json',
+            ),
+            path(
+                'export-json/',
+                self.admin_site.admin_view(self.export_json_view),
+                name='assessments_multiplechoicequestion_export_json',
+            ),
+        ]
+        return custom_urls + urls
+    
+    def changelist_view(self, request, extra_context=None):
+        """Add import/export buttons to changelist."""
+        extra_context = extra_context or {}
+        extra_context['has_import_export'] = True
+        return super().changelist_view(request, extra_context=extra_context)
+    
+    def import_csv_view(self, request):
+        """Handle CSV import of questions."""
+        if request.method == 'POST' and request.FILES.get('csv_file'):
+            csv_file = request.FILES['csv_file']
+            
+            try:
+                # Decode CSV file
+                decoded_file = csv_file.read().decode('utf-8').splitlines()
+                reader = csv.DictReader(decoded_file)
+                
+                imported_count = 0
+                with transaction.atomic():
+                    for row in reader:
+                        # Get or create category
+                        category, _ = QuestionCategory.objects.get_or_create(
+                            name=row.get('category_name', 'General'),
+                            defaults={
+                                'name_ko': row.get('category_name_ko', '일반'),
+                                'weight': float(row.get('category_weight', 0.25)),
+                                'order': int(row.get('category_order', 0))
+                            }
+                        )
+                        
+                        # Create question
+                        question = MultipleChoiceQuestion.objects.create(
+                            category=category,
+                            question_text=row['question_text'],
+                            question_text_ko=row.get('question_text_ko', row['question_text']),
+                            question_type=row.get('question_type', 'single'),
+                            is_required=row.get('is_required', 'True').lower() == 'true',
+                            points=int(row.get('points', 1)),
+                            help_text=row.get('help_text', ''),
+                            help_text_ko=row.get('help_text_ko', ''),
+                            order=int(row.get('order', 0)),
+                            is_active=row.get('is_active', 'True').lower() == 'true'
+                        )
+                        
+                        # Import choices if present
+                        for i in range(1, 6):  # Support up to 5 choices
+                            choice_text = row.get(f'choice_{i}_text')
+                            if choice_text:
+                                QuestionChoice.objects.create(
+                                    question=question,
+                                    choice_text=choice_text,
+                                    choice_text_ko=row.get(f'choice_{i}_text_ko', choice_text),
+                                    points=int(row.get(f'choice_{i}_points', 0)),
+                                    risk_factor=row.get(f'choice_{i}_risk_factor', ''),
+                                    order=i,
+                                    is_correct=row.get(f'choice_{i}_is_correct', 'False').lower() == 'true'
+                                )
+                        
+                        imported_count += 1
+                
+                messages.success(request, f'{imported_count}개의 질문을 성공적으로 가져왔습니다.')
+                return redirect('admin:assessments_multiplechoicequestion_changelist')
+                
+            except Exception as e:
+                messages.error(request, f'CSV 가져오기 중 오류 발생: {str(e)}')
+        
+        context = {
+            'title': 'CSV 질문 가져오기',
+            'opts': self.model._meta,
+        }
+        return render(request, 'admin/mcq_import.html', context)
+    
+    def export_csv_view(self, request):
+        """Export questions as CSV."""
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="mcq_questions.csv"'
+        response.write('\ufeff')  # UTF-8 BOM for Excel
+        
+        writer = csv.writer(response)
+        
+        # Header row
+        headers = [
+            'category_name', 'category_name_ko', 'category_weight', 'category_order',
+            'question_text', 'question_text_ko', 'question_type',
+            'is_required', 'points', 'help_text', 'help_text_ko',
+            'order', 'is_active'
+        ]
+        
+        # Add choice headers
+        for i in range(1, 6):
+            headers.extend([
+                f'choice_{i}_text', f'choice_{i}_text_ko', 
+                f'choice_{i}_points', f'choice_{i}_risk_factor',
+                f'choice_{i}_is_correct'
+            ])
+        
+        writer.writerow(headers)
+        
+        # Export questions
+        questions = MultipleChoiceQuestion.objects.select_related(
+            'category'
+        ).prefetch_related('choices').order_by('category__order', 'order')
+        
+        for question in questions:
+            row = [
+                question.category.name,
+                question.category.name_ko,
+                float(question.category.weight),
+                question.category.order,
+                question.question_text,
+                question.question_text_ko,
+                question.question_type,
+                question.is_required,
+                question.points,
+                question.help_text,
+                question.help_text_ko,
+                question.order,
+                question.is_active
+            ]
+            
+            # Add choices
+            choices = list(question.choices.order_by('order'))
+            for i in range(5):
+                if i < len(choices):
+                    choice = choices[i]
+                    row.extend([
+                        choice.choice_text,
+                        choice.choice_text_ko,
+                        choice.points,
+                        choice.risk_factor,
+                        choice.is_correct
+                    ])
+                else:
+                    row.extend(['', '', '', '', ''])
+            
+            writer.writerow(row)
+        
+        return response
+    
+    def import_json_view(self, request):
+        """Handle JSON import of questions."""
+        if request.method == 'POST' and request.FILES.get('json_file'):
+            json_file = request.FILES['json_file']
+            
+            try:
+                # Parse JSON file
+                data = json.load(json_file)
+                
+                imported_count = 0
+                with transaction.atomic():
+                    for item in data:
+                        # Get or create category
+                        cat_data = item.get('category', {})
+                        category, _ = QuestionCategory.objects.get_or_create(
+                            name=cat_data.get('name', 'General'),
+                            defaults={
+                                'name_ko': cat_data.get('name_ko', '일반'),
+                                'weight': cat_data.get('weight', 0.25),
+                                'order': cat_data.get('order', 0)
+                            }
+                        )
+                        
+                        # Create question
+                        question = MultipleChoiceQuestion.objects.create(
+                            category=category,
+                            question_text=item['question_text'],
+                            question_text_ko=item.get('question_text_ko', item['question_text']),
+                            question_type=item.get('question_type', 'single'),
+                            is_required=item.get('is_required', True),
+                            points=item.get('points', 1),
+                            help_text=item.get('help_text', ''),
+                            help_text_ko=item.get('help_text_ko', ''),
+                            order=item.get('order', 0),
+                            is_active=item.get('is_active', True)
+                        )
+                        
+                        # Import choices
+                        for choice_data in item.get('choices', []):
+                            QuestionChoice.objects.create(
+                                question=question,
+                                choice_text=choice_data['choice_text'],
+                                choice_text_ko=choice_data.get('choice_text_ko', choice_data['choice_text']),
+                                points=choice_data.get('points', 0),
+                                risk_factor=choice_data.get('risk_factor', ''),
+                                order=choice_data.get('order', 0),
+                                is_correct=choice_data.get('is_correct', False)
+                            )
+                        
+                        imported_count += 1
+                
+                messages.success(request, f'{imported_count}개의 질문을 성공적으로 가져왔습니다.')
+                return redirect('admin:assessments_multiplechoicequestion_changelist')
+                
+            except Exception as e:
+                messages.error(request, f'JSON 가져오기 중 오류 발생: {str(e)}')
+        
+        context = {
+            'title': 'JSON 질문 가져오기',
+            'opts': self.model._meta,
+        }
+        return render(request, 'admin/mcq_import.html', context)
+    
+    def export_json_view(self, request):
+        """Export questions as JSON."""
+        questions = MultipleChoiceQuestion.objects.select_related(
+            'category'
+        ).prefetch_related('choices').order_by('category__order', 'order')
+        
+        data = []
+        for question in questions:
+            choices = []
+            for choice in question.choices.order_by('order'):
+                choices.append({
+                    'choice_text': choice.choice_text,
+                    'choice_text_ko': choice.choice_text_ko,
+                    'points': choice.points,
+                    'risk_factor': choice.risk_factor,
+                    'order': choice.order,
+                    'is_correct': choice.is_correct
+                })
+            
+            data.append({
+                'category': {
+                    'name': question.category.name,
+                    'name_ko': question.category.name_ko,
+                    'weight': float(question.category.weight),
+                    'order': question.category.order
+                },
+                'question_text': question.question_text,
+                'question_text_ko': question.question_text_ko,
+                'question_type': question.question_type,
+                'is_required': question.is_required,
+                'points': question.points,
+                'help_text': question.help_text,
+                'help_text_ko': question.help_text_ko,
+                'order': question.order,
+                'is_active': question.is_active,
+                'choices': choices
+            })
+        
+        response = HttpResponse(
+            json.dumps(data, ensure_ascii=False, indent=2),
+            content_type='application/json; charset=utf-8'
+        )
+        response['Content-Disposition'] = 'attachment; filename="mcq_questions.json"'
+        return response
+    
+    actions = [
+        'duplicate_questions', 'activate_questions', 'deactivate_questions',
+        'bulk_change_category', 'bulk_change_required'
+    ]
+    
+    def duplicate_questions(self, request, queryset):
+        """Duplicate selected questions."""
+        duplicated = 0
+        for question in queryset:
+            # Store original data
+            original_id = question.id
+            original_text = question.question_text_ko
+            choices = list(question.choices.all())
+            
+            # Create duplicate
+            question.pk = None
+            question.question_text_ko = f"{original_text} (복사본)"
+            question.is_active = False
+            question.save()
+            
+            # Duplicate choices
+            for choice in choices:
+                choice.pk = None
+                choice.question = question
+                choice.save()
+            
+            duplicated += 1
+        
+        messages.success(request, f'{duplicated}개의 질문이 복사되었습니다.')
+    duplicate_questions.short_description = "선택된 질문 복사"
+    
+    def activate_questions(self, request, queryset):
+        """Activate selected questions."""
+        updated = queryset.update(is_active=True)
+        messages.success(request, f'{updated}개의 질문이 활성화되었습니다.')
+    activate_questions.short_description = "선택된 질문 활성화"
+    
+    def deactivate_questions(self, request, queryset):
+        """Deactivate selected questions."""
+        updated = queryset.update(is_active=False)
+        messages.success(request, f'{updated}개의 질문이 비활성화되었습니다.')
+    deactivate_questions.short_description = "선택된 질문 비활성화"
+    
+    def bulk_change_category(self, request, queryset):
+        """Change category for selected questions."""
+        # This would need a custom form - simplified for now
+        if 'apply' in request.POST:
+            category_id = request.POST.get('category')
+            if category_id:
+                category = QuestionCategory.objects.get(pk=category_id)
+                updated = queryset.update(category=category)
+                messages.success(request, f'{updated}개의 질문 카테고리가 변경되었습니다.')
+            return redirect(request.get_full_path())
+        
+        categories = QuestionCategory.objects.filter(is_active=True)
+        context = {
+            'title': '카테고리 일괄 변경',
+            'queryset': queryset,
+            'categories': categories,
+            'opts': self.model._meta,
+            'action_checkbox_name': admin.helpers.ACTION_CHECKBOX_NAME,
+        }
+        return render(request, 'admin/bulk_change_category.html', context)
+    bulk_change_category.short_description = "카테고리 일괄 변경"
+    
+    def bulk_change_required(self, request, queryset):
+        """Toggle required status for selected questions."""
+        for question in queryset:
+            question.is_required = not question.is_required
+            question.save()
+        
+        messages.success(request, f'{queryset.count()}개의 질문 필수 여부가 변경되었습니다.')
+    bulk_change_required.short_description = "필수 여부 토글"
+
+
+@admin.register(QuestionResponse)
+class QuestionResponseAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for Question Responses.
+    Read-only view for monitoring responses.
+    """
+    list_display = [
+        'assessment_info', 'question_info', 'response_preview',
+        'points_earned', 'created'
+    ]
+    list_filter = [
+        'question__category', 'question__question_type',
+        'created', 'assessment__trainer'
+    ]
+    search_fields = [
+        'assessment__client__name', 'question__question_text_ko',
+        'response_text'
+    ]
+    ordering = ['-created']
+    date_hierarchy = 'created'
+    
+    readonly_fields = [
+        'assessment', 'question', 'response_text', 'selected_choices',
+        'points_earned', 'created', 'updated'
+    ]
+    
+    def assessment_info(self, obj):
+        """Display assessment info."""
+        return f"{obj.assessment.client.name} - {obj.assessment.date}"
+    assessment_info.short_description = "평가 정보"
+    
+    def question_info(self, obj):
+        """Display question category and type."""
+        return f"{obj.question.category.name_ko} - {obj.question.get_question_type_display()}"
+    question_info.short_description = "질문 정보"
+    
+    def response_preview(self, obj):
+        """Preview of the response."""
+        if obj.response_text:
+            return obj.response_text[:50] + '...' if len(obj.response_text) > 50 else obj.response_text
+        elif obj.selected_choices.exists():
+            choices = list(obj.selected_choices.values_list('choice_text_ko', flat=True))
+            return ', '.join(choices[:3]) + ('...' if len(choices) > 3 else '')
+        return '-'
+    response_preview.short_description = "응답"
+    
+    def has_add_permission(self, request):
+        """Disable add permission - responses are created via assessment flow."""
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        """Disable change permission - responses should not be edited."""
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        """Only superusers can delete responses."""
+        return request.user.is_superuser
+    
+    def get_queryset(self, request):
+        """Optimize queryset with select_related."""
+        qs = super().get_queryset(request)
+        return qs.select_related(
+            'assessment', 'assessment__client', 'assessment__trainer',
+            'question', 'question__category'
+        ).prefetch_related('selected_choices')

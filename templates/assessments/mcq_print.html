@@ -1,0 +1,191 @@
+{% extends "base_print.html" %}
+{% load static assessment_tags %}
+
+{% block title %}MCQ 평가 결과 - {{ assessment.client.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mcq-styles.css' %}">
+<style>
+    @media print {
+        body {
+            font-size: 11pt;
+            line-height: 1.5;
+        }
+        
+        .page-break {
+            page-break-after: always;
+        }
+        
+        .no-break {
+            page-break-inside: avoid;
+        }
+        
+        h1 { font-size: 18pt; }
+        h2 { font-size: 14pt; }
+        h3 { font-size: 12pt; }
+        
+        .mcq-print-header {
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .question-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        
+        .response-box {
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            margin-top: 5px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mcq-print-header">
+    <h1>MCQ 평가 결과</h1>
+    <div class="grid grid-cols-2 gap-4 mt-4">
+        <div>
+            <p><strong>고객명:</strong> {{ assessment.client.name }}</p>
+            <p><strong>평가일:</strong> {{ assessment.date|date:"Y년 m월 d일" }}</p>
+        </div>
+        <div>
+            <p><strong>트레이너:</strong> {{ assessment.trainer.get_full_name }}</p>
+            <p><strong>조직:</strong> {{ assessment.trainer.organization.name }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Score Summary -->
+<div class="no-break mb-8">
+    <h2>평가 점수 요약</h2>
+    <table class="w-full border-collapse border border-gray-300">
+        <thead>
+            <tr class="bg-gray-100">
+                <th class="border border-gray-300 p-2 text-left">카테고리</th>
+                <th class="border border-gray-300 p-2 text-center">점수</th>
+                <th class="border border-gray-300 p-2 text-center">가중치</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="border border-gray-300 p-2">신체 평가</td>
+                <td class="border border-gray-300 p-2 text-center">{{ assessment.overall_score|floatformat:1 }}%</td>
+                <td class="border border-gray-300 p-2 text-center">60%</td>
+            </tr>
+            <tr>
+                <td class="border border-gray-300 p-2">지식 평가</td>
+                <td class="border border-gray-300 p-2 text-center">{{ assessment.knowledge_score|floatformat:1 }}%</td>
+                <td class="border border-gray-300 p-2 text-center">15%</td>
+            </tr>
+            <tr>
+                <td class="border border-gray-300 p-2">라이프스타일 평가</td>
+                <td class="border border-gray-300 p-2 text-center">{{ assessment.lifestyle_score|floatformat:1 }}%</td>
+                <td class="border border-gray-300 p-2 text-center">15%</td>
+            </tr>
+            <tr>
+                <td class="border border-gray-300 p-2">준비도 평가</td>
+                <td class="border border-gray-300 p-2 text-center">{{ assessment.readiness_score|floatformat:1 }}%</td>
+                <td class="border border-gray-300 p-2 text-center">10%</td>
+            </tr>
+            <tr class="bg-gray-100 font-bold">
+                <td class="border border-gray-300 p-2">종합 점수</td>
+                <td class="border border-gray-300 p-2 text-center">{{ assessment.comprehensive_score|floatformat:1 }}%</td>
+                <td class="border border-gray-300 p-2 text-center">100%</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Questions and Responses by Category -->
+{% for category in categories %}
+<div class="mcq-category-section {% if not forloop.first %}page-break{% endif %}">
+    <h2>{{ category.name_ko }} ({{ category.name }})</h2>
+    
+    {% for question in category.multiplechoicequestion_set.all %}
+    <div class="question-section no-break">
+        <h3>질문 {{ forloop.counter }}: {{ question.question_text_ko|default:question.question_text }}</h3>
+        
+        <div class="response-box">
+            {% with response=responses|get_item:question.id %}
+                {% if response %}
+                    {% if question.question_type == 'single' or question.question_type == 'multiple' %}
+                        <strong>선택한 답변:</strong>
+                        <ul class="ml-4 mt-1">
+                            {% for choice in response.selected_choices.all %}
+                                <li>• {{ choice.choice_text_ko|default:choice.choice_text }} ({{ choice.points }}점)</li>
+                            {% endfor %}
+                        </ul>
+                    {% elif question.question_type == 'scale' %}
+                        <strong>선택한 값:</strong> {{ response.response_text }}/10
+                    {% elif question.question_type == 'text' %}
+                        <strong>답변:</strong> {{ response.response_text|default:"(답변 없음)" }}
+                    {% endif %}
+                    <p class="mt-2 text-sm"><strong>획득 점수:</strong> {{ response.points_earned }}점</p>
+                {% else %}
+                    <p class="text-gray-500">미응답</p>
+                {% endif %}
+            {% endwith %}
+        </div>
+        
+        {% if question.help_text_ko %}
+        <div class="mt-2 text-sm text-gray-600">
+            <strong>도움말:</strong> {{ question.help_text_ko }}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}
+
+<!-- Risk Factors and Recommendations -->
+<div class="page-break">
+    <h2>위험 요인 및 권장사항</h2>
+    
+    {% if mcq_risk_factors %}
+    <div class="mb-6">
+        <h3>식별된 위험 요인</h3>
+        <ul class="list-disc ml-6">
+            {% for factor in mcq_risk_factors %}
+                <li>{{ factor }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    {% if category_insights %}
+    <div>
+        <h3>카테고리별 권장사항</h3>
+        {% for category, insights in category_insights.items %}
+        <div class="mb-4">
+            <h4 class="font-semibold">{{ category }}</h4>
+            <ul class="list-disc ml-6">
+                {% for insight in insights %}
+                    <li>{{ insight }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Footer -->
+<div class="mt-8 pt-4 border-t text-center text-sm text-gray-600">
+    <p>생성일: {% now "Y년 m월 d일 H:i" %}</p>
+    <p>The5HC Fitness Assessment System</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Automatically trigger print dialog
+    window.onload = function() {
+        window.print();
+    };
+</script>
+{% endblock %}

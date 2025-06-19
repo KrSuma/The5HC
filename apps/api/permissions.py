@@ -38,3 +38,34 @@ class IsTrainerOfClient(permissions.BasePermission):
             return obj.package.trainer == request.user
         
         return False
+
+
+class BelongsToOrganization(permissions.BasePermission):
+    """
+    Permission to ensure user belongs to the same organization.
+    """
+    def has_permission(self, request, view):
+        # Check if user has trainer attribute
+        if not hasattr(request.user, 'trainer'):
+            return False
+        return True
+    
+    def has_object_permission(self, request, view, obj):
+        # Get the user's trainer
+        if not hasattr(request.user, 'trainer'):
+            return False
+        
+        user_trainer = request.user.trainer
+        
+        # Check organization membership based on object type
+        if hasattr(obj, 'trainer'):
+            # For assessments, clients, etc.
+            return obj.trainer.organization == user_trainer.organization
+        elif hasattr(obj, 'organization'):
+            # For direct organization objects
+            return obj.organization == user_trainer.organization
+        elif hasattr(obj, 'client') and hasattr(obj.client, 'trainer'):
+            # For objects related to clients
+            return obj.client.trainer.organization == user_trainer.organization
+        
+        return False

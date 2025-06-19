@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}다중선택 평가 - {{ client.name }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/mcq-styles.css' %}">
+<script src="{% static 'js/mcq-assessment.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="mcq-container" x-data="mcqAssessment">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">종합 건강 평가</h1>
+                <p class="text-gray-600 mt-1">
+                    <span class="font-medium">{{ client.name }}</span>님의 지식, 생활습관, 준비도 평가
+                </p>
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-gray-500">평가일</div>
+                <div class="text-lg font-medium">{{ assessment.date|date:"Y년 m월 d일" }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Search and Filter Bar -->
+    {% include 'assessments/components/mcq_search_filter.html' with categories=categories %}
+    
+    <!-- Overall Progress -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700">전체 진행률</span>
+            <span class="text-sm text-gray-600">
+                <span x-text="completedQuestions"></span> / <span x-text="totalQuestions"></span> 완료
+            </span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-3">
+            <div class="bg-green-600 h-3 rounded-full transition-all duration-300"
+                 :style="`width: ${getProgressPercentage()}%`"></div>
+        </div>
+        <div class="text-center mt-1">
+            <span class="text-lg font-semibold text-gray-800" x-text="`${getProgressPercentage()}%`"></span>
+        </div>
+    </div>
+    
+    <!-- Desktop Category Tabs -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 hidden md:block">
+        <div class="mcq-category-nav">
+            {% for category in categories %}
+                <button type="button"
+                        class="mcq-category-tab"
+                        :class="currentCategory === {{ forloop.counter0 }} ? 
+                               'bg-blue-600 text-white' : 
+                               'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                        @click="goToCategory({{ forloop.counter0 }})"
+                        data-category-id="{{ category.id }}"
+                        data-category-name="{{ category.name_ko|default:category.name }}"
+                        data-category-weight="{{ category.weight }}">
+                    <div class="flex flex-col items-center">
+                        <span>{{ category.name_ko|default:category.name }}</span>
+                        <div class="mt-1 w-full bg-gray-200 bg-opacity-30 rounded-full h-1">
+                            <div class="h-1 rounded-full transition-all duration-300"
+                                 :class="currentCategory === {{ forloop.counter0 }} ? 'bg-white' : 'bg-blue-600'"
+                                 :style="`width: ${getCategoryProgress('{{ category.id }}')}%`"></div>
+                        </div>
+                        <span class="text-xs mt-1" x-text="`${getCategoryProgress('{{ category.id }}')}%`"></span>
+                    </div>
+                </button>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Mobile Category Navigation -->
+    <div class="md:hidden mb-4">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div class="flex items-center justify-between">
+                <button type="button" 
+                        @click="previousCategory()"
+                        :disabled="currentCategory === 0"
+                        class="p-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <div class="text-center flex-1">
+                    <div class="text-lg font-medium" x-text="categories[currentCategory]?.name || ''"></div>
+                    <div class="text-sm text-gray-500">
+                        <span x-text="currentCategory + 1"></span> / <span x-text="categories.length"></span>
+                    </div>
+                </div>
+                <button type="button"
+                        @click="nextCategory()"
+                        :disabled="currentCategory === categories.length - 1"
+                        class="p-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MCQ Form -->
+    <div class="mcq-content-area">
+        <form id="mcq-form" method="post" action="{% url 'assessments:mcq_save' assessment.id %}"
+              hx-post="{% url 'assessments:mcq_save' assessment.id %}"
+              hx-target="#assessment-result"
+              hx-swap="outerHTML"
+              hx-indicator="#loading-indicator">
+            {% csrf_token %}
+            
+            <!-- Category Content -->
+            {% for category in categories %}
+                {% include 'assessments/components/mcq_category.html' with category=category questions=questions forloop=forloop %}
+            {% endfor %}
+            
+            <!-- Hidden inputs for responses -->
+            <template x-for="(value, key) in responses" :key="key">
+                <input type="hidden" :name="key" :value="value">
+            </template>
+        </form>
+    </div>
+    
+    <!-- Mobile Navigation -->
+    {% include 'assessments/mcq_mobile_nav.html' %}
+    
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="htmx-indicator fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 flex flex-col items-center">
+            <svg class="animate-spin h-12 w-12 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-gray-700">평가 결과를 처리중입니다...</p>
+        </div>
+    </div>
+    
+    <!-- Result Container -->
+    <div id="assessment-result"></div>
+    
+    <!-- Action Buttons -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6 mcq-no-print">
+        <div class="flex justify-between items-center flex-wrap gap-3">
+            <div class="flex gap-3">
+                <button type="button"
+                        class="text-gray-600 hover:text-gray-800 transition-colors"
+                        @click="clearResponses()">
+                    <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    응답 초기화
+                </button>
+                
+                <a href="{% url 'assessments:mcq_print' assessment.id %}" 
+                   target="_blank"
+                   class="text-gray-600 hover:text-gray-800 transition-colors">
+                    <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                    </svg>
+                    인쇄
+                </a>
+            </div>
+            
+            <div class="text-sm text-gray-500">
+                <span x-show="autoSaveTimeout">
+                    <svg class="w-4 h-4 inline mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    자동 저장됨
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize category and question data
+document.addEventListener('DOMContentLoaded', () => {
+    // Any additional initialization can go here
+});
+</script>
+{% endblock %}

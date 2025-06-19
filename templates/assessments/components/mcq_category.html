@@ -1,0 +1,107 @@
+{% load static %}
+
+<!-- MCQ Category Component -->
+<div class="mcq-category"
+     data-category-id="{{ category.id }}"
+     data-category-name="{{ category.name }}"
+     data-category-weight="{{ category.weight }}"
+     x-show="currentCategory === {{ forloop.counter0 }}"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 transform translate-x-4"
+     x-transition:enter-end="opacity-100 transform translate-x-0"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100 transform translate-x-0"
+     x-transition:leave-end="opacity-0 transform -translate-x-4">
+    
+    <!-- Category Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-xl font-semibold text-gray-800">
+                    {{ category.name_ko|default:category.name }}
+                </h3>
+                {% if category.description_ko or category.description %}
+                    <p class="text-sm text-gray-600 mt-1">
+                        {{ category.description_ko|default:category.description }}
+                    </p>
+                {% endif %}
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-gray-500">가중치</div>
+                <div class="text-lg font-semibold text-blue-600">
+                    {{ category.weight|floatformat:0 }}%
+                </div>
+            </div>
+        </div>
+        
+        <!-- Category Progress -->
+        <div class="mt-4">
+            <div class="flex items-center justify-between text-sm mb-1">
+                <span class="text-gray-600">진행률</span>
+                <span class="text-gray-800 font-medium">
+                    <span x-text="categoryProgress['{{ category.id }}'].completed"></span> / 
+                    <span x-text="categoryProgress['{{ category.id }}'].total"></span>
+                </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                     :style="`width: ${getCategoryProgress('{{ category.id }}')}%`"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Questions in this Category -->
+    <div class="space-y-4">
+        {% for question in questions %}
+            {% if question.category.id == category.id %}
+                {% include 'assessments/components/mcq_question.html' with question=question %}
+            {% endif %}
+        {% endfor %}
+    </div>
+    
+    <!-- Category Navigation -->
+    <div class="flex justify-between items-center mt-8">
+        <button type="button"
+                class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                @click="previousCategory()"
+                :disabled="currentCategory === 0"
+                :class="{'opacity-50 cursor-not-allowed': currentCategory === 0}">
+            <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            이전
+        </button>
+        
+        <div class="text-center">
+            <span class="text-sm text-gray-500">
+                {{ forloop.counter }} / {{ categories|length }}
+            </span>
+        </div>
+        
+        <button type="button"
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                @click="nextCategory()"
+                x-show="currentCategory < categories.length - 1">
+            다음
+            <svg class="w-5 h-5 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </button>
+        
+        <button type="button"
+                class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                @click="submitAssessment()"
+                x-show="currentCategory === categories.length - 1"
+                :disabled="isLoading"
+                :class="{'opacity-50 cursor-not-allowed': isLoading}">
+            <span x-show="!isLoading">평가 완료</span>
+            <span x-show="isLoading" class="flex items-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                처리중...
+            </span>
+        </button>
+    </div>
+</div>
