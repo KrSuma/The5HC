@@ -5,7 +5,7 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/mcq-styles.css' %}">
-<script src="{% static 'js/mcq-assessment.js' %}" defer></script>
+<script src="{% static 'js/mcq-assessment-fixed.js' %}" defer></script>
 <script>
 // Ensure navbar links work properly on MCQ assessment page
 document.addEventListener('DOMContentLoaded', function() {
@@ -138,6 +138,7 @@ document.addEventListener('alpine:init', function() {
         </div>
     </div>
     
+
     <!-- MCQ Form -->
     <div class="mcq-content-area">
         <form id="mcq-form" method="post" action="{% url 'assessments:mcq_save' assessment.id %}"
@@ -212,9 +213,38 @@ document.addEventListener('alpine:init', function() {
 </div>
 
 <script>
-// Initialize category and question data
+// Debug Alpine.js initialization
 document.addEventListener('DOMContentLoaded', () => {
-    // Any additional initialization can go here
+    console.log('DOM Content Loaded');
+    console.log('Alpine available:', typeof Alpine !== 'undefined');
+    console.log('MCQ container:', document.querySelector('.mcq-container'));
+    
+    // Check if Alpine is available
+    if (typeof Alpine === 'undefined') {
+        console.error('Alpine.js is not loaded!');
+        alert('Alpine.js is not loaded! Check the CDN link.');
+    } else {
+        console.log('Alpine.js is loaded correctly');
+    }
+    
+    // Wait for Alpine to initialize
+    setTimeout(() => {
+        const mcqContainer = document.querySelector('.mcq-container');
+        if (mcqContainer) {
+            console.log('MCQ container x-data:', mcqContainer.getAttribute('x-data'));
+        }
+    }, 1000);
 });
+
+// Check Alpine initialization
+document.addEventListener('alpine:init', () => {
+    console.log('Alpine:init event fired');
+});
+
+document.addEventListener('alpine:initialized', () => {
+    console.log('Alpine:initialized event fired');
+});
+
+// MCQ Assessment component now loaded from external file
 </script>
 {% endblock %}

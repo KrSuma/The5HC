@@ -105,48 +105,60 @@ document.addEventListener('alpine:init', () => {
         showHelpFor: {},
         
         init() {
-            // Initialize categories from DOM
-            this.categories = Array.from(document.querySelectorAll('[data-category-id]')).map(el => ({
-                id: el.dataset.categoryId,
-                name: el.dataset.categoryName,
-                weight: parseFloat(el.dataset.categoryWeight || 0)
-            }));
+            console.log('MCQ Assessment component initializing...');
             
-            // Count total questions
-            this.totalQuestions = document.querySelectorAll('[data-question-id]').length;
-            
-            // Initialize progress for each category
-            this.categories.forEach(category => {
-                this.categoryProgress[category.id] = {
-                    completed: 0,
-                    total: document.querySelectorAll(`[data-category-id="${category.id}"] [data-question-id]`).length
-                };
-            });
-            
-            // Load existing responses from server
-            this.responses = { ...existingResponses };
-            
-            // Load saved responses from session storage (for recovery)
-            this.loadSavedResponses();
-            
-            // Update progress after loading responses
-            this.updateProgress();
-            
-            // Initialize mobile swipe support
-            if (this.isMobile) {
-                this.initSwipeSupport();
+            try {
+                // Initialize categories from DOM
+                this.categories = Array.from(document.querySelectorAll('[data-category-id]')).map(el => ({
+                    id: el.dataset.categoryId,
+                    name: el.dataset.categoryName,
+                    weight: parseFloat(el.dataset.categoryWeight || 0)
+                }));
+                
+                console.log('Categories found:', this.categories);
+                
+                // Count total questions
+                this.totalQuestions = document.querySelectorAll('[data-question-id]').length;
+                console.log('Total questions:', this.totalQuestions);
+                
+                // Initialize progress for each category
+                this.categories.forEach(category => {
+                    this.categoryProgress[category.id] = {
+                        completed: 0,
+                        total: document.querySelectorAll(`[data-category-id="${category.id}"] [data-question-id]`).length
+                    };
+                });
+                
+                // Load existing responses from server
+                this.responses = { ...existingResponses };
+                console.log('Existing responses:', this.responses);
+                
+                // Load saved responses from session storage (for recovery)
+                this.loadSavedResponses();
+                
+                // Update progress after loading responses
+                this.updateProgress();
+                
+                // Initialize mobile swipe support
+                if (this.isMobile) {
+                    this.initSwipeSupport();
+                }
+                
+                // Listen for window resize
+                window.addEventListener('resize', () => {
+                    this.isMobile = window.innerWidth < 768;
+                });
+                
+                // Initialize help tooltips
+                this.initHelpTooltips();
+                
+                // Ensure navbar links work properly
+                this.initNavbarCompatibility();
+                
+                console.log('MCQ Assessment component initialized successfully');
+            } catch (error) {
+                console.error('Error initializing MCQ Assessment component:', error);
             }
-            
-            // Listen for window resize
-            window.addEventListener('resize', () => {
-                this.isMobile = window.innerWidth < 768;
-            });
-            
-            // Initialize help tooltips
-            this.initHelpTooltips();
-            
-            // Ensure navbar links work properly
-            this.initNavbarCompatibility();
         },
         
         // Mobile swipe support
@@ -480,10 +492,7 @@ document.addEventListener('alpine:init', () => {
             }, 1000);
         },
         
-        // Watch for changes
-        $watch('responses', () => {
-            this.autoSave();
-        })
+        // Note: Auto-save is handled in validateResponse method instead of $watch
     }));
 });
 
