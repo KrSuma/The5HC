@@ -1,4 +1,4 @@
-<nav class="bg-white shadow-lg" x-data="{ mobileMenuOpen: false }">
+<nav class="bg-white shadow-lg" x-data="{ mobileMenuOpen: false }" style="position: relative; z-index: 9999; pointer-events: auto;">
     <div class="container mx-auto px-4">
         <div class="flex justify-between items-center py-4">
             <div class="flex items-center">
@@ -8,32 +8,38 @@
             </div>
             
             <!-- Desktop Menu -->
-            <div class="hidden md:flex items-center space-x-10">
+            <div class="hidden md:flex items-center space-x-10" style="z-index: 9999; position: relative;">
                 <a href="{% url 'dashboard' %}" 
-                   class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                   class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                   style="pointer-events: auto !important; cursor: pointer !important; z-index: 10000; position: relative;">
                     대시보드
                 </a>
                 <a href="{% url 'clients:list' %}"
-                   class="nav-link {% if request.resolver_match.app_name == 'clients' %}active{% endif %}">
+                   class="nav-link {% if request.resolver_match.app_name == 'clients' %}active{% endif %}"
+                   style="pointer-events: auto !important; cursor: pointer !important; z-index: 10000; position: relative;">
                     회원 관리
                 </a>
                 <a href="{% url 'assessments:list' %}"
-                   class="nav-link {% if request.resolver_match.app_name == 'assessments' %}active{% endif %}">
+                   class="nav-link {% if request.resolver_match.app_name == 'assessments' %}active{% endif %}"
+                   style="pointer-events: auto !important; cursor: pointer !important; z-index: 10000; position: relative;">
                     평가 관리
                 </a>
                 <a href="{% url 'sessions:package_list' %}"
-                   class="nav-link {% if request.resolver_match.app_name == 'sessions' %}active{% endif %}">
+                   class="nav-link {% if request.resolver_match.app_name == 'sessions' %}active{% endif %}"
+                   style="pointer-events: auto !important; cursor: pointer !important; z-index: 10000; position: relative;">
                     세션 관리
                 </a>
                 {% if request.trainer and request.trainer.role == 'owner' or request.trainer.role == 'senior' %}
                 <a href="{% url 'trainers:list' %}"
-                   class="nav-link {% if request.resolver_match.app_name == 'trainers' %}active{% endif %}">
+                   class="nav-link {% if request.resolver_match.app_name == 'trainers' %}active{% endif %}"
+                   style="pointer-events: auto !important; cursor: pointer !important; z-index: 10000; position: relative;">
                     트레이너
                 </a>
                 {% endif %}
                 {% if request.trainer and request.trainer.role == 'owner' %}
                 <a href="{% url 'trainers:organization_dashboard' %}"
-                   class="nav-link {% if request.resolver_match.url_name == 'organization_dashboard' %}active{% endif %}">
+                   class="nav-link {% if request.resolver_match.url_name == 'organization_dashboard' %}active{% endif %}"
+                   style="pointer-events: auto !important; cursor: pointer !important; z-index: 10000; position: relative;">
                     조직
                 </a>
                 {% endif %}

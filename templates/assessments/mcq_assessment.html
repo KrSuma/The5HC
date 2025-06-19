@@ -7,11 +7,11 @@
 <link rel="stylesheet" href="{% static 'css/mcq-styles.css' %}">
 <script src="{% static 'js/mcq-assessment.js' %}" defer></script>
 <script>
-// Debug navbar links
+// Debug navbar links and force navigation to work
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('MCQ Assessment page loaded, checking navbar...');
+    console.log('MCQ Assessment page loaded, fixing navbar...');
     
-    // Check navbar links
+    // Force navbar links to work
     const navLinks = document.querySelectorAll('nav a[href]');
     console.log('Found navbar links:', navLinks.length);
     
@@ -19,17 +19,25 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Link ${index}:`, {
             href: link.href,
             text: link.textContent.trim(),
-            computedStyle: window.getComputedStyle(link),
             pointerEvents: window.getComputedStyle(link).pointerEvents,
             zIndex: window.getComputedStyle(link).zIndex
         });
         
-        // Add click listener for debugging
-        link.addEventListener('click', function(e) {
+        // Force the link to be clickable
+        link.style.pointerEvents = 'auto';
+        link.style.cursor = 'pointer';
+        link.style.zIndex = '10000';
+        link.style.position = 'relative';
+        
+        // Remove any existing click handlers that might prevent navigation
+        const clone = link.cloneNode(true);
+        link.parentNode.replaceChild(clone, link);
+        
+        // Add our own click handler that ensures navigation works
+        clone.addEventListener('click', function(e) {
             console.log('Navbar link clicked:', this.href);
-            console.log('Event:', e);
-            console.log('Default prevented:', e.defaultPrevented);
-            console.log('Propagation stopped:', e.cancelBubble);
+            // Let the browser handle the navigation normally
+            window.location.href = this.href;
         });
     });
     
@@ -43,6 +51,23 @@ document.addEventListener('DOMContentLoaded', function() {
             pointerEvents: style.pointerEvents
         });
     }
+    
+    // Remove any global event handlers that might interfere
+    document.body.removeEventListener('click', arguments.callee, true);
+});
+
+// Also try to fix it after Alpine.js loads
+document.addEventListener('alpine:init', function() {
+    setTimeout(() => {
+        console.log('Alpine loaded, re-fixing navbar...');
+        const navLinks = document.querySelectorAll('nav a[href]');
+        navLinks.forEach(link => {
+            link.style.pointerEvents = 'auto';
+            link.style.cursor = 'pointer';
+            link.style.zIndex = '10000';
+            link.style.position = 'relative';
+        });
+    }, 100);
 });
 </script>
 {% endblock %}
