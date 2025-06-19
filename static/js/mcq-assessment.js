@@ -144,6 +144,9 @@ document.addEventListener('alpine:init', () => {
             
             // Initialize help tooltips
             this.initHelpTooltips();
+            
+            // Ensure navbar links work properly
+            this.initNavbarCompatibility();
         },
         
         // Mobile swipe support
@@ -183,6 +186,32 @@ document.addEventListener('alpine:init', () => {
         
         toggleHelp(questionId) {
             this.showHelpFor[questionId] = !this.showHelpFor[questionId];
+        },
+        
+        // Navbar compatibility
+        initNavbarCompatibility() {
+            // Ensure navbar links work by explicitly allowing normal navigation
+            const navbarLinks = document.querySelectorAll('nav a[href], .navbar a[href], nav .nav-link');
+            navbarLinks.forEach(link => {
+                // Remove any potential interference
+                link.style.pointerEvents = 'auto';
+                link.style.cursor = 'pointer';
+                
+                // Ensure clicks are not prevented
+                link.addEventListener('click', (e) => {
+                    console.log('Navbar link clicked:', link.href);
+                    // Allow the navigation to proceed normally
+                    // Don't call preventDefault() or stopPropagation()
+                });
+            });
+            
+            // Also check for any overlays that might be blocking clicks
+            const overlays = document.querySelectorAll('.mcq-container, .mcq-overlay, .loading-overlay');
+            overlays.forEach(overlay => {
+                if (overlay.style.position === 'fixed' || overlay.style.position === 'absolute') {
+                    console.warn('Found potential blocking overlay:', overlay);
+                }
+            });
         },
         
         // Progressive disclosure logic

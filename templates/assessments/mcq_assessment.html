@@ -6,6 +6,45 @@
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/mcq-styles.css' %}">
 <script src="{% static 'js/mcq-assessment.js' %}" defer></script>
+<script>
+// Debug navbar links
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('MCQ Assessment page loaded, checking navbar...');
+    
+    // Check navbar links
+    const navLinks = document.querySelectorAll('nav a[href]');
+    console.log('Found navbar links:', navLinks.length);
+    
+    navLinks.forEach((link, index) => {
+        console.log(`Link ${index}:`, {
+            href: link.href,
+            text: link.textContent.trim(),
+            computedStyle: window.getComputedStyle(link),
+            pointerEvents: window.getComputedStyle(link).pointerEvents,
+            zIndex: window.getComputedStyle(link).zIndex
+        });
+        
+        // Add click listener for debugging
+        link.addEventListener('click', function(e) {
+            console.log('Navbar link clicked:', this.href);
+            console.log('Event:', e);
+            console.log('Default prevented:', e.defaultPrevented);
+            console.log('Propagation stopped:', e.cancelBubble);
+        });
+    });
+    
+    // Check for potential blocking elements
+    const mcqContainer = document.querySelector('.mcq-container');
+    if (mcqContainer) {
+        const style = window.getComputedStyle(mcqContainer);
+        console.log('MCQ container style:', {
+            position: style.position,
+            zIndex: style.zIndex,
+            pointerEvents: style.pointerEvents
+        });
+    }
+});
+</script>
 {% endblock %}
 
 {% block content %}
