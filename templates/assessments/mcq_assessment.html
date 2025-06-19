@@ -7,59 +7,29 @@
 <link rel="stylesheet" href="{% static 'css/mcq-styles.css' %}">
 <script src="{% static 'js/mcq-assessment.js' %}" defer></script>
 <script>
-// Debug navbar links and force navigation to work
+// Ensure navbar links work properly on MCQ assessment page
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('MCQ Assessment page loaded, fixing navbar...');
-    
-    // Force navbar links to work
+    // Force navbar links to be clickable (fix for Alpine.js interference)
     const navLinks = document.querySelectorAll('nav a[href]');
-    console.log('Found navbar links:', navLinks.length);
-    
-    navLinks.forEach((link, index) => {
-        console.log(`Link ${index}:`, {
-            href: link.href,
-            text: link.textContent.trim(),
-            pointerEvents: window.getComputedStyle(link).pointerEvents,
-            zIndex: window.getComputedStyle(link).zIndex
-        });
-        
-        // Force the link to be clickable
+    navLinks.forEach(link => {
         link.style.pointerEvents = 'auto';
         link.style.cursor = 'pointer';
         link.style.zIndex = '10000';
         link.style.position = 'relative';
         
-        // Remove any existing click handlers that might prevent navigation
+        // Remove any blocking event handlers and ensure direct navigation
         const clone = link.cloneNode(true);
         link.parentNode.replaceChild(clone, link);
         
-        // Add our own click handler that ensures navigation works
         clone.addEventListener('click', function(e) {
-            console.log('Navbar link clicked:', this.href);
-            // Let the browser handle the navigation normally
             window.location.href = this.href;
         });
     });
-    
-    // Check for potential blocking elements
-    const mcqContainer = document.querySelector('.mcq-container');
-    if (mcqContainer) {
-        const style = window.getComputedStyle(mcqContainer);
-        console.log('MCQ container style:', {
-            position: style.position,
-            zIndex: style.zIndex,
-            pointerEvents: style.pointerEvents
-        });
-    }
-    
-    // Remove any global event handlers that might interfere
-    document.body.removeEventListener('click', arguments.callee, true);
 });
 
-// Also try to fix it after Alpine.js loads
+// Re-apply fixes after Alpine.js initialization
 document.addEventListener('alpine:init', function() {
     setTimeout(() => {
-        console.log('Alpine loaded, re-fixing navbar...');
         const navLinks = document.querySelectorAll('nav a[href]');
         navLinks.forEach(link => {
             link.style.pointerEvents = 'auto';
@@ -88,6 +58,7 @@ document.addEventListener('alpine:init', function() {
                 <div class="text-lg font-medium">{{ assessment.date|date:"Y년 m월 d일" }}</div>
             </div>
         </div>
+        
     </div>
     
     <!-- Search and Filter Bar -->
