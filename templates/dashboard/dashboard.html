@@ -246,7 +246,7 @@
                             <p class="text-sm font-medium text-gray-900">{{ activity.title }}</p>
                             <p class="text-xs text-gray-500">{{ activity.date|timesince }} 전</p>
                             {% if activity.score %}
-                            <p class="text-xs text-gray-600">점수: {{ activity.score }}점</p>
+                            <p class="text-xs text-gray-600">점수: {{ activity.score|floatformat:2 }}점</p>
                             {% endif %}
                         </div>
                     </div>
