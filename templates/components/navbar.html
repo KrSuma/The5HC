@@ -134,17 +134,17 @@
         <div x-show="mobileMenuOpen" 
              x-transition
              class="md:hidden border-t border-gray-200 py-2">
-            <a href="{% url 'dashboard' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">대시보드</a>
-            <a href="{% url 'clients:list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">회원 관리</a>
-            <a href="{% url 'assessments:list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">평가 관리</a>
-            <a href="{% url 'sessions:package_list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">세션 관리</a>
+            <a href="{% url 'dashboard' %}" class="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100 {% if request.resolver_match.url_name == 'dashboard' %}bg-blue-100 text-blue-700{% endif %}">대시보드</a>
+            <a href="{% url 'clients:list' %}" class="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100 {% if request.resolver_match.app_name == 'clients' %}bg-blue-100 text-blue-700{% endif %}">회원 관리</a>
+            <a href="{% url 'assessments:list' %}" class="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100 {% if request.resolver_match.app_name == 'assessments' %}bg-blue-100 text-blue-700{% endif %}">평가 관리</a>
+            <a href="{% url 'sessions:package_list' %}" class="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100 {% if request.resolver_match.app_name == 'sessions' %}bg-blue-100 text-blue-700{% endif %}">세션 관리</a>
             {% if request.trainer and request.trainer.role == 'owner' or request.trainer.role == 'senior' %}
-            <a href="{% url 'trainers:list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">트레이너</a>
+            <a href="{% url 'trainers:list' %}" class="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100 {% if request.resolver_match.app_name == 'trainers' %}bg-blue-100 text-blue-700{% endif %}">트레이너</a>
             {% endif %}
             {% if request.trainer and request.trainer.role == 'owner' %}
-            <a href="{% url 'trainers:organization_dashboard' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">조직</a>
+            <a href="{% url 'trainers:organization_dashboard' %}" class="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100 {% if request.resolver_match.url_name == 'organization_dashboard' %}bg-blue-100 text-blue-700{% endif %}">조직</a>
             {% endif %}
-            {% comment %}<a href="{% url 'reports:list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">보고서</a>{% endcomment %}
+            {% comment %}<a href="{% url 'reports:list' %}" class="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100">보고서</a>{% endcomment %}
         </div>
     </div>
 </nav>

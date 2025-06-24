@@ -9,7 +9,7 @@
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold text-gray-800">패키지 관리</h1>
         <a href="{% url 'sessions:package_add' %}" 
-           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200"
+           class="px-6 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200"
            hx-get="{% url 'sessions:package_add' %}"
            hx-target="#main-content"
            hx-push-url="true">

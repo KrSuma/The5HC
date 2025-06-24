@@ -104,6 +104,57 @@ This fixes the button sizing issues mentioned for:
 - Professional appearance with consistent spacing
 - Proper alignment of UI elements
 
+## Additional Fixes - Button Consistency
+
+### "새 회원 등록" Button Styling (Updated after initial fix)
+
+Fixed inconsistent styling between "새 회원 등록" and "새 평가 등록" buttons:
+
+**Before:**
+- `bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg`
+- Had `font-bold` making text appear heavier
+- Different padding and hover color
+
+**After:**
+- `px-6 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600`
+- Removed `font-bold` for consistent text weight
+- Matching padding and hover behavior with assessment button
+
+Files updated:
+- `/templates/clients/client_list.html`
+- `/templates/clients/client_list_content.html`
+
+### Additional Primary Action Buttons (Second round of fixes)
+
+Fixed "새 패키지 등록" and "트레이너 초대" buttons to match standard styling:
+
+**"새 패키지 등록" button:**
+- Before: `px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600`
+- After: `px-6 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600`
+
+**"트레이너 초대" button:**
+- Before: `block rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-blue-500`
+- After: `px-6 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600`
+- Also added plus icon for consistency with other primary action buttons
+
+Files updated:
+- `/templates/sessions/package_list.html`
+- `/templates/trainers/trainer_list_content.html`
+
+### Button Text Consistency
+
+Renamed "트레이너 초대" to "새 트레이너 초대" to maintain consistency with other primary action buttons:
+- All primary creation/addition buttons now start with "새" (new)
+- Consistent pattern: "새 회원 등록", "새 평가 등록", "새 패키지 등록", "새 트레이너 초대"
+
+### Layout Consistency Fix
+
+Fixed trainer list header layout to match other management pages:
+- Changed from complex flexbox layout (`sm:flex sm:items-center` with nested `sm:flex-auto`)
+- Updated to simple flex layout (`flex justify-between items-center`) matching other pages
+- This ensures the "새 트레이너 초대" button aligns properly with other headers
+- Removed unnecessary responsive classes that were causing height differences
+
 ## Future Considerations
 
 Consider creating a global CSS class for standard buttons to ensure consistency:

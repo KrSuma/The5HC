@@ -121,6 +121,13 @@ python manage.py fix_trainer_profile <username> [--role owner|senior|trainer|ass
   - Fixed step indicator connecting lines to center on numbered circles (was at bottom)
   - Applied fixes to both regular and HTMX content templates
   - See `logs/maintenance/UI_BUTTON_SIZING_FIXES_2025_06_24.md` for details
+- ✅ **Navigation Bar Consistency Fixes**
+  - Standardized navigation link buttons with consistent sizing
+  - Updated nav links from `px-3 py-2 text-sm` to `px-6 py-2.5 text-base`
+  - Added minimum width (100px) to ensure uniform button sizes
+  - Fixed mobile menu styling to match desktop navigation
+  - Maintained original spacing (40px) between nav links for clarity
+  - See `logs/maintenance/NAVBAR_CONSISTENCY_FIX_2025_06_24.md` for details
 
 #### 2025-06-19 (Session 16)
 - ✅ **Trainer Profile Access Fixes for Superusers**
@@ -531,6 +538,7 @@ python manage.py fix_trainer_profile <username> [--role owner|senior|trainer|ass
 - `logs/feature/CLIENT_MANAGEMENT_FILTERING_IMPLEMENTATION_LOG.md` - Client management filtering system implementation
 - `logs/maintenance/CLIENT_BMI_ANNOTATION_FIX_2025_06_24.md` - BMI annotation conflict fix for client filtering
 - `logs/maintenance/UI_BUTTON_SIZING_FIXES_2025_06_24.md` - UI consistency and button sizing standardization
+- `logs/maintenance/NAVBAR_CONSISTENCY_FIX_2025_06_24.md` - Navigation bar button consistency fixes
 
 ## Complete Project File Structure
 
