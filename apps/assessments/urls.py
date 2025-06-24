@@ -12,6 +12,9 @@ urlpatterns = [
     path('<int:pk>/', views.assessment_detail_view, name='detail'),
     path('<int:pk>/delete/', views.assessment_delete_view, name='delete'),
     
+    # Comparison
+    path('compare/', views.assessment_compare_view, name='compare'),
+    
     # MCQ Assessment
     path('<int:assessment_id>/mcq/', views.mcq_assessment_view, name='mcq'),
     path('<int:assessment_id>/mcq/save/', views.mcq_save_view, name='mcq_save'),

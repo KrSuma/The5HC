@@ -81,6 +81,78 @@ def assessment_list_view(request):
                 assessments = assessments.filter(overall_score__gte=60, overall_score__lt=70)
             elif score_range == '0-59':
                 assessments = assessments.filter(overall_score__lt=60)
+        
+        # New filters
+        gender = form.cleaned_data.get('gender')
+        if gender:
+            assessments = assessments.filter(client__gender=gender)
+        
+        age_min = form.cleaned_data.get('age_min')
+        if age_min is not None:
+            assessments = assessments.filter(client__age__gte=age_min)
+        
+        age_max = form.cleaned_data.get('age_max')
+        if age_max is not None:
+            assessments = assessments.filter(client__age__lte=age_max)
+        
+        bmi_range = form.cleaned_data.get('bmi_range')
+        if bmi_range:
+            # Use Django's annotate for BMI calculation
+            from django.db.models import F, FloatField, ExpressionWrapper
+            assessments_with_bmi = assessments.annotate(
+                bmi=ExpressionWrapper(
+                    F('client__weight') / (F('client__height') * F('client__height') / 10000),
+                    output_field=FloatField()
+                )
+            )
+            
+            if bmi_range == 'underweight':
+                # BMI < 18.5
+                assessments = assessments_with_bmi.filter(bmi__lt=18.5)
+            elif bmi_range == 'normal':
+                # BMI 18.5-24.9
+                assessments = assessments_with_bmi.filter(bmi__gte=18.5, bmi__lt=25)
+            elif bmi_range == 'overweight':
+                # BMI 25-29.9
+                assessments = assessments_with_bmi.filter(bmi__gte=25, bmi__lt=30)
+            elif bmi_range == 'obese':
+                # BMI >= 30
+                assessments = assessments_with_bmi.filter(bmi__gte=30)
+        
+        risk_range = form.cleaned_data.get('risk_range')
+        if risk_range:
+            if risk_range == '0-20':
+                assessments = assessments.filter(injury_risk_score__lte=20)
+            elif risk_range == '21-40':
+                assessments = assessments.filter(injury_risk_score__gt=20, injury_risk_score__lte=40)
+            elif risk_range == '41-60':
+                assessments = assessments.filter(injury_risk_score__gt=40, injury_risk_score__lte=60)
+            elif risk_range == '61-80':
+                assessments = assessments.filter(injury_risk_score__gt=60, injury_risk_score__lte=80)
+            elif risk_range == '81-100':
+                assessments = assessments.filter(injury_risk_score__gt=80)
+        
+        strength_range = form.cleaned_data.get('strength_range')
+        if strength_range:
+            if strength_range == '80-100':
+                assessments = assessments.filter(strength_score__gte=80)
+            elif strength_range == '60-79':
+                assessments = assessments.filter(strength_score__gte=60, strength_score__lt=80)
+            elif strength_range == '40-59':
+                assessments = assessments.filter(strength_score__gte=40, strength_score__lt=60)
+            elif strength_range == '0-39':
+                assessments = assessments.filter(strength_score__lt=40)
+        
+        mobility_range = form.cleaned_data.get('mobility_range')
+        if mobility_range:
+            if mobility_range == '80-100':
+                assessments = assessments.filter(mobility_score__gte=80)
+            elif mobility_range == '60-79':
+                assessments = assessments.filter(mobility_score__gte=60, mobility_score__lt=80)
+            elif mobility_range == '40-59':
+                assessments = assessments.filter(mobility_score__gte=40, mobility_score__lt=60)
+            elif mobility_range == '0-39':
+                assessments = assessments.filter(mobility_score__lt=40)
     
     # Pagination
     paginator = Paginator(assessments, 20)
@@ -683,3 +755,96 @@ def mcq_print_view(request, assessment_id):
     # Note: In production, this filter should be in a templatetags file
     
     return render(request, 'assessments/mcq_print.html', context)
+
+
+@login_required
+@requires_trainer
+@organization_member_required
+def assessment_compare_view(request):
+    """Compare multiple assessments side by side"""
+    if request.method == 'POST':
+        # Get selected assessment IDs
+        assessment_ids = request.POST.getlist('assessment_ids')
+        
+        # Validate we have 2-5 assessments
+        if len(assessment_ids) < 2 or len(assessment_ids) > 5:
+            messages.error(request, '비교를 위해 2-5개의 평가를 선택해주세요.')
+            return redirect('assessments:list')
+        
+        # Fetch assessments
+        if request.user.is_superuser:
+            assessments = Assessment.objects.filter(
+                id__in=assessment_ids
+            ).select_related('client', 'trainer').order_by('-date')
+        else:
+            assessments = Assessment.objects.filter(
+                id__in=assessment_ids,
+                trainer__organization=request.organization
+            ).select_related('client', 'trainer').order_by('-date')
+        
+        # Ensure we got all requested assessments
+        if assessments.count() != len(assessment_ids):
+            messages.error(request, '일부 평가를 찾을 수 없습니다.')
+            return redirect('assessments:list')
+        
+        # Prepare comparison data
+        comparison_data = []
+        for assessment in assessments:
+            data = {
+                'assessment': assessment,
+                'client': assessment.client,
+                'scores': {
+                    'overall': assessment.overall_score or 0,
+                    'strength': assessment.strength_score or 0,
+                    'mobility': assessment.mobility_score or 0,
+                    'balance': assessment.balance_score or 0,
+                    'cardio': assessment.cardio_score or 0
+                },
+                'tests': {
+                    'overhead_squat': assessment.overhead_squat_score,
+                    'push_up': assessment.push_up_reps,
+                    'balance_avg': None,
+                    'toe_touch': assessment.toe_touch_distance,
+                    'shoulder_mobility': assessment.shoulder_mobility_score,
+                    'farmer_carry': assessment.farmer_carry_score,
+                    'risk': assessment.injury_risk_score
+                }
+            }
+            
+            # Calculate average balance score
+            balance_values = [
+                assessment.single_leg_balance_right_eyes_open,
+                assessment.single_leg_balance_left_eyes_open,
+                assessment.single_leg_balance_right_eyes_closed,
+                assessment.single_leg_balance_left_eyes_closed
+            ]
+            balance_values = [v for v in balance_values if v is not None]
+            if balance_values:
+                data['tests']['balance_avg'] = sum(balance_values) / len(balance_values)
+            
+            comparison_data.append(data)
+        
+        # Calculate averages and find best performers
+        score_categories = ['overall', 'strength', 'mobility', 'balance', 'cardio']
+        best_performers = {}
+        
+        for category in score_categories:
+            scores = [(i, data['scores'][category]) for i, data in enumerate(comparison_data)]
+            if scores:
+                best_idx = max(scores, key=lambda x: x[1])[0]
+                best_performers[category] = best_idx
+        
+        context = {
+            'comparison_data': comparison_data,
+            'best_performers': best_performers,
+            'score_categories': score_categories
+        }
+        
+        # Check if this is an HTMX request
+        if request.headers.get('HX-Request'):
+            return render(request, 'assessments/assessment_compare_content.html', context)
+        else:
+            return render(request, 'assessments/assessment_compare.html', context)
+    
+    # GET request - redirect to list
+    return redirect('assessments:list')

@@ -1,0 +1,362 @@
+{% load humanize %}
+
+<!-- Assessment Comparison Content (no base.html extension) -->
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">평가 비교</h1>
+        <a href="{% url 'assessments:list' %}" 
+           class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-200">
+            <svg class="inline-block w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            목록으로
+        </a>
+    </div>
+    
+    <!-- Comparison Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden mb-8">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                            항목
+                        </th>
+                        {% for item in comparison_data %}
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
+                            <div>{{ item.client.name }}</div>
+                            <div class="text-gray-400 font-normal">{{ item.assessment.date|date:"Y.m.d" }}</div>
+                            <div class="text-gray-400 font-normal text-xs">
+                                {{ item.client.age }}세, {{ item.client.get_gender_display }}
+                            </div>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <!-- Overall Score -->
+                    <tr class="bg-blue-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-blue-50 z-10">
+                            종합 점수
+                        </td>
+                        {% for item in comparison_data %}
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="text-2xl font-bold 
+                                {% if forloop.counter0 == best_performers.overall %}text-green-600
+                                {% elif item.scores.overall >= 80 %}text-blue-600
+                                {% elif item.scores.overall >= 70 %}text-yellow-600
+                                {% elif item.scores.overall >= 60 %}text-orange-600
+                                {% else %}text-red-600{% endif %}">
+                                {{ item.scores.overall|floatformat:1 }}
+                            </span>
+                            {% if forloop.counter0 == best_performers.overall %}
+                            <div class="text-xs text-green-600 mt-1">최고</div>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <!-- Category Scores -->
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">
+                            근력
+                        </td>
+                        {% for item in comparison_data %}
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                            <span class="{% if forloop.counter0 == best_performers.strength %}font-bold text-green-600{% endif %}">
+                                {{ item.scores.strength|floatformat:1 }}
+                            </span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">
+                            유연성
+                        </td>
+                        {% for item in comparison_data %}
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                            <span class="{% if forloop.counter0 == best_performers.mobility %}font-bold text-green-600{% endif %}">
+                                {{ item.scores.mobility|floatformat:1 }}
+                            </span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">
+                            균형
+                        </td>
+                        {% for item in comparison_data %}
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                            <span class="{% if forloop.counter0 == best_performers.balance %}font-bold text-green-600{% endif %}">
+                                {{ item.scores.balance|floatformat:1 }}
+                            </span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">
+                            심폐지구력
+                        </td>
+                        {% for item in comparison_data %}
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                            <span class="{% if forloop.counter0 == best_performers.cardio %}font-bold text-green-600{% endif %}">
+                                {{ item.scores.cardio|floatformat:1 }}
+                            </span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <!-- Risk Score -->
+                    <tr class="bg-red-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-red-50 z-10">
+                            부상 위험도
+                        </td>
+                        {% for item in comparison_data %}
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                            {% if item.tests.risk %}
+                            <span class="font-semibold
+                                {% if item.tests.risk <= 20 %}text-green-600
+                                {% elif item.tests.risk <= 40 %}text-yellow-600
+                                {% elif item.tests.risk <= 60 %}text-orange-600
+                                {% else %}text-red-600{% endif %}">
+                                {{ item.tests.risk|floatformat:1 }}%
+                            </span>
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <!-- Individual Tests -->
+                    <tr class="bg-gray-50">
+                        <td colspan="{{ comparison_data|length|add:1 }}" class="px-6 py-2 text-sm font-medium text-gray-700">
+                            개별 테스트 결과
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 sticky left-0 bg-white z-10">
+                            오버헤드 스쿼트
+                        </td>
+                        {% for item in comparison_data %}
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                            {{ item.tests.overhead_squat|default:"-" }}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 sticky left-0 bg-white z-10">
+                            푸시업 (개)
+                        </td>
+                        {% for item in comparison_data %}
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                            {{ item.tests.push_up|default:"-" }}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 sticky left-0 bg-white z-10">
+                            균형 평균 (초)
+                        </td>
+                        {% for item in comparison_data %}
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                            {{ item.tests.balance_avg|floatformat:1|default:"-" }}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 sticky left-0 bg-white z-10">
+                            유연성 (cm)
+                        </td>
+                        {% for item in comparison_data %}
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                            {% if item.tests.toe_touch is not None %}
+                                {% if item.tests.toe_touch < 0 %}
+                                    <span class="text-red-600">{{ item.tests.toe_touch|floatformat:1 }}</span>
+                                {% else %}
+                                    <span class="text-green-600">+{{ item.tests.toe_touch|floatformat:1 }}</span>
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Radar Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">종합 비교 차트</h3>
+            <div style="position: relative; height: 400px;">
+                <canvas id="comparisonRadar"></canvas>
+            </div>
+        </div>
+        
+        <!-- Bar Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">카테고리별 점수</h3>
+            <div style="position: relative; height: 400px;">
+                <canvas id="comparisonBar"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // Destroy existing charts if they exist (in case of HTMX reload)
+    if (window.comparisonRadarChart) {
+        window.comparisonRadarChart.destroy();
+        window.comparisonRadarChart = null;
+    }
+    if (window.comparisonBarChart) {
+        window.comparisonBarChart.destroy();
+        window.comparisonBarChart = null;
+    }
+
+    function initializeCharts() {
+// Prepare data for charts
+const labels = [
+    {% for item in comparison_data %}'{{ item.client.name }} ({{ item.assessment.date|date:"m/d" }})'{% if not forloop.last %},{% endif %}{% endfor %}
+];
+
+const datasets = {
+    overall: [{% for item in comparison_data %}{{ item.scores.overall }}{% if not forloop.last %},{% endif %}{% endfor %}],
+    strength: [{% for item in comparison_data %}{{ item.scores.strength }}{% if not forloop.last %},{% endif %}{% endfor %}],
+    mobility: [{% for item in comparison_data %}{{ item.scores.mobility }}{% if not forloop.last %},{% endif %}{% endfor %}],
+    balance: [{% for item in comparison_data %}{{ item.scores.balance }}{% if not forloop.last %},{% endif %}{% endfor %}],
+    cardio: [{% for item in comparison_data %}{{ item.scores.cardio }}{% if not forloop.last %},{% endif %}{% endfor %}]
+};
+
+// Colors for each client
+const colors = [
+    'rgba(255, 99, 132, 0.6)',
+    'rgba(54, 162, 235, 0.6)',
+    'rgba(255, 206, 86, 0.6)',
+    'rgba(75, 192, 192, 0.6)',
+    'rgba(153, 102, 255, 0.6)'
+];
+
+const borderColors = [
+    'rgba(255, 99, 132, 1)',
+    'rgba(54, 162, 235, 1)',
+    'rgba(255, 206, 86, 1)',
+    'rgba(75, 192, 192, 1)',
+    'rgba(153, 102, 255, 1)'
+];
+
+    // Radar Chart
+    const radarCtx = document.getElementById('comparisonRadar');
+    if (radarCtx) {
+        const radarDatasets = labels.map((label, index) => ({
+            label: label,
+            data: [
+                datasets.strength[index] || 0,
+                datasets.mobility[index] || 0,
+                datasets.balance[index] || 0,
+                datasets.cardio[index] || 0,
+                datasets.overall[index] || 0
+            ],
+            backgroundColor: colors[index],
+            borderColor: borderColors[index],
+            borderWidth: 2,
+            pointBackgroundColor: borderColors[index],
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: borderColors[index]
+        }));
+
+        window.comparisonRadarChart = new Chart(radarCtx, {
+            type: 'radar',
+            data: {
+                labels: ['근력', '유연성', '균형', '심폐지구력', '종합'],
+                datasets: radarDatasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                size: 11
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            stepSize: 20
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Bar Chart
+    const barCtx = document.getElementById('comparisonBar');
+    if (barCtx) {
+        window.comparisonBarChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: ['근력', '유연성', '균형', '심폐지구력', '종합'],
+                datasets: labels.map((label, index) => ({
+                    label: label,
+                    data: [
+                        datasets.strength[index] || 0,
+                        datasets.mobility[index] || 0,
+                        datasets.balance[index] || 0,
+                        datasets.cardio[index] || 0,
+                        datasets.overall[index] || 0
+                    ],
+                    backgroundColor: colors[index],
+                    borderColor: borderColors[index],
+                    borderWidth: 1
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                size: 11
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+    } // end initializeCharts
+
+    // Initialize immediately since this is loaded via HTMX
+    initializeCharts();
+})();
+</script>

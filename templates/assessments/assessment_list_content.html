@@ -46,11 +46,13 @@
     </div>
     
     <!-- Search and Filters -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
+    <div class="bg-white rounded-lg shadow p-6 mb-6" x-data="{ showAdvanced: false }">
         <form method="get">
+            {% csrf_token %}
+            <!-- Basic Filters -->
             <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                 <!-- Search Field -->
-                <div class="md:col-span-4">
+                <div class="md:col-span-3">
                     <label class="block text-xs text-gray-600 mb-1">회원 검색</label>
                     {{ form.search }}
                     <span id="search-indicator" class="htmx-indicator ml-2">
@@ -61,8 +63,14 @@
                     </span>
                 </div>
                 
-                <!-- Date Range Fields - grouped together -->
-                <div class="md:col-span-4 grid grid-cols-2 gap-1">
+                <!-- Gender Filter -->
+                <div class="md:col-span-2">
+                    <label class="block text-xs text-gray-600 mb-1">성별</label>
+                    {{ form.gender }}
+                </div>
+                
+                <!-- Date Range Fields -->
+                <div class="md:col-span-3 grid grid-cols-2 gap-1">
                     <div class="pr-0.5">
                         <label class="block text-xs text-gray-600 mb-1">시작 날짜</label>
                         {{ form.date_from }}
@@ -74,16 +82,79 @@
                 </div>
                 
                 <!-- Score Range -->
-                <div class="md:col-span-3">
-                    <label class="block text-xs text-gray-600 mb-1">점수 범위</label>
+                <div class="md:col-span-2">
+                    <label class="block text-xs text-gray-600 mb-1">전체 점수</label>
                     {{ form.score_range }}
                 </div>
                 
-                <!-- Clear Filters Button -->
+                <!-- Advanced Filters Toggle -->
+                <div class="md:col-span-1">
+                    <button type="button" 
+                            @click="showAdvanced = !showAdvanced"
+                            class="w-full px-3 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition duration-200">
+                        <svg class="inline-block w-4 h-4" :class="{'rotate-180': showAdvanced}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                        고급
+                    </button>
+                </div>
+                
+                <!-- Clear Button -->
                 <div class="md:col-span-1">
                     <a href="{% url 'assessments:list' %}" class="block text-center px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition duration-200">
                         초기화
                     </a>
+                </div>
+            </div>
+            
+            <!-- Advanced Filters -->
+            <div x-show="showAdvanced" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform -translate-y-2"
+                 x-transition:enter-end="opacity-100 transform translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="mt-4 pt-4 border-t border-gray-200">
+                
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                    <!-- Age Range -->
+                    <div class="md:col-span-3 grid grid-cols-2 gap-1">
+                        <div class="pr-0.5">
+                            <label class="block text-xs text-gray-600 mb-1">최소 나이</label>
+                            {{ form.age_min }}
+                        </div>
+                        <div class="pl-0.5">
+                            <label class="block text-xs text-gray-600 mb-1">최대 나이</label>
+                            {{ form.age_max }}
+                        </div>
+                    </div>
+                    
+                    <!-- BMI Range -->
+                    <div class="md:col-span-3">
+                        <label class="block text-xs text-gray-600 mb-1">BMI 범위</label>
+                        {{ form.bmi_range }}
+                    </div>
+                    
+                    <!-- Risk Range -->
+                    <div class="md:col-span-3">
+                        <label class="block text-xs text-gray-600 mb-1">위험도</label>
+                        {{ form.risk_range }}
+                    </div>
+                    
+                    <!-- Strength Score -->
+                    <div class="md:col-span-3">
+                        <label class="block text-xs text-gray-600 mb-1">근력 점수</label>
+                        {{ form.strength_range }}
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end mt-4">
+                    <!-- Mobility Score -->
+                    <div class="md:col-span-3">
+                        <label class="block text-xs text-gray-600 mb-1">유연성 점수</label>
+                        {{ form.mobility_range }}
+                    </div>
                 </div>
             </div>
         </form>

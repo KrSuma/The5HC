@@ -2,11 +2,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, JsonResponse
-from django.db.models import Q, Count
+from django.db.models import Q, Count, F, FloatField, ExpressionWrapper, Max, Subquery, OuterRef, Exists
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.urls import reverse
 from django.template.loader import render_to_string
+from django.utils import timezone
+from datetime import timedelta
 import csv
 
 from .models import Client
@@ -27,6 +29,41 @@ def client_list_view(request):
     clients = Client.objects.filter(
         trainer__organization=request.organization
     ).select_related('trainer')
+    
+    # Add annotations for filtering
+    # Calculate BMI (use calculated_bmi to avoid conflict with model property)
+    clients = clients.annotate(
+        calculated_bmi=ExpressionWrapper(
+            F('weight') / (F('height') * F('height') / 10000),
+            output_field=FloatField()
+        )
+    )
+    
+    # Get latest assessment score
+    latest_assessment = Assessment.objects.filter(
+        client=OuterRef('pk')
+    ).order_by('-date').values('overall_score')[:1]
+    
+    clients = clients.annotate(
+        latest_score=Subquery(latest_assessment)
+    )
+    
+    # Check activity status (session or assessment in last 30 days)
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    
+    recent_session = Session.objects.filter(
+        client=OuterRef('pk'),
+        session_date__gte=thirty_days_ago
+    )
+    
+    recent_assessment = Assessment.objects.filter(
+        client=OuterRef('pk'),
+        date__gte=thirty_days_ago
+    )
+    
+    clients = clients.annotate(
+        has_recent_activity=Exists(recent_session) | Exists(recent_assessment)
+    )
     
     # Apply search filters
     if form.is_valid():
@@ -49,6 +86,62 @@ def client_list_view(request):
         age_max = form.cleaned_data.get('age_max')
         if age_max:
             clients = clients.filter(age__lte=age_max)
+        
+        # BMI range filter
+        bmi_range = form.cleaned_data.get('bmi_range')
+        if bmi_range:
+            if bmi_range == 'underweight':
+                clients = clients.filter(calculated_bmi__lt=18.5)
+            elif bmi_range == 'normal':
+                clients = clients.filter(calculated_bmi__gte=18.5, calculated_bmi__lt=23)
+            elif bmi_range == 'overweight':
+                clients = clients.filter(calculated_bmi__gte=23, calculated_bmi__lt=25)
+            elif bmi_range == 'obese':
+                clients = clients.filter(calculated_bmi__gte=25)
+        
+        # Registration date filter
+        registration_start = form.cleaned_data.get('registration_start')
+        if registration_start:
+            clients = clients.filter(created_at__date__gte=registration_start)
+        
+        registration_end = form.cleaned_data.get('registration_end')
+        if registration_end:
+            clients = clients.filter(created_at__date__lte=registration_end)
+        
+        # Medical conditions filter
+        has_medical = form.cleaned_data.get('has_medical_conditions')
+        if has_medical == 'yes':
+            clients = clients.exclude(medical_conditions='').exclude(medical_conditions__isnull=True)
+        elif has_medical == 'no':
+            clients = clients.filter(Q(medical_conditions='') | Q(medical_conditions__isnull=True))
+        
+        # Athletic background filter
+        has_athletic = form.cleaned_data.get('has_athletic_background')
+        if has_athletic == 'yes':
+            clients = clients.exclude(athletic_background='').exclude(athletic_background__isnull=True)
+        elif has_athletic == 'no':
+            clients = clients.filter(Q(athletic_background='') | Q(athletic_background__isnull=True))
+        
+        # Activity status filter
+        activity_status = form.cleaned_data.get('activity_status')
+        if activity_status == 'active':
+            clients = clients.filter(has_recent_activity=True)
+        elif activity_status == 'inactive':
+            clients = clients.filter(has_recent_activity=False)
+        
+        # Latest score range filter
+        score_range = form.cleaned_data.get('latest_score_range')
+        if score_range:
+            if score_range == '90-100':
+                clients = clients.filter(latest_score__gte=90)
+            elif score_range == '80-89':
+                clients = clients.filter(latest_score__gte=80, latest_score__lt=90)
+            elif score_range == '70-79':
+                clients = clients.filter(latest_score__gte=70, latest_score__lt=80)
+            elif score_range == '60-69':
+                clients = clients.filter(latest_score__gte=60, latest_score__lt=70)
+            elif score_range == '0-59':
+                clients = clients.filter(latest_score__lt=60)
     
     # Order by most recent
     clients = clients.order_by('-created_at')
@@ -67,10 +160,16 @@ def client_list_view(request):
         'form': form,
         'page_obj': page_obj,
         'total_count': paginator.count,
+        'export_url': request.get_full_path().replace('?', 'export/?', 1) if '?' in request.get_full_path() else 'export/',
     }
     
+    # Check if this is an HTMX navigation request (navbar click)
+    # HX-Target will be #main-content for navbar navigation
     if request.headers.get('HX-Request'):
-        return render(request, 'clients/client_list_partial.html', context)
+        if request.headers.get('HX-Target') == 'main-content':
+            return render(request, 'clients/client_list_content.html', context)
+        else:
+            return render(request, 'clients/client_list_partial.html', context)
     
     return render(request, 'clients/client_list.html', context)
 
@@ -249,20 +348,129 @@ def client_delete_view(request, pk):
 @requires_trainer
 @organization_member_required
 def client_export_view(request):
-    """Export client list to CSV."""
+    """Export filtered client list to CSV."""
+    # Apply same filters as list view
+    form = ClientSearchForm(request.GET)
+    clients = Client.objects.filter(
+        trainer__organization=request.organization
+    ).select_related('trainer__user')
+    
+    # Add annotations
+    clients = clients.annotate(
+        calculated_bmi=ExpressionWrapper(
+            F('weight') / (F('height') * F('height') / 10000),
+            output_field=FloatField()
+        )
+    )
+    
+    latest_assessment = Assessment.objects.filter(
+        client=OuterRef('pk')
+    ).order_by('-date').values('overall_score')[:1]
+    
+    clients = clients.annotate(
+        latest_score=Subquery(latest_assessment)
+    )
+    
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    recent_session = Session.objects.filter(
+        client=OuterRef('pk'),
+        session_date__gte=thirty_days_ago
+    )
+    recent_assessment = Assessment.objects.filter(
+        client=OuterRef('pk'),
+        date__gte=thirty_days_ago
+    )
+    clients = clients.annotate(
+        has_recent_activity=Exists(recent_session) | Exists(recent_assessment)
+    )
+    
+    # Apply filters (same logic as list view)
+    if form.is_valid():
+        search = form.cleaned_data.get('search')
+        if search:
+            clients = clients.filter(
+                Q(name__icontains=search) |
+                Q(email__icontains=search) |
+                Q(phone__icontains=search)
+            )
+        
+        gender = form.cleaned_data.get('gender')
+        if gender:
+            clients = clients.filter(gender=gender)
+        
+        age_min = form.cleaned_data.get('age_min')
+        if age_min:
+            clients = clients.filter(age__gte=age_min)
+        
+        age_max = form.cleaned_data.get('age_max')
+        if age_max:
+            clients = clients.filter(age__lte=age_max)
+        
+        # Apply all other filters (same as list view)
+        bmi_range = form.cleaned_data.get('bmi_range')
+        if bmi_range:
+            if bmi_range == 'underweight':
+                clients = clients.filter(calculated_bmi__lt=18.5)
+            elif bmi_range == 'normal':
+                clients = clients.filter(calculated_bmi__gte=18.5, calculated_bmi__lt=23)
+            elif bmi_range == 'overweight':
+                clients = clients.filter(calculated_bmi__gte=23, calculated_bmi__lt=25)
+            elif bmi_range == 'obese':
+                clients = clients.filter(calculated_bmi__gte=25)
+        
+        registration_start = form.cleaned_data.get('registration_start')
+        if registration_start:
+            clients = clients.filter(created_at__date__gte=registration_start)
+        
+        registration_end = form.cleaned_data.get('registration_end')
+        if registration_end:
+            clients = clients.filter(created_at__date__lte=registration_end)
+        
+        has_medical = form.cleaned_data.get('has_medical_conditions')
+        if has_medical == 'yes':
+            clients = clients.exclude(medical_conditions='').exclude(medical_conditions__isnull=True)
+        elif has_medical == 'no':
+            clients = clients.filter(Q(medical_conditions='') | Q(medical_conditions__isnull=True))
+        
+        has_athletic = form.cleaned_data.get('has_athletic_background')
+        if has_athletic == 'yes':
+            clients = clients.exclude(athletic_background='').exclude(athletic_background__isnull=True)
+        elif has_athletic == 'no':
+            clients = clients.filter(Q(athletic_background='') | Q(athletic_background__isnull=True))
+        
+        activity_status = form.cleaned_data.get('activity_status')
+        if activity_status == 'active':
+            clients = clients.filter(has_recent_activity=True)
+        elif activity_status == 'inactive':
+            clients = clients.filter(has_recent_activity=False)
+        
+        score_range = form.cleaned_data.get('latest_score_range')
+        if score_range:
+            if score_range == '90-100':
+                clients = clients.filter(latest_score__gte=90)
+            elif score_range == '80-89':
+                clients = clients.filter(latest_score__gte=80, latest_score__lt=90)
+            elif score_range == '70-79':
+                clients = clients.filter(latest_score__gte=70, latest_score__lt=80)
+            elif score_range == '60-69':
+                clients = clients.filter(latest_score__gte=60, latest_score__lt=70)
+            elif score_range == '0-59':
+                clients = clients.filter(latest_score__lt=60)
+    
+    # Order by name for export
+    clients = clients.order_by('name')
+    
+    # Create CSV response
     response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
-    response['Content-Disposition'] = 'attachment; filename="clients.csv"'
+    response['Content-Disposition'] = 'attachment; filename="clients_filtered.csv"'
     
     # Add BOM for proper Korean encoding in Excel
     response.write('\ufeff')
     
     writer = csv.writer(response)
-    writer.writerow(['이름', '나이', '성별', '키(cm)', '몸무게(kg)', 'BMI', '이메일', '전화번호', '등록일', '담당 트레이너'])
+    writer.writerow(['이름', '나이', '성별', '키(cm)', '몸무게(kg)', 'BMI', '활동상태', '최근평가점수', 
+                     '병력', '운동경력', '이메일', '전화번호', '등록일', '담당 트레이너'])
     
-    # Export all clients in the organization
-    clients = Client.objects.filter(
-        trainer__organization=request.organization
-    ).select_related('trainer__user').order_by('name')
     for client in clients:
         writer.writerow([
             client.name,
@@ -270,7 +478,11 @@ def client_export_view(request):
             client.get_gender_display(),
             client.height,
             client.weight,
-            client.bmi if client.bmi else '',
+            f'{client.bmi:.1f}' if client.bmi else '',
+            '활동중' if client.has_recent_activity else '비활동',
+            f'{client.latest_score:.1f}' if client.latest_score else '평가없음',
+            '있음' if client.medical_conditions else '없음',
+            '있음' if client.athletic_background else '없음',
             client.email or '',
             client.phone or '',
             client.created_at.strftime('%Y-%m-%d'),

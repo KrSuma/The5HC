@@ -157,6 +157,16 @@ def session_package_add_view(request):
         'form': form,
         'client_id': client_id,
     }
+    
+    # Check for HTMX navigation request
+    if request.headers.get('HX-Request') and request.headers.get('HX-Target') == 'main-content':
+        # First, check if we have a content-only template
+        try:
+            return render(request, 'sessions/package_form_content.html', context)
+        except:
+            # If content template doesn't exist, return the full template
+            return render(request, 'sessions/package_form.html', context)
+    
     return render(request, 'sessions/package_form.html', context)
 
 

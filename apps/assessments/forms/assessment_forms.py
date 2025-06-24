@@ -482,3 +482,122 @@ class AssessmentSearchForm(forms.Form):
             'hx-swap': 'innerHTML'
         })
     )
+    
+    # New filters
+    gender = forms.ChoiceField(
+        choices=[
+            ('', '전체 성별'),
+            ('male', '남성'),
+            ('female', '여성')
+        ],
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '',
+            'hx-trigger': 'change',
+            'hx-target': '#assessment-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    age_min = forms.IntegerField(
+        required=False,
+        min_value=0,
+        max_value=150,
+        widget=forms.NumberInput(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'placeholder': '최소 나이',
+            'hx-get': '',
+            'hx-trigger': 'change delay:500ms',
+            'hx-target': '#assessment-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    age_max = forms.IntegerField(
+        required=False,
+        min_value=0,
+        max_value=150,
+        widget=forms.NumberInput(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'placeholder': '최대 나이',
+            'hx-get': '',
+            'hx-trigger': 'change delay:500ms',
+            'hx-target': '#assessment-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    bmi_range = forms.ChoiceField(
+        choices=[
+            ('', '전체 BMI'),
+            ('underweight', '저체중 (< 18.5)'),
+            ('normal', '정상 (18.5-24.9)'),
+            ('overweight', '과체중 (25-29.9)'),
+            ('obese', '비만 (≥ 30)')
+        ],
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '',
+            'hx-trigger': 'change',
+            'hx-target': '#assessment-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    risk_range = forms.ChoiceField(
+        choices=[
+            ('', '전체 위험도'),
+            ('0-20', '낮음 (0-20)'),
+            ('21-40', '보통 (21-40)'),
+            ('41-60', '주의 (41-60)'),
+            ('61-80', '높음 (61-80)'),
+            ('81-100', '매우 높음 (81-100)')
+        ],
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '',
+            'hx-trigger': 'change',
+            'hx-target': '#assessment-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    # Category-specific score filters
+    strength_range = forms.ChoiceField(
+        choices=[
+            ('', '전체 근력'),
+            ('80-100', '우수 (80-100)'),
+            ('60-79', '양호 (60-79)'),
+            ('40-59', '보통 (40-59)'),
+            ('0-39', '개선 필요 (0-39)')
+        ],
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '',
+            'hx-trigger': 'change',
+            'hx-target': '#assessment-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    mobility_range = forms.ChoiceField(
+        choices=[
+            ('', '전체 유연성'),
+            ('80-100', '우수 (80-100)'),
+            ('60-79', '양호 (60-79)'),
+            ('40-59', '보통 (40-59)'),
+            ('0-39', '개선 필요 (0-39)')
+        ],
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '',
+            'hx-trigger': 'change',
+            'hx-target': '#assessment-list',
+            'hx-swap': 'innerHTML'
+        })
+    )

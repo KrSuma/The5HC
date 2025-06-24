@@ -1,6 +1,8 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
+from datetime import timedelta
 from .models import Client
 
 
@@ -157,5 +159,115 @@ class ClientSearchForm(forms.Form):
             'hx-get': '/clients/',
             'hx-trigger': 'change',
             'hx-target': '#client-list',
+        })
+    )
+    
+    # Advanced filters
+    bmi_range = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', 'BMI 전체'),
+            ('underweight', '저체중 (<18.5)'),
+            ('normal', '정상 (18.5-23)'),
+            ('overweight', '과체중 (23-25)'),
+            ('obese', '비만 (≥25)')
+        ],
+        widget=forms.Select(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '/clients/',
+            'hx-trigger': 'change',
+            'hx-target': '#client-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    registration_start = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '/clients/',
+            'hx-trigger': 'change',
+            'hx-target': '#client-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    registration_end = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '/clients/',
+            'hx-trigger': 'change',
+            'hx-target': '#client-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    has_medical_conditions = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', '병력 전체'),
+            ('yes', '병력 있음'),
+            ('no', '병력 없음')
+        ],
+        widget=forms.Select(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '/clients/',
+            'hx-trigger': 'change',
+            'hx-target': '#client-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    has_athletic_background = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', '운동경력 전체'),
+            ('yes', '운동경력 있음'),
+            ('no', '운동경력 없음')
+        ],
+        widget=forms.Select(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '/clients/',
+            'hx-trigger': 'change',
+            'hx-target': '#client-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    activity_status = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', '활동상태 전체'),
+            ('active', '활동중 (30일 이내)'),
+            ('inactive', '비활동 (30일 초과)')
+        ],
+        widget=forms.Select(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '/clients/',
+            'hx-trigger': 'change',
+            'hx-target': '#client-list',
+            'hx-swap': 'innerHTML'
+        })
+    )
+    
+    latest_score_range = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', '최근 점수 전체'),
+            ('90-100', '90-100 (우수)'),
+            ('80-89', '80-89 (양호)'),
+            ('70-79', '70-79 (보통)'),
+            ('60-69', '60-69 (주의)'),
+            ('0-59', '0-59 (관리필요)')
+        ],
+        widget=forms.Select(attrs={
+            'class': 'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'hx-get': '/clients/',
+            'hx-trigger': 'change',
+            'hx-target': '#client-list',
+            'hx-swap': 'innerHTML'
         })
     )

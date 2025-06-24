@@ -4,6 +4,7 @@
 {% block title %}패키지 관리 - The5HC{% endblock %}
 
 {% block content %}
+<div class="container mx-auto px-4 py-8">
     <!-- Header -->
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold text-gray-800">패키지 관리</h1>
@@ -130,4 +131,5 @@
     <div id="package-list">
         {% include 'sessions/package_list_partial.html' %}
     </div>
+</div>
 {% endblock %}
