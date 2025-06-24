@@ -113,6 +113,14 @@ python manage.py fix_trainer_profile <username> [--role owner|senior|trainer|ass
   - Fixed BMI annotation conflict with Client model property
   - Created new client_list_content.html for HTMX navigation support
   - See `logs/feature/CLIENT_MANAGEMENT_FILTERING_IMPLEMENTATION_LOG.md` for details
+- ✅ **UI Consistency and Button Sizing Fixes**
+  - Standardized button padding from `px-4 py-2` to `px-6 py-2.5` across all pages
+  - Fixed client detail page buttons (평가 실시, 패키지 등록, 정보 수정)
+  - Fixed assessment list and detail page buttons (새 평가 등록, PDF 리포트, 삭제, MCQ 평가)
+  - Fixed assessment form navigation buttons (이전, 취소, 다음, 평가 저장)
+  - Fixed step indicator connecting lines to center on numbered circles (was at bottom)
+  - Applied fixes to both regular and HTMX content templates
+  - See `logs/maintenance/UI_BUTTON_SIZING_FIXES_2025_06_24.md` for details
 
 #### 2025-06-19 (Session 16)
 - ✅ **Trainer Profile Access Fixes for Superusers**
@@ -522,6 +530,7 @@ python manage.py fix_trainer_profile <username> [--role owner|senior|trainer|ass
 - `logs/maintenance/CLIENT_FILTERING_COMPARISON_SESSION_2025_06_24.md` - Assessment filtering and comparison implementation with bug fixes
 - `logs/feature/CLIENT_MANAGEMENT_FILTERING_IMPLEMENTATION_LOG.md` - Client management filtering system implementation
 - `logs/maintenance/CLIENT_BMI_ANNOTATION_FIX_2025_06_24.md` - BMI annotation conflict fix for client filtering
+- `logs/maintenance/UI_BUTTON_SIZING_FIXES_2025_06_24.md` - UI consistency and button sizing standardization
 
 ## Complete Project File Structure
 

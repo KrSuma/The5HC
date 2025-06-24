@@ -19,7 +19,7 @@
     .step:not(:last-child)::after {
         content: '';
         position: absolute;
-        top: 50%;
+        top: calc(1rem + 1.25rem); /* padding + half of step-number height */
         right: -50%;
         width: 100%;
         height: 2px;
@@ -409,26 +409,26 @@
             <button type="button" 
                     @click="previousStep"
                     x-show="currentStep > 1"
-                    class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition duration-200">
+                    class="px-6 py-2.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition duration-200">
                 이전
             </button>
             
             <div class="ml-auto space-x-4">
                 <a href="{% url 'assessments:list' %}" 
-                   class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-200 inline-block">
+                   class="px-6 py-2.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-200 inline-block">
                     취소
                 </a>
                 
                 <button type="button" 
                         @click="nextStep"
                         x-show="currentStep < 5"
-                        class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200">
+                        class="px-6 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200">
                     다음
                 </button>
                 
                 <button type="submit" 
                         x-show="currentStep === 5"
-                        class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200">
+                        class="px-6 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200">
                     <span class="htmx-indicator">
                         <svg class="inline-block w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

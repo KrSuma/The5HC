@@ -8,7 +8,7 @@
             <p class="text-gray-600 mt-2">회원번호: #{{ client.pk }}</p>
         </div>
         <div class="flex space-x-2">
-            <button class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200"
+            <button class="px-6 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200"
                     hx-get="{% url 'assessments:add' %}?client={{ client.pk }}"
                     hx-target="#main-content"
                     hx-push-url="true">
@@ -17,7 +17,7 @@
                 </svg>
                 평가 실시
             </button>
-            <button class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200"
+            <button class="px-6 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200"
                     hx-get="{% url 'sessions:package_add' %}?client={{ client.pk }}"
                     hx-target="#main-content"
                     hx-push-url="true">
@@ -26,7 +26,7 @@
                 </svg>
                 패키지 등록
             </button>
-            <button class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-200"
+            <button class="px-6 py-2.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-200"
                     hx-get="{% url 'clients:edit' client.pk %}"
                     hx-target="#main-content"
                     hx-push-url="true">
