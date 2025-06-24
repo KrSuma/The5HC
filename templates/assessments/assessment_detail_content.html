@@ -198,10 +198,10 @@
                     <div class="p-4 bg-green-50 rounded-lg">
                         <div class="flex justify-between items-center">
                             <span class="text-sm font-medium text-gray-700">유연성</span>
-                            <span class="text-lg font-bold text-green-600">{{ assessment.flexibility_score|default:0|floatformat:0 }}%</span>
+                            <span class="text-lg font-bold text-green-600">{{ assessment.mobility_score|default:0|floatformat:0 }}%</span>
                         </div>
                         <div class="mt-2 bg-green-200 rounded-full h-2">
-                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ assessment.flexibility_score|default:0 }}%"></div>
+                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ assessment.mobility_score|default:0 }}%"></div>
                         </div>
                     </div>
                     
@@ -524,12 +524,12 @@ const ctx = document.getElementById('barChart').getContext('2d');
 const barChart = new Chart(ctx, {
     type: 'bar',
     data: {
-        labels: ['근력', '유연성', '균형', '심폐지구력'],
+        labels: ['근력', '기동성', '균형', '심폐지구력'],
         datasets: [{
             label: '점수',
             data: [
                 {{ assessment.strength_score|default:0 }},
-                {{ assessment.flexibility_score|default:0 }},
+                {{ assessment.mobility_score|default:0 }},
                 {{ assessment.balance_score|default:0 }},
                 {{ assessment.cardio_score|default:0 }}
             ],

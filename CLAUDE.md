@@ -103,6 +103,35 @@ python manage.py fix_trainer_profile <username> [--role owner|senior|trainer|ass
   - Verified 4 quality fields: overhead_squat_quality, toe_touch_flexibility, shoulder_mobility_category, overhead_squat_arm_drop
   - All movement compensation checkboxes working correctly
   - See `logs/maintenance/MOVEMENT_QUALITY_FIELDS_VISIBILITY_SESSION_2025_06_25.md` for details
+- ✅ **Dashboard Score Display Rounding Fix**
+  - Fixed long decimal display in 최근 활동 (Recent Activity) section
+  - Applied Django's floatformat:2 filter to round scores to 2 decimal places
+  - Changed 66.08333333333333점 to display as 66.08점
+  - Updated both dashboard.html and dashboard_content.html templates
+  - Git commit: bfc091d
+- ✅ **Physical Assessment Test Category Reorganization**
+  - Reorganized test categories per client request:
+    * 근력 및 근지구력 (Strength & Muscular Endurance): Push-up, Farmers Carry
+    * 균형 및 협응성 (Balance & Coordination): Single Leg Balance, Overhead Squat
+    * 기동성 및 유연성 (Mobility & Flexibility): Toe Touch, Shoulder Mobility
+    * 심폐지구력 (Cardiovascular Endurance): Harvard Step Test
+  - Moved Overhead Squat from Step 2 to Step 3
+  - Updated all step indicators and section headers
+  - Fixed field name inconsistencies (flexibility_score → mobility_score)
+  - Updated chart labels from '유연성' to '기동성'
+  - See `logs/maintenance/ASSESSMENT_CATEGORY_REORGANIZATION_2025_06_25.md` for details
+- ✅ **Manual Score Field Fixes (COMPLETE - All 7 Phases)**
+  - Fixed missing Alpine.js bindings on manual score fields (overhead_squat_score, shoulder_mobility_score)
+  - Extended score range from 0-3 to 0-5 with new options
+  - Implemented manual override tracking to prevent automatic calculations from overwriting manual entries
+  - Fixed balance score calculation confusion (separated singleLegBalanceScore from category balanceScore)
+  - Added proper form initialization to load existing values on page load
+  - ✅ Phase 4: Added visual feedback with blue ring around manual scores, "수동 입력됨" badge, and reset buttons
+  - ✅ Phase 5: Fixed backend score normalization for 0-5 scale in category calculations
+  - ✅ Phase 6: Created comprehensive test suite with 3 pytest files and manual testing checklist
+  - ✅ Phase 7: Created user guide, deployment plan, and technical documentation
+  - Successfully completed all 7 phases - feature ready for production deployment
+  - See `logs/maintenance/MANUAL_SCORE_FIELD_FIXES_2025_06_25.md` and phase-specific logs for details
 
 #### 2025-06-24 (Session 17)
 - ✅ **Assessment Filtering and Comparison Feature Implementation**
@@ -549,10 +578,22 @@ python manage.py fix_trainer_profile <username> [--role owner|senior|trainer|ass
 - `logs/maintenance/UI_BUTTON_SIZING_FIXES_2025_06_24.md` - UI consistency and button sizing standardization
 - `logs/maintenance/NAVBAR_CONSISTENCY_FIX_2025_06_24.md` - Navigation bar button consistency fixes
 - `logs/maintenance/MOVEMENT_QUALITY_FIELDS_VISIBILITY_SESSION_2025_06_25.md` - Movement quality fields browser cache investigation
+- `logs/maintenance/ASSESSMENT_CATEGORY_REORGANIZATION_2025_06_25.md` - Physical assessment test category reorganization
+- `logs/maintenance/MANUAL_SCORE_FIELD_FIXES_2025_06_25.md` - Manual score field Alpine.js integration fixes (All 7 Phases)
+- `logs/maintenance/MANUAL_SCORE_PHASE4_VISUAL_FEEDBACK_2025_06_25.md` - Phase 4: Visual feedback implementation for manual scores
+- `logs/maintenance/MANUAL_SCORE_PHASE5_BACKEND_VALIDATION_2025_06_25.md` - Phase 5: Backend validation and normalization fixes
+- `logs/maintenance/MANUAL_SCORE_PHASE6_TESTING_2025_06_25.md` - Phase 6: Comprehensive test suite and manual testing checklist
+- `logs/maintenance/MANUAL_SCORE_PHASE7_DOCUMENTATION_DEPLOYMENT_2025_06_25.md` - Phase 7: Documentation and deployment planning
+- `logs/maintenance/SESSION_18_SUMMARY_2025_06_25.md` - Session 18 summary with all fixes
+- `logs/maintenance/SESSION_18_COMPLETE_LOG_2025_06_25.md` - Comprehensive Session 18 documentation
+- `docs/MANUAL_SCORE_TESTING_CHECKLIST.md` - Manual score field testing checklist
+- `docs/MANUAL_SCORE_OVERRIDE_USER_GUIDE.md` - Bilingual user guide for manual score override feature
+- `docs/MANUAL_SCORE_DEPLOYMENT_PLAN.md` - Comprehensive deployment plan for manual score feature
+- `docs/MANUAL_SCORE_TECHNICAL_SUMMARY.md` - Technical implementation summary for developers
 
 ## Complete Project File Structure
 
-**Updated**: 2025-06-25 (Session 18 - Movement quality fields visibility investigation)
+**Updated**: 2025-06-25 (Session 18 - Assessment category reorganization and manual score field fixes)
 
 ```
 The5HC/

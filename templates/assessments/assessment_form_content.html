@@ -1,4 +1,18 @@
 <!-- Content-only template for HTMX navigation - does not extend base.html -->
+<style>
+    /* Manual score override styles */
+    .manual-override-container {
+        transition: all 0.3s ease;
+    }
+    .manual-override-indicator {
+        animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
 <div class="container mx-auto px-4 py-8" x-data="assessmentForm()">
     <h1 class="text-3xl font-bold text-gray-800 mb-8">체력 평가 등록</h1>
     
@@ -32,19 +46,19 @@
         </div>
         <div class="step" :class="{ 'active': currentStep === 2, 'completed': currentStep > 2 }">
             <div class="step-number">2</div>
-            <div class="text-sm font-medium">근력 평가</div>
+            <div class="text-sm font-medium">근력 및 근지구력</div>
         </div>
         <div class="step" :class="{ 'active': currentStep === 3, 'completed': currentStep > 3 }">
             <div class="step-number">3</div>
-            <div class="text-sm font-medium">균형 평가</div>
+            <div class="text-sm font-medium">균형 및 협응성</div>
         </div>
         <div class="step" :class="{ 'active': currentStep === 4, 'completed': currentStep > 4 }">
             <div class="step-number">4</div>
-            <div class="text-sm font-medium">유연성 평가</div>
+            <div class="text-sm font-medium">기동성 및 유연성</div>
         </div>
         <div class="step" :class="{ 'active': currentStep === 5, 'completed': currentStep > 5 }">
             <div class="step-number">5</div>
-            <div class="text-sm font-medium">심폐 평가</div>
+            <div class="text-sm font-medium">심폐지구력</div>
         </div>
     </div>
     
@@ -102,55 +116,10 @@
                 </div>
             </div>
             
-            <!-- Step 2: Strength Assessment -->
+            <!-- Step 2: Strength & Muscular Endurance Assessment -->
             <div class="step-content" :class="{ 'active': currentStep === 2 }">
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-6">근력 평가</h2>
-                    
-                    <!-- Overhead Squat -->
-                    <div class="mb-8">
-                        <h3 class="text-lg font-medium text-gray-700 mb-4">오버헤드 스쿼트</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">점수</label>
-                                {{ form.overhead_squat_score }}
-                            </div>
-                            
-                            <!-- Movement Quality Checkboxes -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">동작 보상</label>
-                                <div class="space-y-2">
-                                    <label class="flex items-center">
-                                        {{ form.overhead_squat_knee_valgus }}
-                                        <span class="ml-2 text-sm text-gray-600">무릎이 안쪽으로 모임</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        {{ form.overhead_squat_forward_lean }}
-                                        <span class="ml-2 text-sm text-gray-600">과도한 전방 기울임</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        {{ form.overhead_squat_heel_lift }}
-                                        <span class="ml-2 text-sm text-gray-600">발뒤꿈치 들림</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        {{ form.overhead_squat_arm_drop }}
-                                        <span class="ml-2 text-sm text-gray-600">팔 전방 하강</span>
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <!-- Performance Quality -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">수행 품질</label>
-                                {{ form.overhead_squat_quality }}
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
-                                {{ form.overhead_squat_notes }}
-                            </div>
-                        </div>
-                    </div>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-6">근력 및 근지구력 평가</h2>
                     
                     <!-- Push-up Test -->
                     <div class="mb-8">
@@ -230,12 +199,75 @@
                 </div>
             </div>
             
-            <!-- Step 3: Balance Assessment -->
+            <!-- Step 3: Balance & Coordination Assessment -->
             <div class="step-content" :class="{ 'active': currentStep === 3 }">
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-6">균형 평가</h2>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-6">균형 및 협응성 평가</h2>
                     
-                    <h3 class="text-lg font-medium text-gray-700 mb-4">외발 서기 테스트</h3>
+                    <!-- Overhead Squat -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-medium text-gray-700 mb-4">오버헤드 스쿼트</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">점수</label>
+                                <div class="relative">
+                                    <div :class="{'ring-2 ring-blue-500': manualOverrides.overheadSquat}">
+                                        {{ form.overhead_squat_score }}
+                                    </div>
+                                    
+                                    <!-- Manual Override Indicator -->
+                                    <div x-show="manualOverrides.overheadSquat" x-transition
+                                         class="absolute -top-2 right-0 flex items-center space-x-2">
+                                        <span class="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                                            수동 입력됨
+                                        </span>
+                                        <button type="button" @click="resetManualScore('overheadSquat')"
+                                                class="text-xs text-blue-600 hover:text-blue-800 underline">
+                                            자동 계산으로 재설정
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Movement Quality Checkboxes -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">동작 보상</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        {{ form.overhead_squat_knee_valgus }}
+                                        <span class="ml-2 text-sm text-gray-600">무릎이 안쪽으로 모임</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        {{ form.overhead_squat_forward_lean }}
+                                        <span class="ml-2 text-sm text-gray-600">과도한 전방 기울임</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        {{ form.overhead_squat_heel_lift }}
+                                        <span class="ml-2 text-sm text-gray-600">발뒤꿈치 들림</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        {{ form.overhead_squat_arm_drop }}
+                                        <span class="ml-2 text-sm text-gray-600">팔 전방 하강</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Performance Quality -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">수행 품질</label>
+                                {{ form.overhead_squat_quality }}
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                                {{ form.overhead_squat_notes }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Single Leg Balance Test -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-medium text-gray-700 mb-4">외발 서기 테스트</h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Eyes Open -->
@@ -272,14 +304,14 @@
                     <div class="mt-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">균형 점수 (자동 계산)</label>
                         <div class="relative">
-                            <input type="text" x-model="balanceScore" readonly 
+                            <input type="text" x-model="singleLegBalanceScore" readonly 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100">
-                            <div x-show="balanceScore !== null" class="absolute right-3 top-2">
+                            <div x-show="singleLegBalanceScore !== null" class="absolute right-3 top-2">
                                 <span class="text-xs font-medium px-2 py-1 rounded"
-                                      :class="{'bg-green-100 text-green-800': balanceScore >= 4,
-                                               'bg-yellow-100 text-yellow-800': balanceScore >= 2 && balanceScore < 4,
-                                               'bg-red-100 text-red-800': balanceScore < 2}">
-                                    <span x-text="balanceScore"></span>/5
+                                      :class="{'bg-green-100 text-green-800': singleLegBalanceScore >= 4,
+                                               'bg-yellow-100 text-yellow-800': singleLegBalanceScore >= 2 && singleLegBalanceScore < 4,
+                                               'bg-red-100 text-red-800': singleLegBalanceScore < 2}">
+                                    <span x-text="singleLegBalanceScore"></span>/5
                                 </span>
                             </div>
                         </div>
@@ -289,13 +321,14 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
                         {{ form.single_leg_balance_notes }}
                     </div>
+                    </div>
                 </div>
             </div>
             
-            <!-- Step 4: Flexibility Assessment -->
+            <!-- Step 4: Mobility & Flexibility Assessment -->
             <div class="step-content" :class="{ 'active': currentStep === 4 }">
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-6">유연성 평가</h2>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-6">기동성 및 유연성 평가</h2>
                     
                     <!-- Toe Touch -->
                     <div class="mb-8">
@@ -345,7 +378,23 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">점수</label>
-                                {{ form.shoulder_mobility_score }}
+                                <div class="relative">
+                                    <div :class="{'ring-2 ring-blue-500': manualOverrides.shoulderMobility}">
+                                        {{ form.shoulder_mobility_score }}
+                                    </div>
+                                    
+                                    <!-- Manual Override Indicator -->
+                                    <div x-show="manualOverrides.shoulderMobility" x-transition
+                                         class="absolute -top-2 right-0 flex items-center space-x-2">
+                                        <span class="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                                            수동 입력됨
+                                        </span>
+                                        <button type="button" @click="resetManualScore('shoulderMobility')"
+                                                class="text-xs text-blue-600 hover:text-blue-800 underline">
+                                            자동 계산으로 재설정
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -376,10 +425,10 @@
                 </div>
             </div>
             
-            <!-- Step 5: Cardio Assessment -->
+            <!-- Step 5: Cardiovascular Endurance Assessment -->
             <div class="step-content" :class="{ 'active': currentStep === 5 }">
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-6">심폐 평가</h2>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-6">심폐지구력 평가</h2>
                     
                     <h3 class="text-lg font-medium text-gray-700 mb-4">하버드 스텝 테스트</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -533,7 +582,8 @@ function assessmentForm() {
         balanceLeftOpen: null,
         balanceRightClosed: null,
         balanceLeftClosed: null,
-        balanceScore: null,
+        singleLegBalanceScore: null,  // Single leg balance test score
+        balanceScore: null,  // Category average score
         toeTouchDistance: null,
         toeTouchScore: null,
         farmerWeight: null,
@@ -549,6 +599,8 @@ function assessmentForm() {
         mobilityScore: null,
         cardioScore: null,
         overallScore: null,
+        overheadSquatScore: null,
+        shoulderMobilityScore: null,
         
         // Movement quality fields
         overheadSquatKneeValgus: false,
@@ -563,6 +615,12 @@ function assessmentForm() {
         testEnvironment: 'indoor',
         pushUpType: 'standard',
         farmerPercentage: null,
+        
+        // Manual override tracking
+        manualOverrides: {
+            overheadSquat: false,
+            shoulderMobility: false
+        },
         
         selectClient(clientId) {
             if (!clientId) return;
@@ -587,7 +645,57 @@ function assessmentForm() {
             }
         },
         
+        onManualScoreChange(test, value) {
+            // Mark as manually overridden
+            this.manualOverrides[test] = true;
+            
+            // Update the score
+            const score = value ? parseInt(value) : null;
+            if (test === 'overheadSquat') {
+                this.overheadSquatScore = score;
+            } else if (test === 'shoulderMobility') {
+                this.shoulderMobilityScore = score;
+            }
+            
+            // Recalculate overall scores
+            this.calculateOverallScores();
+        },
+        
+        resetManualScore(test) {
+            // Clear manual override flag
+            this.manualOverrides[test] = false;
+            
+            // Clear the current value and recalculate
+            if (test === 'overheadSquat') {
+                this.overheadSquatScore = null;
+                // Clear the select field
+                const selectElement = document.querySelector('[name="overhead_squat_score"]');
+                if (selectElement) {
+                    selectElement.value = '';
+                }
+                // Recalculate based on compensations
+                this.calculateOverheadSquatScore();
+            } else if (test === 'shoulderMobility') {
+                this.shoulderMobilityScore = null;
+                // Clear the select field
+                const selectElement = document.querySelector('[name="shoulder_mobility_score"]');
+                if (selectElement) {
+                    selectElement.value = '';
+                }
+                // Note: Shoulder mobility doesn't have automatic calculation
+                // so just clearing is sufficient
+            }
+            
+            // Trigger overall recalculation
+            this.calculateOverallScores();
+        },
+        
         calculateOverheadSquatScore() {
+            // Skip if manually overridden
+            if (this.manualOverrides.overheadSquat) {
+                return;
+            }
+            
             let score = 3; // Base score
             let compensations = 0;
             
@@ -613,6 +721,10 @@ function assessmentForm() {
             if (selectElement) {
                 selectElement.value = score;
             }
+            
+            // Update the JavaScript variable for scoring calculations
+            this.overheadSquatScore = score;
+            this.calculateOverallScores();
         },
         
         async calculatePushUpScore() {
@@ -641,7 +753,7 @@ function assessmentForm() {
             try {
                 const response = await fetch(`{% url 'assessments:calculate_balance_score' %}?right_open=${this.balanceRightOpen}&left_open=${this.balanceLeftOpen}&right_closed=${this.balanceRightClosed}&left_closed=${this.balanceLeftClosed}`);
                 const data = await response.json();
-                this.balanceScore = data.score;
+                this.singleLegBalanceScore = data.score;  // Store single leg balance score separately
                 this.calculateOverallScores();
             } catch (error) {
                 console.error('Error calculating balance score:', error);
@@ -716,12 +828,17 @@ function assessmentForm() {
                 this.strengthScore = Math.round(strengthScores.reduce((a, b) => a + b) / strengthScores.length * 10) / 10;
             }
             
-            const mobilityScores = [this.toeTouchScore].filter(s => s !== null);
+            // Mobility includes toe touch AND shoulder mobility
+            const mobilityScores = [this.toeTouchScore, this.shoulderMobilityScore].filter(s => s !== null);
             if (mobilityScores.length > 0) {
                 this.mobilityScore = Math.round(mobilityScores.reduce((a, b) => a + b) / mobilityScores.length * 10) / 10;
             }
             
-            // Balance score is already calculated from the balance test
+            // Balance includes single leg balance AND overhead squat
+            const balanceScores = [this.singleLegBalanceScore, this.overheadSquatScore].filter(s => s !== null);
+            if (balanceScores.length > 0) {
+                this.balanceScore = Math.round(balanceScores.reduce((a, b) => a + b) / balanceScores.length * 10) / 10;
+            }
             
             // Calculate overall score (normalized to 0-100 scale)
             const categoryScores = [this.strengthScore, this.mobilityScore, this.balanceScore, this.cardioScore].filter(s => s !== null);
@@ -734,8 +851,96 @@ function assessmentForm() {
         
         hasAnyScore() {
             return this.pushUpScore !== null || this.farmerScore !== null || 
-                   this.balanceScore !== null || this.toeTouchScore !== null || 
-                   this.harvardScore !== null;
+                   this.singleLegBalanceScore !== null || this.toeTouchScore !== null || 
+                   this.harvardScore !== null || this.overheadSquatScore !== null ||
+                   this.shoulderMobilityScore !== null;
+        },
+        
+        init() {
+            // Initialize scores from form fields if they have values
+            this.initializeScoresFromForm();
+            
+            // Set up watchers for form synchronization
+            this.$watch('overheadSquatScore', (value) => {
+                const selectElement = document.querySelector('[name="overhead_squat_score"]');
+                if (selectElement && !this.manualOverrides.overheadSquat) {
+                    selectElement.value = value;
+                }
+            });
+            
+            this.$watch('shoulderMobilityScore', (value) => {
+                const selectElement = document.querySelector('[name="shoulder_mobility_score"]');
+                if (selectElement && !this.manualOverrides.shoulderMobility) {
+                    selectElement.value = value;
+                }
+            });
+        },
+        
+        initializeScoresFromForm() {
+            // Initialize overhead squat score
+            const overheadSquatSelect = document.querySelector('[name="overhead_squat_score"]');
+            if (overheadSquatSelect && overheadSquatSelect.value) {
+                this.overheadSquatScore = parseInt(overheadSquatSelect.value);
+                if (this.overheadSquatScore !== null) {
+                    this.manualOverrides.overheadSquat = true;
+                }
+            }
+            
+            // Initialize shoulder mobility score
+            const shoulderMobilitySelect = document.querySelector('[name="shoulder_mobility_score"]');
+            if (shoulderMobilitySelect && shoulderMobilitySelect.value) {
+                this.shoulderMobilityScore = parseInt(shoulderMobilitySelect.value);
+                if (this.shoulderMobilityScore !== null) {
+                    this.manualOverrides.shoulderMobility = true;
+                }
+            }
+            
+            // Initialize other form fields that might have default values
+            const pushUpScoreInput = document.querySelector('[name="push_up_score"]');
+            if (pushUpScoreInput && pushUpScoreInput.value) {
+                this.pushUpScore = parseInt(pushUpScoreInput.value);
+            }
+            
+            const toeTouchScoreInput = document.querySelector('[name="toe_touch_score"]');
+            if (toeTouchScoreInput && toeTouchScoreInput.value) {
+                this.toeTouchScore = parseInt(toeTouchScoreInput.value);
+            }
+            
+            const farmerScoreInput = document.querySelector('[name="farmer_carry_score"]');
+            if (farmerScoreInput && farmerScoreInput.value) {
+                this.farmerScore = parseInt(farmerScoreInput.value);
+            }
+            
+            // Initialize movement quality checkboxes
+            const checkboxFields = [
+                { field: 'overheadSquatKneeValgus', name: 'overhead_squat_knee_valgus' },
+                { field: 'overheadSquatForwardLean', name: 'overhead_squat_forward_lean' },
+                { field: 'overheadSquatHeelLift', name: 'overhead_squat_heel_lift' },
+                { field: 'overheadSquatArmDrop', name: 'overhead_squat_arm_drop' }
+            ];
+            
+            checkboxFields.forEach(({ field, name }) => {
+                const checkbox = document.querySelector(`[name="${name}"]`);
+                if (checkbox) {
+                    this[field] = checkbox.checked;
+                }
+            });
+            
+            // Initialize quality selects
+            const qualitySelect = document.querySelector('[name="overhead_squat_quality"]');
+            if (qualitySelect && qualitySelect.value) {
+                this.overheadSquatQuality = qualitySelect.value;
+            }
+            
+            const flexibilitySelect = document.querySelector('[name="toe_touch_flexibility"]');
+            if (flexibilitySelect && flexibilitySelect.value) {
+                this.toeTouchFlexibility = flexibilitySelect.value;
+            }
+            
+            const mobilityCategory = document.querySelector('[name="shoulder_mobility_category"]');
+            if (mobilityCategory && mobilityCategory.value) {
+                this.shoulderMobilityCategory = mobilityCategory.value;
+            }
         }
     }
 }

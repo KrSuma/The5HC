@@ -73,7 +73,7 @@
                     
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">
-                            유연성
+                            기동성
                         </td>
                         {% for item in comparison_data %}
                         <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
@@ -174,7 +174,7 @@
                     
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 sticky left-0 bg-white z-10">
-                            유연성 (cm)
+                            기동성 (cm)
                         </td>
                         {% for item in comparison_data %}
                         <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
@@ -282,7 +282,7 @@ const borderColors = [
         window.comparisonRadarChart = new Chart(radarCtx, {
             type: 'radar',
             data: {
-                labels: ['근력', '유연성', '균형', '심폐지구력', '종합'],
+                labels: ['근력', '기동성', '균형', '심폐지구력', '종합'],
                 datasets: radarDatasets
             },
             options: {
@@ -317,7 +317,7 @@ const borderColors = [
         window.comparisonBarChart = new Chart(barCtx, {
             type: 'bar',
             data: {
-                labels: ['근력', '유연성', '균형', '심폐지구력', '종합'],
+                labels: ['근력', '기동성', '균형', '심폐지구력', '종합'],
                 datasets: labels.map((label, index) => ({
                     label: label,
                     data: [
