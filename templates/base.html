@@ -42,6 +42,23 @@
         .htmx-request.htmx-indicator {
             opacity: 1;
         }
+        
+        /* Normalize select dropdown height to match input fields */
+        select {
+            height: 2.5rem; /* 40px - matches h-10 in Tailwind */
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            line-height: 1.5;
+            background-position: right 0.5rem center;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem; /* Space for dropdown arrow */
+        }
+        
+        /* Ensure consistent appearance across browsers */
+        select:not([multiple]):not([size]) {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+        }
     </style>
     
     <!-- Chart.js - Load globally for dashboard and other charts -->
