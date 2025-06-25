@@ -1,4 +1,5 @@
 <!-- Content-only template for HTMX navigation - does not extend base.html -->
+{% load static %}
 <style>
     /* Manual score override styles */
     .manual-override-container {
@@ -184,9 +185,33 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">거리 (m)</label>
                                 {{ form.farmer_carry_distance }}
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">시간 (초)</label>
-                                {{ form.farmer_carry_time }}
+                            <div x-data="farmersCarryTimer()">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">시간 측정</label>
+                                <div class="timer-section">
+                                    <div class="timer-display">
+                                        <span class="timer-value" x-text="formatTime(timer)">0.0</span>
+                                        <span class="timer-label">초</span>
+                                    </div>
+                                    <div class="timer-controls">
+                                        <button type="button" 
+                                                @click="isRunning ? stop() : start()" 
+                                                class="timer-btn"
+                                                :class="isRunning ? 'timer-btn-stop' : 'timer-btn-start'">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path x-show="!isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                                <path x-show="isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h4v16H6zM14 4h4v16h-4z"></path>
+                                            </svg>
+                                            <span x-text="isRunning ? '정지' : '시작'"></span>
+                                        </button>
+                                        <button type="button" @click="reset()" class="timer-btn timer-btn-reset">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                            </svg>
+                                            초기화
+                                        </button>
+                                    </div>
+                                    {{ form.farmer_carry_time }}
+                                </div>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -295,14 +320,77 @@
                         <!-- Eyes Open -->
                         <div>
                             <h4 class="font-medium text-gray-600 mb-3">눈 뜨고</h4>
-                            <div class="space-y-4">
-                                <div>
+                            <div class="space-y-6">
+                                <!-- Right Leg Timer -->
+                                <div x-data="balanceTimer('right_open', 'single_leg_balance_right_eyes_open')">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">오른발 (초)</label>
-                                    {{ form.single_leg_balance_right_eyes_open }}
+                                    <div class="timer-section">
+                                        <div class="timer-display">
+                                            <span class="timer-value" x-text="formatTime(timer)">0.0</span>
+                                            <span class="timer-label">초</span>
+                                        </div>
+                                        <div class="timer-controls">
+                                            <button type="button" 
+                                                    @click="isRunning ? stop() : start()" 
+                                                    class="timer-btn"
+                                                    :class="isRunning ? 'timer-btn-stop' : 'timer-btn-start'">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path x-show="!isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                                    <path x-show="isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h4v16H6zM14 4h4v16h-4z"></path>
+                                                </svg>
+                                                <span x-text="isRunning ? '정지' : '시작'"></span>
+                                            </button>
+                                            <button type="button" @click="reset()" class="timer-btn timer-btn-reset">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                </svg>
+                                                초기화
+                                            </button>
+                                        </div>
+                                        <div class="timer-progress mt-3">
+                                            <div class="timer-progress-bar" 
+                                                 :class="progressColor" 
+                                                 :style="`width: ${progressPercentage}%`"></div>
+                                        </div>
+                                        <div class="mt-2">
+                                            {{ form.single_leg_balance_right_eyes_open }}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
+                                
+                                <!-- Left Leg Timer -->
+                                <div x-data="balanceTimer('left_open', 'single_leg_balance_left_eyes_open')">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">왼발 (초)</label>
-                                    {{ form.single_leg_balance_left_eyes_open }}
+                                    <div class="timer-section">
+                                        <div class="timer-display">
+                                            <span class="timer-value" x-text="formatTime(timer)">0.0</span>
+                                            <span class="timer-label">초</span>
+                                        </div>
+                                        <div class="timer-controls">
+                                            <button type="button" 
+                                                    @click="isRunning ? stop() : start()" 
+                                                    class="timer-btn"
+                                                    :class="isRunning ? 'timer-btn-stop' : 'timer-btn-start'">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path x-show="!isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                                    <path x-show="isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h4v16H6zM14 4h4v16h-4z"></path>
+                                                </svg>
+                                                <span x-text="isRunning ? '정지' : '시작'"></span>
+                                            </button>
+                                            <button type="button" @click="reset()" class="timer-btn timer-btn-reset">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                </svg>
+                                                초기화
+                                            </button>
+                                        </div>
+                                        <div class="timer-progress mt-3">
+                                            <div class="timer-progress-bar" 
+                                                 :class="progressColor" 
+                                                 :style="`width: ${progressPercentage}%`"></div>
+                                        </div>
+                                        {{ form.single_leg_balance_left_eyes_open }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -310,14 +398,75 @@
                         <!-- Eyes Closed -->
                         <div>
                             <h4 class="font-medium text-gray-600 mb-3">눈 감고</h4>
-                            <div class="space-y-4">
-                                <div>
+                            <div class="space-y-6">
+                                <!-- Right Leg Timer -->
+                                <div x-data="balanceTimer('right_closed', 'single_leg_balance_right_eyes_closed')">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">오른발 (초)</label>
-                                    {{ form.single_leg_balance_right_eyes_closed }}
+                                    <div class="timer-section">
+                                        <div class="timer-display">
+                                            <span class="timer-value" x-text="formatTime(timer)">0.0</span>
+                                            <span class="timer-label">초</span>
+                                        </div>
+                                        <div class="timer-controls">
+                                            <button type="button" 
+                                                    @click="isRunning ? stop() : start()" 
+                                                    class="timer-btn"
+                                                    :class="isRunning ? 'timer-btn-stop' : 'timer-btn-start'">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path x-show="!isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                                    <path x-show="isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h4v16H6zM14 4h4v16h-4z"></path>
+                                                </svg>
+                                                <span x-text="isRunning ? '정지' : '시작'"></span>
+                                            </button>
+                                            <button type="button" @click="reset()" class="timer-btn timer-btn-reset">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                </svg>
+                                                초기화
+                                            </button>
+                                        </div>
+                                        <div class="timer-progress mt-3">
+                                            <div class="timer-progress-bar" 
+                                                 :class="progressColor" 
+                                                 :style="`width: ${progressPercentage}%`"></div>
+                                        </div>
+                                        {{ form.single_leg_balance_right_eyes_closed }}
+                                    </div>
                                 </div>
-                                <div>
+                                
+                                <!-- Left Leg Timer -->
+                                <div x-data="balanceTimer('left_closed', 'single_leg_balance_left_eyes_closed')">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">왼발 (초)</label>
-                                    {{ form.single_leg_balance_left_eyes_closed }}
+                                    <div class="timer-section">
+                                        <div class="timer-display">
+                                            <span class="timer-value" x-text="formatTime(timer)">0.0</span>
+                                            <span class="timer-label">초</span>
+                                        </div>
+                                        <div class="timer-controls">
+                                            <button type="button" 
+                                                    @click="isRunning ? stop() : start()" 
+                                                    class="timer-btn"
+                                                    :class="isRunning ? 'timer-btn-stop' : 'timer-btn-start'">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path x-show="!isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                                    <path x-show="isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h4v16H6zM14 4h4v16h-4z"></path>
+                                                </svg>
+                                                <span x-text="isRunning ? '정지' : '시작'"></span>
+                                            </button>
+                                            <button type="button" @click="reset()" class="timer-btn timer-btn-reset">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                </svg>
+                                                초기화
+                                            </button>
+                                        </div>
+                                        <div class="timer-progress mt-3">
+                                            <div class="timer-progress-bar" 
+                                                 :class="progressColor" 
+                                                 :style="`width: ${progressPercentage}%`"></div>
+                                        </div>
+                                        {{ form.single_leg_balance_left_eyes_closed }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -474,6 +623,77 @@
                     <h2 class="text-xl font-semibold text-gray-800 mb-6">심폐지구력 평가</h2>
                     
                     <h3 class="text-lg font-medium text-gray-700 mb-4">하버드 스텝 테스트</h3>
+                    
+                    <!-- Harvard Step Test Timer -->
+                    <div x-data="harvardStepTimer()" class="mb-6">
+                        <div class="harvard-timer-container">
+                            <!-- Phase Indicator -->
+                            <div class="phase-indicator mb-4">
+                                <span class="phase-badge" :class="phase === 'ready' ? 'phase-badge-active' : 'phase-badge-complete'">준비</span>
+                                <span class="phase-badge" :class="phase === 'exercise' ? 'phase-badge-active' : (phase !== 'ready' ? 'phase-badge-complete' : 'phase-badge-pending')">운동</span>
+                                <span class="phase-badge" :class="phase === 'recovery' || phase === 'hr1' || phase === 'hr2' || phase === 'hr3' ? 'phase-badge-active' : (phase === 'complete' ? 'phase-badge-complete' : 'phase-badge-pending')">회복</span>
+                                <span class="phase-badge" :class="phase === 'complete' ? 'phase-badge-complete' : 'phase-badge-pending'">완료</span>
+                            </div>
+                            
+                            <!-- Timer Display -->
+                            <div class="timer-display mb-4" x-show="phase !== 'complete'">
+                                <span class="timer-value" x-text="phase === 'exercise' ? formatTime(exerciseTimer) : formatTime(recoveryTimer)">3:00</span>
+                                <span class="timer-label" x-text="phase === 'exercise' ? '운동 시간' : '회복 시간'"></span>
+                            </div>
+                            
+                            <!-- Control Buttons -->
+                            <div class="timer-controls mb-4">
+                                <button type="button" 
+                                        @click="startTest()" 
+                                        x-show="phase === 'ready'"
+                                        class="timer-btn timer-btn-start">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                    </svg>
+                                    테스트 시작
+                                </button>
+                                
+                                <button type="button" 
+                                        @click="stopExercise()" 
+                                        x-show="phase === 'exercise'"
+                                        class="timer-btn timer-btn-stop">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h4v16H6zM14 4h4v16h-4z"></path>
+                                    </svg>
+                                    조기 종료
+                                </button>
+                                
+                                <button type="button" 
+                                        @click="reset()" 
+                                        x-show="phase === 'complete'"
+                                        class="timer-btn timer-btn-reset">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                    다시 시작
+                                </button>
+                            </div>
+                            
+                            <!-- Heart Rate Input Prompts -->
+                            <div x-show="phase === 'hr1'" class="hr-input-section">
+                                <p class="hr-input-prompt">첫 번째 심박수를 측정하세요 (30초간)</p>
+                            </div>
+                            <div x-show="phase === 'hr2'" class="hr-input-section">
+                                <p class="hr-input-prompt">두 번째 심박수를 측정하세요 (30초간)</p>
+                            </div>
+                            <div x-show="phase === 'hr3'" class="hr-input-section">
+                                <p class="hr-input-prompt">세 번째 심박수를 측정하세요 (30초간)</p>
+                            </div>
+                            
+                            <!-- Metronome Indicator -->
+                            <div x-show="phase === 'exercise'" class="text-center">
+                                <div class="inline-block metronome-indicator bg-gray-300" :class="{'metronome-beat': true}"></div>
+                                <p class="text-sm text-gray-600 mt-2">메트로놈: 96 BPM</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Fields -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">1-1.5분 후 심박수 (bpm)</label>
@@ -1129,3 +1349,5 @@ function assessmentForm() {
     }
 }
 </script>
+
+<!-- Timer components are loaded in base template -->

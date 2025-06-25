@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Simple Timer Test{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Timer Component Test</h1>
+    
+    <!-- Simple inline Alpine component to test -->
+    <div class="bg-white p-6 rounded-lg shadow mb-6" x-data="{ count: 0 }">
+        <h2 class="text-lg font-semibold mb-4">Alpine.js Test</h2>
+        <p>Count: <span x-text="count"></span></p>
+        <button @click="count++" class="bg-blue-500 text-white px-4 py-2 rounded">Increment</button>
+    </div>
+    
+    <!-- Balance Timer Test -->
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-lg font-semibold mb-4">Balance Timer Test</h2>
+        
+        <div x-data="balanceTimer('test', 'test_field', 10)">
+            <div class="timer-section">
+                <div class="timer-display">
+                    <span class="timer-value" x-text="formatTime(timer)">0.0</span>
+                    <span class="timer-label">초</span>
+                </div>
+                <div class="timer-controls">
+                    <button type="button" 
+                            @click="isRunning ? stop() : start()" 
+                            class="timer-btn"
+                            :class="isRunning ? 'timer-btn-stop' : 'timer-btn-start'">
+                        <span x-text="isRunning ? '정지' : '시작'"></span>
+                    </button>
+                    <button type="button" @click="reset()" class="timer-btn timer-btn-reset">
+                        초기화
+                    </button>
+                </div>
+                <div class="timer-progress mt-3">
+                    <div class="timer-progress-bar bg-green-500" 
+                         :style="`width: ${progressPercentage}%`"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Debug output
+console.log('Timer test page loaded');
+console.log('Alpine available:', typeof Alpine !== 'undefined');
+console.log('Timer script loaded:', window._assessmentTimersLoaded);
+</script>
+{% endblock %}

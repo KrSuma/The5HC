@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Timer Inline Test{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Timer Inline Test</h1>
+    
+    <!-- Test if Alpine loads and timer components are registered -->
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h2 class="text-lg font-semibold mb-4">Testing Timer Component Registration</h2>
+        
+        <!-- Simple inline timer to test -->
+        <div x-data="{
+            timer: 0,
+            startTime: null,
+            interval: null,
+            isRunning: false,
+            
+            start() {
+                if (this.isRunning) return;
+                this.isRunning = true;
+                this.startTime = performance.now() - (this.timer * 1000);
+                this.interval = setInterval(() => {
+                    this.timer = (performance.now() - this.startTime) / 1000;
+                }, 100);
+            },
+            
+            stop() {
+                if (!this.isRunning) return;
+                clearInterval(this.interval);
+                this.isRunning = false;
+            },
+            
+            reset() {
+                this.stop();
+                this.timer = 0;
+            },
+            
+            formatTime(seconds) {
+                return seconds.toFixed(1);
+            }
+        }">
+            <div class="timer-section">
+                <div class="timer-display">
+                    <span class="timer-value" x-text="formatTime(timer)">0.0</span>
+                    <span class="timer-label">초</span>
+                </div>
+                <div class="timer-controls">
+                    <button type="button" 
+                            @click="isRunning ? stop() : start()" 
+                            class="timer-btn"
+                            :class="isRunning ? 'timer-btn-stop' : 'timer-btn-start'">
+                        <span x-text="isRunning ? '정지' : '시작'"></span>
+                    </button>
+                    <button type="button" @click="reset()" class="timer-btn timer-btn-reset">
+                        초기화
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4 p-4 bg-gray-100 rounded">
+            <p class="text-sm text-gray-600">This inline timer should work if Alpine.js is loaded properly.</p>
+        </div>
+    </div>
+    
+    <!-- Test registered component -->
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-lg font-semibold mb-4">Testing Registered balanceTimer Component</h2>
+        
+        <div x-data="typeof balanceTimer !== 'undefined' ? balanceTimer('test', 'test_field', 10) : { error: 'balanceTimer not registered' }">
+            <div x-show="!error" class="timer-section">
+                <div class="timer-display">
+                    <span class="timer-value" x-text="formatTime ? formatTime(timer) : '0.0'">0.0</span>
+                    <span class="timer-label">초</span>
+                </div>
+                <div class="timer-controls">
+                    <button type="button" 
+                            @click="isRunning ? stop() : start()" 
+                            class="timer-btn timer-btn-start">
+                        시작/정지
+                    </button>
+                </div>
+            </div>
+            <div x-show="error" class="text-red-600 p-4">
+                Error: <span x-text="error"></span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Check script loading -->
+    <div class="mt-6 bg-white p-6 rounded-lg shadow">
+        <h2 class="text-lg font-semibold mb-4">Script Loading Status</h2>
+        <div id="status-output" class="space-y-2"></div>
+    </div>
+</div>
+
+<script>
+// Debug inline
+(function() {
+    const status = document.getElementById('status-output');
+    
+    function addStatus(message, isSuccess = true) {
+        const div = document.createElement('div');
+        div.className = isSuccess ? 'text-green-600' : 'text-red-600';
+        div.textContent = message;
+        status.appendChild(div);
+    }
+    
+    // Check on load
+    window.addEventListener('load', () => {
+        addStatus('Alpine.js loaded: ' + (typeof Alpine !== 'undefined' ? 'Yes' : 'No'), typeof Alpine !== 'undefined');
+        addStatus('Timer script flag: ' + (window._assessmentTimersLoaded ? 'Yes' : 'No'), window._assessmentTimersLoaded);
+        
+        // Try to manually check for timer data
+        setTimeout(() => {
+            addStatus('--- After 500ms delay ---', true);
+            addStatus('Can create inline timer: Yes (see above)', true);
+            
+            // Check if balanceTimer is available in Alpine store
+            if (typeof Alpine !== 'undefined') {
+                try {
+                    // Try to use the timer component
+                    const testEl = document.createElement('div');
+                    testEl.setAttribute('x-data', 'balanceTimer("test", "test", 10)');
+                    document.body.appendChild(testEl);
+                    Alpine.initTree(testEl);
+                    
+                    const component = Alpine.$data(testEl);
+                    if (component && typeof component.start === 'function') {
+                        addStatus('balanceTimer component works!', true);
+                    } else {
+                        addStatus('balanceTimer component failed', false);
+                    }
+                    document.body.removeChild(testEl);
+                } catch (e) {
+                    addStatus('Error testing component: ' + e.message, false);
+                }
+            }
+        }, 500);
+    });
+})();
+</script>
+{% endblock %}

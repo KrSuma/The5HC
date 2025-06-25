@@ -27,4 +27,9 @@ urlpatterns = [
     path('ajax/calculate-toe-touch-score/', views.calculate_toe_touch_score_ajax, name='calculate_toe_touch_score'),
     path('ajax/calculate-farmer-score/', views.calculate_farmer_score_ajax, name='calculate_farmer_score'),
     path('ajax/calculate-harvard-score/', views.calculate_harvard_score_ajax, name='calculate_harvard_score'),
+    
+    # Timer test page
+    path('timer-test/', views.timer_test_view, name='timer_test'),
+    path('timer-debug/', views.timer_debug_view, name='timer_debug'),
+    path('timer-inline-test/', views.timer_inline_test_view, name='timer_inline_test'),
 ]

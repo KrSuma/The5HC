@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -9,9 +10,6 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Alpine.js -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     
@@ -19,8 +17,13 @@
     <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
     
     <!-- Custom CSS -->
-    {% load static %}
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    
+    <!-- Assessment Timer Components - Must load BEFORE Alpine.js -->
+    <script defer src="{% static 'js/components/assessment-timers.js' %}"></script>
+    
+    <!-- Alpine.js - Load AFTER timer components -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <style>
         [x-cloak] { display: none !important; }
@@ -60,6 +63,9 @@
             background-repeat: no-repeat;
         }
     </style>
+    
+    <!-- Timer Styles -->
+    <link rel="stylesheet" href="{% static 'css/timers.css' %}">
     
     <!-- Chart.js - Load globally for dashboard and other charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

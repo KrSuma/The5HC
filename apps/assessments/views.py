@@ -827,3 +827,23 @@ def assessment_compare_view(request):
     
     # GET request - redirect to list
     return redirect('assessments:list')
+
+
+@login_required
+def timer_test_view(request):
+    """Timer test page for demonstration."""
+    if request.headers.get('HX-Request'):
+        return render(request, 'assessments/timer_test_content.html')
+    return render(request, 'assessments/timer_test.html')
+
+
+@login_required
+def timer_debug_view(request):
+    """Timer debug page."""
+    return render(request, 'assessments/timer_debug.html')
+
+
+@login_required  
+def timer_inline_test_view(request):
+    """Timer inline test page."""
+    return render(request, 'assessments/timer_inline_test.html')

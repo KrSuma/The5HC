@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Timer Debug{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Timer Debug Page</h1>
+    
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h2 class="text-lg font-semibold mb-4">JavaScript Loading Status</h2>
+        <div id="debug-output" class="space-y-2"></div>
+    </div>
+    
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h2 class="text-lg font-semibold mb-4">Simple Alpine Test</h2>
+        <div x-data="{ count: 0 }">
+            <p>Count: <span x-text="count"></span></p>
+            <button @click="count++" class="bg-blue-500 text-white px-4 py-2 rounded">Click me</button>
+        </div>
+    </div>
+    
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-lg font-semibold mb-4">Timer Component Test</h2>
+        <div x-data="typeof balanceTimer !== 'undefined' ? balanceTimer('test', 'test_field', 10) : { error: 'balanceTimer not defined' }">
+            <div x-show="!error">
+                <div class="timer-section">
+                    <div class="timer-display">
+                        <span class="timer-value" x-text="formatTime ? formatTime(timer) : '0.0'">0.0</span>
+                        <span class="timer-label">초</span>
+                    </div>
+                    <div class="timer-controls">
+                        <button type="button" 
+                                @click="isRunning ? stop() : start()" 
+                                class="timer-btn timer-btn-start">
+                            시작/정지
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div x-show="error" class="text-red-600">
+                Error: <span x-text="error"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Debug script to check loading order
+(function() {
+    const debug = document.getElementById('debug-output');
+    
+    function log(message, status = 'info') {
+        const div = document.createElement('div');
+        div.className = status === 'error' ? 'text-red-600' : status === 'success' ? 'text-green-600' : 'text-gray-600';
+        div.textContent = message;
+        if (debug) debug.appendChild(div);
+        console.log(message);
+    }
+    
+    // Initial check
+    log('Initial script execution at: ' + new Date().toISOString());
+    log('Alpine.js loaded (initial): ' + (typeof Alpine !== 'undefined' ? 'Yes' : 'No'), 
+        typeof Alpine !== 'undefined' ? 'success' : 'error');
+    log('Timer script loaded (initial): ' + (window._assessmentTimersLoaded ? 'Yes' : 'No'),
+        window._assessmentTimersLoaded ? 'success' : 'error');
+    
+    // Check after DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+        log('--- DOMContentLoaded Event ---', 'info');
+        log('Alpine.js loaded: ' + (typeof Alpine !== 'undefined' ? 'Yes' : 'No'), 
+            typeof Alpine !== 'undefined' ? 'success' : 'error');
+        log('Timer script loaded: ' + (window._assessmentTimersLoaded ? 'Yes' : 'No'),
+            window._assessmentTimersLoaded ? 'success' : 'error');
+    });
+    
+    // Check for Alpine init event
+    document.addEventListener('alpine:init', () => {
+        log('--- alpine:init Event Fired ---', 'success');
+        log('Timer components should be registering now...');
+    });
+    
+    // Check for Alpine initialized event  
+    document.addEventListener('alpine:initialized', () => {
+        log('--- alpine:initialized Event Fired ---', 'success');
+    });
+    
+    // Delayed checks
+    setTimeout(() => {
+        log('--- 1 Second Delay Check ---', 'info');
+        log('Alpine.js loaded: ' + (typeof Alpine !== 'undefined' ? 'Yes' : 'No'), 
+            typeof Alpine !== 'undefined' ? 'success' : 'error');
+        log('Timer script loaded: ' + (window._assessmentTimersLoaded ? 'Yes' : 'No'),
+            window._assessmentTimersLoaded ? 'success' : 'error');
+        
+        if (typeof Alpine !== 'undefined') {
+            log('Alpine version: ' + (Alpine.version || 'unknown'));
+            
+            // Try to check if timer data is registered
+            try {
+                // Alpine v3 doesn't allow direct access to registered data
+                // We'll test by trying to use it
+                const testEl = document.createElement('div');
+                testEl.setAttribute('x-data', 'balanceTimer("test", "test", 10)');
+                document.body.appendChild(testEl);
+                Alpine.initTree(testEl);
+                
+                const component = Alpine.$data(testEl);
+                if (component && typeof component.start === 'function') {
+                    log('balanceTimer component successfully initialized!', 'success');
+                } else {
+                    log('balanceTimer component failed to initialize', 'error');
+                }
+                document.body.removeChild(testEl);
+            } catch (e) {
+                log('Error testing timer component: ' + e.message, 'error');
+            }
+        }
+    }, 1000);
+    
+    // Even more delayed check
+    setTimeout(() => {
+        log('--- 2 Second Delay Check ---', 'info');
+        // Check if the test component on the page works
+        const timerTest = document.querySelector('[x-data*="balanceTimer"]');
+        if (timerTest) {
+            const component = Alpine.$data(timerTest);
+            log('Timer component found on page: ' + (component ? 'Yes' : 'No'),
+                component ? 'success' : 'error');
+            if (component) {
+                log('Timer component has start method: ' + (typeof component.start === 'function' ? 'Yes' : 'No'),
+                    typeof component.start === 'function' ? 'success' : 'error');
+            }
+        }
+    }, 2000);
+})();
+</script>
+{% endblock %}

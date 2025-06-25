@@ -123,6 +123,34 @@ See @docs/PROJECT_STRUCTURE.md for complete file structure
 - **Testing**: Use pytest with `@pytest.mark.django_db` for database access
 - **Korean UI**: All user-facing text in Korean with proper formatting
 
+## CRITICAL: HTMX Dual Template Pattern
+
+**⚠️ IMPORTANT**: This project uses a dual-template pattern for HTMX navigation. When adding ANY new feature to templates, you MUST update BOTH templates:
+
+1. **Full Page Template** (e.g., `assessment_form.html`) - Used for direct URL navigation
+2. **Content Template** (e.g., `assessment_form_content.html`) - Used for HTMX navigation
+
+### Why This Matters
+- Direct URL navigation (typing `/assessments/add/` in browser) uses the full page template
+- HTMX navigation (clicking links with `hx-get`) uses the content template
+- Missing features in either template causes confusing bugs where features work in one navigation method but not the other
+
+### Required Actions When Modifying Templates
+1. **ALWAYS check if a template has a corresponding `_content.html` version**
+2. **Apply ALL changes to BOTH templates**
+3. **Test features using BOTH navigation methods**:
+   - Direct URL access (refresh the page)
+   - HTMX navigation (click through the app)
+
+### Common Template Pairs
+- `assessment_form.html` ↔ `assessment_form_content.html`
+- `assessment_list.html` ↔ `assessment_list_content.html`
+- `client_form.html` ↔ `client_form_content.html`
+- `client_list.html` ↔ `client_list_content.html`
+
+### Example Issue
+Timer components were added only to `assessment_form_content.html` but not to `assessment_form.html`, causing timers to be invisible when navigating directly to `/assessments/add/`. This took significant time to debug.
+
 ## JavaScript Integration Guidelines
 
 ### Alpine.js Component Requirements

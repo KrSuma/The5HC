@@ -103,6 +103,9 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
+// Make showNotification globally available for timer components
+window.showNotification = showNotification;
+
 // Alpine.js components
 document.addEventListener('alpine:init', () => {
     // Global Alpine data/components can be defined here
@@ -218,7 +221,7 @@ document.body.addEventListener('htmx:beforeSwap', (event) => {
     }
 });
 
-// After swap event for additional debugging
+// After swap event for additional debugging and Alpine reinitialization
 document.body.addEventListener('htmx:afterSwap', (event) => {
     const targetId = event.detail.target.id;
     if (targetId === 'main-content') {
@@ -234,6 +237,16 @@ document.body.addEventListener('htmx:afterSwap', (event) => {
                 display: mainContent.style.display,
                 visibility: mainContent.style.visibility
             });
+            
+            // Initialize Alpine components in the new content
+            // This is crucial for timer components loaded via HTMX
+            if (typeof Alpine !== 'undefined') {
+                // Wait a tick for DOM to settle
+                setTimeout(() => {
+                    console.log('Initializing Alpine components in swapped content');
+                    Alpine.initTree(mainContent);
+                }, 10);
+            }
         }
     }
 });
