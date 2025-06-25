@@ -5,7 +5,7 @@
 {% block title %}평가 상세 - {{ assessment.client.name }} - The5HC{% endblock %}
 
 {% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js is already loaded in base.html -->
 {% endblock %}
 
 {% block content %}
@@ -496,6 +496,56 @@
             </div>
             {% endif %}
             
+            <!-- Score Visualization / 능력치 평가 -->
+            <div class="bg-white rounded-lg shadow p-6 mb-4">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">능력치 평가</h2>
+                
+                <!-- Progress Bars -->
+                <div class="space-y-4 max-w-2xl mx-auto mb-8">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">근력</span>
+                            <span class="text-sm text-gray-600">{{ assessment.strength_score|default:0|floatformat:0 }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="bg-blue-600 h-3 rounded-full transition-all duration-500" style="width: {{ assessment.strength_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">유연성</span>
+                            <span class="text-sm text-gray-600">{{ assessment.mobility_score|default:0|floatformat:0 }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="bg-green-600 h-3 rounded-full transition-all duration-500" style="width: {{ assessment.mobility_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">균형</span>
+                            <span class="text-sm text-gray-600">{{ assessment.balance_score|default:0|floatformat:0 }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="bg-yellow-600 h-3 rounded-full transition-all duration-500" style="width: {{ assessment.balance_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">심폐지구력</span>
+                            <span class="text-sm text-gray-600">{{ assessment.cardio_score|default:0|floatformat:0 }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="bg-red-600 h-3 rounded-full transition-all duration-500" style="width: {{ assessment.cardio_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bar Chart -->
+                <div class="max-w-2xl mx-auto" style="height: 300px;">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+            
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h2 class="text-lg font-semibold text-gray-800">테스트 결과</h2>
@@ -642,56 +692,6 @@
         </div>
     </div>
     
-    <!-- Score Visualization -->
-    <div class="bg-white rounded-lg shadow p-6 mt-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">능력치 평가</h2>
-        
-        <!-- Progress Bars -->
-        <div class="space-y-4 max-w-2xl mx-auto mb-8">
-            <div>
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm font-medium text-gray-700">근력</span>
-                    <span class="text-sm text-gray-600">{{ assessment.strength_score|default:0|floatformat:0 }}%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-3">
-                    <div class="bg-blue-600 h-3 rounded-full transition-all duration-500" style="width: {{ assessment.strength_score|default:0 }}%"></div>
-                </div>
-            </div>
-            <div>
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm font-medium text-gray-700">유연성</span>
-                    <span class="text-sm text-gray-600">{{ assessment.mobility_score|default:0|floatformat:0 }}%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-3">
-                    <div class="bg-green-600 h-3 rounded-full transition-all duration-500" style="width: {{ assessment.mobility_score|default:0 }}%"></div>
-                </div>
-            </div>
-            <div>
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm font-medium text-gray-700">균형</span>
-                    <span class="text-sm text-gray-600">{{ assessment.balance_score|default:0|floatformat:0 }}%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-3">
-                    <div class="bg-yellow-600 h-3 rounded-full transition-all duration-500" style="width: {{ assessment.balance_score|default:0 }}%"></div>
-                </div>
-            </div>
-            <div>
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm font-medium text-gray-700">심폐지구력</span>
-                    <span class="text-sm text-gray-600">{{ assessment.cardio_score|default:0|floatformat:0 }}%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-3">
-                    <div class="bg-red-600 h-3 rounded-full transition-all duration-500" style="width: {{ assessment.cardio_score|default:0 }}%"></div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Bar Chart -->
-        <div class="max-w-2xl mx-auto">
-            <canvas id="barChart"></canvas>
-        </div>
-    </div>
-    
     <!-- MCQ Assessment Section -->
     <div class="mt-8">
         <div class="bg-white rounded-lg shadow p-6">
@@ -786,61 +786,74 @@
 </div>
 
 <script>
-// Bar Chart
-const ctx = document.getElementById('barChart').getContext('2d');
-const barChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: ['근력', '기동성', '균형', '심폐지구력'],
-        datasets: [{
-            label: '점수',
-            data: [
-                {{ assessment.strength_score|default:0 }},
-                {{ assessment.mobility_score|default:0 }},
-                {{ assessment.balance_score|default:0 }},
-                {{ assessment.cardio_score|default:0 }}
-            ],
-            backgroundColor: [
-                'rgba(59, 130, 246, 0.8)',
-                'rgba(16, 185, 129, 0.8)',
-                'rgba(245, 158, 11, 0.8)',
-                'rgba(239, 68, 68, 0.8)'
-            ],
-            borderColor: [
-                'rgba(59, 130, 246, 1)',
-                'rgba(16, 185, 129, 1)',
-                'rgba(245, 158, 11, 1)',
-                'rgba(239, 68, 68, 1)'
-            ],
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        aspectRatio: 2,
-        scales: {
-            y: {
-                beginAtZero: true,
-                max: 100,
-                ticks: {
-                    stepSize: 20
-                }
-            }
+// Bar Chart - wrapped in IIFE to avoid duplicate variable errors
+(function() {
+    // Destroy existing chart if it exists
+    if (window.assessmentBarChart) {
+        window.assessmentBarChart.destroy();
+    }
+    
+    const chartElement = document.getElementById('barChart');
+    if (!chartElement) {
+        console.warn('Bar chart canvas element not found');
+        return;
+    }
+    
+    const ctx = chartElement.getContext('2d');
+    window.assessmentBarChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['근력', '기동성', '균형', '심폐지구력'],
+            datasets: [{
+                label: '점수',
+                data: [
+                    {{ assessment.strength_score|default:0 }},
+                    {{ assessment.mobility_score|default:0 }},
+                    {{ assessment.balance_score|default:0 }},
+                    {{ assessment.cardio_score|default:0 }}
+                ],
+                backgroundColor: [
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(239, 68, 68, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(59, 130, 246, 1)',
+                    'rgba(16, 185, 129, 1)',
+                    'rgba(245, 158, 11, 1)',
+                    'rgba(239, 68, 68, 1)'
+                ],
+                borderWidth: 1
+            }]
         },
-        plugins: {
-            legend: {
-                display: false
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            aspectRatio: 2,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        stepSize: 20
+                    }
+                }
             },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return context.dataset.label + ': ' + context.parsed.y.toFixed(0) + '%';
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(0) + '%';
+                        }
                     }
                 }
             }
         }
-    }
-});
+    });
+})(); // End of IIFE
 </script>
 {% endblock %}

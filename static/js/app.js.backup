@@ -1,12 +1,8 @@
-// Wrap entire script in IIFE to allow early returns
-(function() {
-    'use strict';
-    
-    // Prevent multiple executions of this script
-    if (window._appJsLoaded) {
-        return;
-    }
-    window._appJsLoaded = true;
+// Prevent multiple executions of this script
+if (window._appJsLoaded) {
+    return;
+}
+window._appJsLoaded = true;
 
 // HTMX Configuration for Django
 document.body.addEventListener('htmx:configRequest', (event) => {
@@ -37,25 +33,6 @@ document.body.addEventListener('htmx:responseError', (event) => {
     } else {
         // Show error notification for other requests
         showNotification('오류가 발생했습니다. 다시 시도해주세요.', 'error');
-    }
-});
-
-// Handle HTMX script processing errors
-document.body.addEventListener('htmx:onLoadError', (event) => {
-    console.error('HTMX script load error:', event.detail);
-    // Prevent the error from propagating
-    event.stopPropagation();
-});
-
-// Debug script processing
-document.body.addEventListener('htmx:beforeProcessNode', (event) => {
-    const node = event.detail.node;
-    if (node && node.tagName === 'SCRIPT') {
-        console.log('HTMX processing script:', {
-            content: node.innerHTML.substring(0, 100) + '...',
-            src: node.src,
-            type: node.type
-        });
     }
 });
 
@@ -141,39 +118,85 @@ document.addEventListener('alpine:init', () => {
     }));
 });
 
-// Utility functions - simple assignment to avoid conflicts
-window.utils = window.utils || {};
+// Utility functions - use window.utils directly to prevent duplicate declaration
+// IMPORTANT: Never create local references like const utils = window.utils
+// Always use window.utils directly to avoid "duplicate variable" errors with HTMX
 
-// Add utility functions
-Object.assign(window.utils, {
-    formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    },
-    
-    formatCurrency(amount) {
-        return new Intl.NumberFormat('ko-KR', {
-            style: 'currency',
-            currency: 'KRW'
-        }).format(amount);
-    },
-    
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
+// Check if utils already exists and handle it properly
+if (window.utils) {
+    console.log('Utils already exists on window, updating it instead of redefining');
+    // If utils already exists, just update its properties instead of redefining
+    Object.assign(window.utils, {
+        // Format date for display
+        formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        },
+        
+        // Format currency
+        formatCurrency(amount) {
+            return new Intl.NumberFormat('ko-KR', {
+                style: 'currency',
+                currency: 'KRW'
+            }).format(amount);
+        },
+        
+        // Debounce function for search inputs
+        debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
                 clearTimeout(timeout);
-                func(...args);
+                timeout = setTimeout(later, wait);
             };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-});
+        }
+    });
+} else {
+    // Define utils on window only if it doesn't exist
+    Object.defineProperty(window, 'utils', {
+        value: {
+        // Format date for display
+        formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        },
+        
+        // Format currency
+        formatCurrency(amount) {
+            return new Intl.NumberFormat('ko-KR', {
+                style: 'currency',
+                currency: 'KRW'
+            }).format(amount);
+        },
+        
+        // Debounce function for search inputs
+        debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        },
+        writable: false,    // Prevent reassignment
+        configurable: false // Prevent redefinition
+    });
+}
 
 // Prevent HTMX from swapping content into wrong targets
 document.body.addEventListener('htmx:beforeSwap', (event) => {
@@ -245,35 +268,6 @@ window.addEventListener('error', (event) => {
     // but log it for debugging
 });
 
-// Load assessment detail script when needed
-function loadAssessmentDetailScript() {
-    // Check if we're on assessment detail page
-    if (!document.getElementById('barChart')) {
-        return;
-    }
-    
-    // Check if script already loaded
-    if (document.querySelector('script[src="/static/js/assessment-detail.js"]')) {
-        return;
-    }
-    
-    // Load the script
-    const script = document.createElement('script');
-    script.src = '/static/js/assessment-detail.js';
-    script.defer = true;
-    document.body.appendChild(script);
-}
-
-// Load on page load
-document.addEventListener('DOMContentLoaded', loadAssessmentDetailScript);
-
-// Load after HTMX swaps
-document.body.addEventListener('htmx:afterSwap', function(evt) {
-    if (evt.detail.target.id === 'main-content') {
-        setTimeout(loadAssessmentDetailScript, 50);
-    }
-});
-
 // Safeguard to ensure main content is never hidden
 setInterval(() => {
     const mainContent = document.getElementById('main-content');
@@ -288,5 +282,3 @@ setInterval(() => {
         mainContent.classList.remove('hidden');
     }
 }, 1000);
-
-})(); // End of IIFE wrapper

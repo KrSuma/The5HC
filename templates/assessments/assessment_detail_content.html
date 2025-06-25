@@ -180,7 +180,11 @@
                 
                 <!-- Bar Chart -->
                 <div class="mb-6" style="height: 300px;">
-                    <canvas id="barChart"></canvas>
+                    <canvas id="barChart"
+                            data-strength-score="{{ assessment.strength_score|default:0 }}"
+                            data-mobility-score="{{ assessment.mobility_score|default:0 }}"
+                            data-balance-score="{{ assessment.balance_score|default:0 }}"
+                            data-cardio-score="{{ assessment.cardio_score|default:0 }}"></canvas>
                 </div>
                 
                 <!-- Score Details -->
@@ -517,75 +521,3 @@
         {% endif %}
     </div>
 </div>
-
-<script>
-// Bar Chart
-const ctx = document.getElementById('barChart').getContext('2d');
-const barChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: ['근력', '기동성', '균형', '심폐지구력'],
-        datasets: [{
-            label: '점수',
-            data: [
-                {{ assessment.strength_score|default:0 }},
-                {{ assessment.mobility_score|default:0 }},
-                {{ assessment.balance_score|default:0 }},
-                {{ assessment.cardio_score|default:0 }}
-            ],
-            backgroundColor: [
-                'rgba(59, 130, 246, 0.8)',  // blue
-                'rgba(16, 185, 129, 0.8)',  // green
-                'rgba(147, 51, 234, 0.8)',  // purple
-                'rgba(239, 68, 68, 0.8)'    // red
-            ],
-            borderColor: [
-                'rgb(59, 130, 246)',
-                'rgb(16, 185, 129)',
-                'rgb(147, 51, 234)',
-                'rgb(239, 68, 68)'
-            ],
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            y: {
-                beginAtZero: true,
-                max: 100,
-                ticks: {
-                    callback: function(value) {
-                        return value + '%';
-                    }
-                }
-            }
-        },
-        plugins: {
-            legend: {
-                display: false
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return context.parsed.y + '%';
-                    }
-                }
-            }
-        }
-    }
-});
-
-// Template filter implementation
-if (!Number.prototype.mul) {
-    Number.prototype.mul = function(value) {
-        return this * value;
-    };
-}
-if (!Number.prototype.sub) {
-    Number.prototype.sub = function(value) {
-        return this - value;
-    };
-}
-</script>

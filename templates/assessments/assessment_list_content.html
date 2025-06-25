@@ -167,17 +167,38 @@
 </div>
 
 <script>
-// Setup HTMX for search and filters
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    const inputs = form.querySelectorAll('input, select');
+// Setup HTMX for search and filters - HTMX-aware version
+(function() {
+    'use strict';
     
-    inputs.forEach(input => {
-        input.setAttribute('hx-get', '{% url "assessments:list" %}');
-        input.setAttribute('hx-target', '#assessment-list');
-        input.setAttribute('hx-trigger', 'change, keyup delay:500ms');
-        input.setAttribute('hx-indicator', '#search-indicator');
-        input.setAttribute('hx-include', 'form');
-    });
-});
+    function setupHTMXFilters() {
+        const form = document.querySelector('form');
+        if (!form) {
+            console.warn('Form not found for HTMX setup');
+            return;
+        }
+        
+        const inputs = form.querySelectorAll('input, select');
+        if (!inputs || inputs.length === 0) {
+            console.warn('No inputs found in form');
+            return;
+        }
+        
+        inputs.forEach(input => {
+            input.setAttribute('hx-get', '{% url "assessments:list" %}');
+            input.setAttribute('hx-target', '#assessment-list');
+            input.setAttribute('hx-trigger', 'change, keyup delay:500ms');
+            input.setAttribute('hx-indicator', '#search-indicator');
+            input.setAttribute('hx-include', 'form');
+        });
+    }
+    
+    // Execute immediately for HTMX loads
+    setupHTMXFilters();
+    
+    // Also set up for regular page loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupHTMXFilters);
+    }
+})();
 </script>

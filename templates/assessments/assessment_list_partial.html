@@ -1,6 +1,6 @@
 {% load humanize %}
 
-<div class="bg-white rounded-lg shadow overflow-hidden" x-data="compareSelection()">
+<div class="bg-white rounded-lg shadow overflow-hidden" x-data="window.compareSelection ? window.compareSelection() : {selected: [], selectedNames: [], toggleSelection(){}, toggleAll(){}, clearSelection(){}, compareSelected(){}}">
     {% if page_obj.object_list %}
     <!-- Comparison Bar -->
     <div x-show="selected.length > 0" 
@@ -215,8 +215,10 @@
 </div>
 
 <script>
-function compareSelection() {
-    return {
+// Simple guard against re-definition
+if (typeof window.compareSelection === 'undefined') {
+    window.compareSelection = function() {
+        return {
         selected: [],
         selectedNames: [],
         
@@ -309,6 +311,6 @@ function compareSelection() {
                 form.submit();
             }
         }
-    }
+    };
 }
 </script>

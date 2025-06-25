@@ -122,3 +122,46 @@ See @docs/PROJECT_STRUCTURE.md for complete file structure
 - **WeasyPrint on macOS**: Use `./run_with_weasyprint.sh` for PDF generation
 - **Testing**: Use pytest with `@pytest.mark.django_db` for database access
 - **Korean UI**: All user-facing text in Korean with proper formatting
+
+## JavaScript Integration Guidelines
+
+### Alpine.js Component Requirements
+When working with Alpine.js components in templates:
+
+1. **Variable Synchronization**: Ensure all `x-model` bindings in form fields have corresponding variables in the Alpine component
+2. **Method Definitions**: All `@change`, `@input`, or `@click` handlers must have corresponding methods defined
+3. **Form Field Bindings**: Check these files when adding form fields with Alpine.js:
+   - `apps/assessments/forms/assessment_forms.py` - Form field definitions with x-model attributes
+   - `templates/assessments/assessment_form.html` - Main Alpine.js component definition
+   - `templates/assessments/assessment_form_content.html` - If using separate content templates
+
+### Common Alpine.js Variables for Assessment Forms
+```javascript
+// Movement quality variables
+pushUpType: 'standard',
+overheadSquatQuality: '',
+toeTouchFlexibility: '',
+shoulderMobilityCategory: '',
+
+// Overhead squat compensations
+overheadSquatKneeValgus: false,
+overheadSquatForwardLean: false,
+overheadSquatHeelLift: false,
+overheadSquatArmDrop: false,
+```
+
+### CDN Best Practices
+1. **Chart.js**: Use specific version to avoid source map errors
+   ```html
+   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+   ```
+
+2. **Tailwind CSS**: Production warning is expected with CDN. For production deployment:
+   - Current: `<script src="https://cdn.tailwindcss.com"></script>` (development only)
+   - Production: Should use PostCSS or Tailwind CLI build process
+
+### Debugging JavaScript Errors
+1. Check browser console for Alpine.js expression errors
+2. Verify all x-model variables exist in the Alpine component
+3. Ensure all event handler methods are defined
+4. Check for missing form field initializations in `initializeScoresFromForm()`

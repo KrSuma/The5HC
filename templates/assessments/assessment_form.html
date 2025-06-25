@@ -586,6 +586,18 @@ function assessmentForm() {
         overheadSquatScore: null,
         shoulderMobilityScore: null,
         
+        // Movement quality variables
+        pushUpType: 'standard',
+        overheadSquatQuality: '',
+        toeTouchFlexibility: '',
+        shoulderMobilityCategory: '',
+        
+        // Overhead squat compensations
+        overheadSquatKneeValgus: false,
+        overheadSquatForwardLean: false,
+        overheadSquatHeelLift: false,
+        overheadSquatArmDrop: false,
+        
         // Manual override tracking
         manualOverrides: {
             overheadSquat: false,
@@ -804,6 +816,42 @@ function assessmentForm() {
                    this.singleLegBalanceScore !== null || this.toeTouchScore !== null || 
                    this.harvardScore !== null || this.overheadSquatScore !== null ||
                    this.shoulderMobilityScore !== null;
+        },
+        
+        calculateOverheadSquatScore() {
+            // Count compensations
+            let compensations = 0;
+            if (this.overheadSquatKneeValgus) compensations++;
+            if (this.overheadSquatForwardLean) compensations++;
+            if (this.overheadSquatHeelLift) compensations++;
+            if (this.overheadSquatArmDrop) compensations++;
+            
+            // Calculate score based on quality and compensations
+            if (this.overheadSquatQuality === 'pain') {
+                this.overheadSquatScore = 0;
+            } else if (this.overheadSquatQuality === 'cannot_squat') {
+                this.overheadSquatScore = 1;
+            } else if (this.overheadSquatQuality === 'compensations' || compensations > 0) {
+                this.overheadSquatScore = 2;
+            } else if (this.overheadSquatQuality === 'perfect') {
+                this.overheadSquatScore = 3;
+            }
+            
+            this.calculateOverallScores();
+        },
+        
+        updateToeTouchScore() {
+            const flexibilityScores = {
+                'fingertips': 1,
+                'palms': 2,
+                'wrists': 3
+            };
+            
+            if (this.toeTouchFlexibility && flexibilityScores[this.toeTouchFlexibility]) {
+                this.toeTouchScore = flexibilityScores[this.toeTouchFlexibility];
+            }
+            
+            this.calculateOverallScores();
         },
         
         init() {
