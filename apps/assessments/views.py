@@ -280,34 +280,13 @@ def assessment_add_view(request):
                 from datetime import datetime, time
                 assessment.date = datetime.combine(assessment.date, time.min)
             
-            # Calculate scores before saving
-            assessment_data = {
-                'push_up_score': form.cleaned_data.get('push_up_score'),
-                'farmers_carry_score': form.cleaned_data.get('farmer_carry_score'),
-                'toe_touch_score': form.cleaned_data.get('toe_touch_score'),
-                'shoulder_mobility_score': form.cleaned_data.get('shoulder_mobility_score'),
-                'overhead_squat_score': form.cleaned_data.get('overhead_squat_score'),
-                'single_leg_balance_right_open': form.cleaned_data.get('single_leg_balance_right_eyes_open'),
-                'single_leg_balance_left_open': form.cleaned_data.get('single_leg_balance_left_eyes_open'),
-                'single_leg_balance_right_closed': form.cleaned_data.get('single_leg_balance_right_eyes_closed'),
-                'single_leg_balance_left_closed': form.cleaned_data.get('single_leg_balance_left_eyes_closed'),
-                'step_test_hr1': form.cleaned_data.get('harvard_step_test_hr1', 90),
-                'step_test_hr2': form.cleaned_data.get('harvard_step_test_hr2', 80),
-                'step_test_hr3': form.cleaned_data.get('harvard_step_test_hr3', 70)
-            }
+            # Save the assessment first to ensure all fields are set
+            assessment.save()
             
-            client_details = {
-                'gender': assessment.client.gender,
-                'age': assessment.client.age
-            }
+            # Calculate scores using the model method which respects manual overrides
+            assessment.calculate_scores()
             
-            scores = calculate_category_scores(assessment_data, client_details)
-            assessment.overall_score = scores['overall_score']
-            assessment.strength_score = scores['strength_score']
-            assessment.mobility_score = scores['mobility_score']
-            assessment.balance_score = scores['balance_score']
-            assessment.cardio_score = scores['cardio_score']
-            
+            # Save again to persist the calculated scores
             assessment.save()
             
             messages.success(request, '평가가 성공적으로 저장되었습니다.')

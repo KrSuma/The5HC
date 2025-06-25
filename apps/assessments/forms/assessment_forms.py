@@ -16,25 +16,30 @@ class AssessmentForm(forms.ModelForm):
             # Overhead Squat
             'overhead_squat_score', 'overhead_squat_knee_valgus', 'overhead_squat_forward_lean', 
             'overhead_squat_heel_lift', 'overhead_squat_arm_drop', 'overhead_squat_quality', 
-            'overhead_squat_notes',
+            'overhead_squat_notes', 'overhead_squat_score_manual_override',
             # Push-up
             'push_up_reps', 'push_up_type', 'push_up_score', 'push_up_notes',
+            'push_up_score_manual_override',
             # Single Leg Balance
             'single_leg_balance_right_eyes_open', 'single_leg_balance_left_eyes_open',
             'single_leg_balance_right_eyes_closed', 'single_leg_balance_left_eyes_closed',
-            'single_leg_balance_notes',
+            'single_leg_balance_notes', 'single_leg_balance_score_manual', 
+            'single_leg_balance_score_manual_override',
             # Toe Touch
             'toe_touch_distance', 'toe_touch_score', 'toe_touch_flexibility', 'toe_touch_notes',
+            'toe_touch_score_manual_override',
             # Shoulder Mobility
             'shoulder_mobility_right', 'shoulder_mobility_left', 
             'shoulder_mobility_score', 'shoulder_mobility_pain', 'shoulder_mobility_asymmetry',
-            'shoulder_mobility_category', 'shoulder_mobility_notes',
+            'shoulder_mobility_category', 'shoulder_mobility_notes', 
+            'shoulder_mobility_score_manual_override',
             # Farmer's Carry
             'farmer_carry_weight', 'farmer_carry_percentage', 'farmer_carry_distance', 'farmer_carry_time',
-            'farmer_carry_score', 'farmer_carry_notes',
+            'farmer_carry_score', 'farmer_carry_notes', 'farmer_carry_score_manual_override',
             # Harvard Step Test
             'harvard_step_test_hr1', 'harvard_step_test_hr2', 'harvard_step_test_hr3',
-            'harvard_step_test_duration', 'harvard_step_test_notes'
+            'harvard_step_test_duration', 'harvard_step_test_notes', 
+            'harvard_step_test_score_manual', 'harvard_step_test_score_manual_override'
         ]
         
         widgets = {
@@ -69,11 +74,17 @@ class AssessmentForm(forms.ModelForm):
             
             # Overhead Squat
             'overhead_squat_score': forms.Select(
-                choices=[(None, '선택'), (0, '0 - 통증'), (1, '1 - 불가'), (2, '2 - 보정동작'), (3, '3 - 완벽'), (4, '4 - 우수'), (5, '5 - 탁월')],
+                choices=[(None, '선택'), (0, '0 - 통증'), (1, '1 - 불가'), (2, '2 - 보상동작'), (3, '3 - 완벽'), (4, '4 - 우수'), (5, '5 - 탁월')],
                 attrs={
                     'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'x-model': 'overheadSquatScore',
-                    '@change': 'onManualScoreChange("overheadSquat", $event.target.value)'
+                    '@change': 'onManualScoreChange("overheadSquat", $event.target.value)',
+                    ':class': "{'ring-2 ring-blue-500': manualOverrides.overheadSquat}"
+                }
+            ),
+            'overhead_squat_score_manual_override': forms.HiddenInput(
+                attrs={
+                    'x-model': 'manualOverrides.overheadSquat'
                 }
             ),
             'overhead_squat_knee_valgus': forms.CheckboxInput(
@@ -136,11 +147,18 @@ class AssessmentForm(forms.ModelForm):
                     '@change': 'calculatePushUpScore()'
                 }
             ),
-            'push_up_score': forms.NumberInput(
+            'push_up_score': forms.Select(
+                choices=[(None, '자동 계산'), (0, '0'), (1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')],
                 attrs={
-                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100',
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'x-model': 'pushUpScore',
-                    'readonly': True
+                    '@change': 'onManualScoreChange("pushUp", $event.target.value)',
+                    ':class': "{'ring-2 ring-blue-500': manualOverrides.pushUp}"
+                }
+            ),
+            'push_up_score_manual_override': forms.HiddenInput(
+                attrs={
+                    'x-model': 'manualOverrides.pushUp'
                 }
             ),
             'push_up_notes': forms.Textarea(
@@ -199,6 +217,20 @@ class AssessmentForm(forms.ModelForm):
                     'placeholder': '추가 메모 (선택사항)'
                 }
             ),
+            'single_leg_balance_score_manual': forms.Select(
+                choices=[(None, '자동 계산'), (0, '0'), (1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')],
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'x-model': 'balanceScore',
+                    '@change': 'onManualScoreChange("balance", $event.target.value)',
+                    ':class': "{'ring-2 ring-blue-500': manualOverrides.balance}"
+                }
+            ),
+            'single_leg_balance_score_manual_override': forms.HiddenInput(
+                attrs={
+                    'x-model': 'manualOverrides.balance'
+                }
+            ),
             
             # Toe Touch
             'toe_touch_distance': forms.NumberInput(
@@ -210,11 +242,18 @@ class AssessmentForm(forms.ModelForm):
                     '@input': 'calculateToeTouchScore()'
                 }
             ),
-            'toe_touch_score': forms.NumberInput(
+            'toe_touch_score': forms.Select(
+                choices=[(None, '자동 계산'), (0, '0'), (1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')],
                 attrs={
-                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100',
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'x-model': 'toeTouchScore',
-                    'readonly': True
+                    '@change': 'onManualScoreChange("toeTouch", $event.target.value)',
+                    ':class': "{'ring-2 ring-blue-500': manualOverrides.toeTouch}"
+                }
+            ),
+            'toe_touch_score_manual_override': forms.HiddenInput(
+                attrs={
+                    'x-model': 'manualOverrides.toeTouch'
                 }
             ),
             'toe_touch_flexibility': forms.Select(
@@ -254,7 +293,13 @@ class AssessmentForm(forms.ModelForm):
                 attrs={
                     'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'x-model': 'shoulderMobilityScore',
-                    '@change': 'onManualScoreChange("shoulderMobility", $event.target.value)'
+                    '@change': 'onManualScoreChange("shoulderMobility", $event.target.value)',
+                    ':class': "{'ring-2 ring-blue-500': manualOverrides.shoulderMobility}"
+                }
+            ),
+            'shoulder_mobility_score_manual_override': forms.HiddenInput(
+                attrs={
+                    'x-model': 'manualOverrides.shoulderMobility'
                 }
             ),
             'shoulder_mobility_pain': forms.CheckboxInput(
@@ -325,11 +370,18 @@ class AssessmentForm(forms.ModelForm):
                     '@input': 'calculateFarmerScore()'
                 }
             ),
-            'farmer_carry_score': forms.NumberInput(
+            'farmer_carry_score': forms.Select(
+                choices=[(None, '자동 계산'), (0, '0'), (1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')],
                 attrs={
-                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100',
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'x-model': 'farmerScore',
-                    'readonly': True
+                    '@change': 'onManualScoreChange("farmerCarry", $event.target.value)',
+                    ':class': "{'ring-2 ring-blue-500': manualOverrides.farmerCarry}"
+                }
+            ),
+            'farmer_carry_score_manual_override': forms.HiddenInput(
+                attrs={
+                    'x-model': 'manualOverrides.farmerCarry'
                 }
             ),
             'farmer_carry_notes': forms.Textarea(
@@ -386,6 +438,20 @@ class AssessmentForm(forms.ModelForm):
                     'placeholder': '추가 메모 (선택사항)'
                 }
             ),
+            'harvard_step_test_score_manual': forms.Select(
+                choices=[(None, '자동 계산'), (0, '0'), (1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')],
+                attrs={
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'x-model': 'harvardScore',
+                    '@change': 'onManualScoreChange("harvard", $event.target.value)',
+                    ':class': "{'ring-2 ring-blue-500': manualOverrides.harvard}"
+                }
+            ),
+            'harvard_step_test_score_manual_override': forms.HiddenInput(
+                attrs={
+                    'x-model': 'manualOverrides.harvard'
+                }
+            ),
         }
         
     def __init__(self, *args, **kwargs):
@@ -395,8 +461,10 @@ class AssessmentForm(forms.ModelForm):
             self.fields['date'].initial = timezone.now()
             
         # Set default values for all numeric fields
+        # Note: Manual score fields (overhead_squat_score, shoulder_mobility_score) 
+        # are intentionally NOT given defaults to allow user input
         defaults = {
-            'overhead_squat_score': 2,
+            # 'overhead_squat_score': 2,  # Removed - manual input field
             'push_up_reps': 10,
             'push_up_score': 3,
             'single_leg_balance_right_eyes_open': 30,
@@ -407,7 +475,7 @@ class AssessmentForm(forms.ModelForm):
             'toe_touch_score': 3,
             'shoulder_mobility_right': 10,
             'shoulder_mobility_left': 10,
-            'shoulder_mobility_score': 3,
+            # 'shoulder_mobility_score': 3,  # Removed - manual input field
             'farmer_carry_weight': 20,
             'farmer_carry_distance': 20,
             'farmer_carry_time': 30,

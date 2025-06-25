@@ -134,10 +134,15 @@
                                 {{ form.push_up_type }}
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">점수 (자동 계산)</label>
-                                <div class="relative">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    점수 
+                                    <span x-show="!manualOverrides.pushUp" class="text-xs text-gray-500">(자동 계산)</span>
+                                    <span x-show="manualOverrides.pushUp" class="text-xs text-blue-600">(수동 입력)</span>
+                                </label>
+                                <div class="relative manual-override-container" :class="{'ring-2 ring-blue-500': manualOverrides.pushUp}">
                                     {{ form.push_up_score }}
-                                    <div x-show="pushUpScore !== null" class="absolute right-3 top-2">
+                                    {{ form.push_up_score_manual_override }}
+                                    <div x-show="pushUpScore !== null && pushUpScore !== ''" class="absolute right-3 top-2">
                                         <span class="text-xs font-medium px-2 py-1 rounded"
                                               :class="{'bg-green-100 text-green-800': pushUpScore >= 4,
                                                        'bg-yellow-100 text-yellow-800': pushUpScore >= 2 && pushUpScore < 4,
@@ -145,6 +150,13 @@
                                             <span x-text="pushUpScore"></span>/5
                                         </span>
                                     </div>
+                                </div>
+                                <div x-show="manualOverrides.pushUp" x-transition
+                                     class="mt-2 manual-override-indicator">
+                                    <button type="button" @click="resetManualScore('pushUp')"
+                                            class="text-xs text-blue-600 hover:text-blue-800 underline">
+                                        자동 계산으로 재설정
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -177,10 +189,15 @@
                                 {{ form.farmer_carry_time }}
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">점수 (자동 계산)</label>
-                                <div class="relative">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    점수 
+                                    <span x-show="!manualOverrides.farmerCarry" class="text-xs text-gray-500">(자동 계산)</span>
+                                    <span x-show="manualOverrides.farmerCarry" class="text-xs text-blue-600">(수동 입력)</span>
+                                </label>
+                                <div class="relative manual-override-container" :class="{'ring-2 ring-blue-500': manualOverrides.farmerCarry}">
                                     {{ form.farmer_carry_score }}
-                                    <div x-show="farmerScore !== null" class="absolute right-3 top-2">
+                                    {{ form.farmer_carry_score_manual_override }}
+                                    <div x-show="farmerScore !== null && farmerScore !== ''" class="absolute right-3 top-2">
                                         <span class="text-xs font-medium px-2 py-1 rounded"
                                               :class="{'bg-green-100 text-green-800': farmerScore >= 4,
                                                        'bg-yellow-100 text-yellow-800': farmerScore >= 2 && farmerScore < 4,
@@ -188,6 +205,13 @@
                                             <span x-text="farmerScore"></span>/5
                                         </span>
                                     </div>
+                                </div>
+                                <div x-show="manualOverrides.farmerCarry" x-transition
+                                     class="mt-2 manual-override-indicator">
+                                    <button type="button" @click="resetManualScore('farmerCarry')"
+                                            class="text-xs text-blue-600 hover:text-blue-800 underline">
+                                        자동 계산으로 재설정
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -209,22 +233,20 @@
                         <h3 class="text-lg font-medium text-gray-700 mb-4">오버헤드 스쿼트</h3>
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">점수</label>
-                                <div class="relative">
-                                    <div :class="{'ring-2 ring-blue-500': manualOverrides.overheadSquat}">
-                                        {{ form.overhead_squat_score }}
-                                    </div>
-                                    
-                                    <!-- Manual Override Indicator -->
-                                    <div x-show="manualOverrides.overheadSquat" x-transition
-                                         class="absolute -top-2 right-0 flex items-center space-x-2">
-                                        <span class="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                                            수동 입력됨
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    점수
+                                    <span x-show="manualOverrides.overheadSquat" class="text-xs text-blue-600">(수동 입력)</span>
+                                </label>
+                                <div class="relative manual-override-container" :class="{'ring-2 ring-blue-500': manualOverrides.overheadSquat}">
+                                    {{ form.overhead_squat_score }}
+                                    {{ form.overhead_squat_score_manual_override }}
+                                    <div x-show="overheadSquatScore !== null && overheadSquatScore !== ''" class="absolute right-3 top-2">
+                                        <span class="text-xs font-medium px-2 py-1 rounded"
+                                              :class="{'bg-green-100 text-green-800': overheadSquatScore >= 4,
+                                                       'bg-yellow-100 text-yellow-800': overheadSquatScore >= 2 && overheadSquatScore < 4,
+                                                       'bg-red-100 text-red-800': overheadSquatScore < 2}">
+                                            <span x-text="overheadSquatScore"></span>/5
                                         </span>
-                                        <button type="button" @click="resetManualScore('overheadSquat')"
-                                                class="text-xs text-blue-600 hover:text-blue-800 underline">
-                                            자동 계산으로 재설정
-                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -302,18 +324,29 @@
                     </div>
                     
                     <div class="mt-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">균형 점수 (자동 계산)</label>
-                        <div class="relative">
-                            <input type="text" x-model="singleLegBalanceScore" readonly 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100">
-                            <div x-show="singleLegBalanceScore !== null" class="absolute right-3 top-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            균형 점수
+                            <span x-show="!manualOverrides.balance" class="text-xs text-gray-500">(자동 계산)</span>
+                            <span x-show="manualOverrides.balance" class="text-xs text-blue-600">(수동 입력)</span>
+                        </label>
+                        <div class="relative manual-override-container" :class="{'ring-2 ring-blue-500': manualOverrides.balance}">
+                            {{ form.single_leg_balance_score_manual }}
+                            {{ form.single_leg_balance_score_manual_override }}
+                            <div x-show="balanceScore !== null && balanceScore !== ''" class="absolute right-3 top-2">
                                 <span class="text-xs font-medium px-2 py-1 rounded"
-                                      :class="{'bg-green-100 text-green-800': singleLegBalanceScore >= 4,
-                                               'bg-yellow-100 text-yellow-800': singleLegBalanceScore >= 2 && singleLegBalanceScore < 4,
-                                               'bg-red-100 text-red-800': singleLegBalanceScore < 2}">
-                                    <span x-text="singleLegBalanceScore"></span>/5
+                                      :class="{'bg-green-100 text-green-800': balanceScore >= 4,
+                                               'bg-yellow-100 text-yellow-800': balanceScore >= 2 && balanceScore < 4,
+                                               'bg-red-100 text-red-800': balanceScore < 2}">
+                                    <span x-text="balanceScore"></span>/5
                                 </span>
                             </div>
+                        </div>
+                        <div x-show="manualOverrides.balance" x-transition
+                             class="mt-2 manual-override-indicator">
+                            <button type="button" @click="resetManualScore('balance')"
+                                    class="text-xs text-blue-600 hover:text-blue-800 underline">
+                                자동 계산으로 재설정
+                            </button>
                         </div>
                     </div>
                     
@@ -340,10 +373,15 @@
                                 <p class="text-xs text-gray-500 mt-1">바닥 위는 +, 아래는 -</p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">점수 (자동 계산)</label>
-                                <div class="relative">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    점수 
+                                    <span x-show="!manualOverrides.toeTouch" class="text-xs text-gray-500">(자동 계산)</span>
+                                    <span x-show="manualOverrides.toeTouch" class="text-xs text-blue-600">(수동 입력)</span>
+                                </label>
+                                <div class="relative manual-override-container" :class="{'ring-2 ring-blue-500': manualOverrides.toeTouch}">
                                     {{ form.toe_touch_score }}
-                                    <div x-show="toeTouchScore !== null" class="absolute right-3 top-2">
+                                    {{ form.toe_touch_score_manual_override }}
+                                    <div x-show="toeTouchScore !== null && toeTouchScore !== ''" class="absolute right-3 top-2">
                                         <span class="text-xs font-medium px-2 py-1 rounded"
                                               :class="{'bg-green-100 text-green-800': toeTouchScore >= 4,
                                                        'bg-yellow-100 text-yellow-800': toeTouchScore >= 2 && toeTouchScore < 4,
@@ -351,6 +389,13 @@
                                             <span x-text="toeTouchScore"></span>/5
                                         </span>
                                     </div>
+                                </div>
+                                <div x-show="manualOverrides.toeTouch" x-transition
+                                     class="mt-2 manual-override-indicator">
+                                    <button type="button" @click="resetManualScore('toeTouch')"
+                                            class="text-xs text-blue-600 hover:text-blue-800 underline">
+                                        자동 계산으로 재설정
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -377,22 +422,20 @@
                                 {{ form.shoulder_mobility_left }}
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">점수</label>
-                                <div class="relative">
-                                    <div :class="{'ring-2 ring-blue-500': manualOverrides.shoulderMobility}">
-                                        {{ form.shoulder_mobility_score }}
-                                    </div>
-                                    
-                                    <!-- Manual Override Indicator -->
-                                    <div x-show="manualOverrides.shoulderMobility" x-transition
-                                         class="absolute -top-2 right-0 flex items-center space-x-2">
-                                        <span class="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                                            수동 입력됨
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    점수
+                                    <span x-show="manualOverrides.shoulderMobility" class="text-xs text-blue-600">(수동 입력)</span>
+                                </label>
+                                <div class="relative manual-override-container" :class="{'ring-2 ring-blue-500': manualOverrides.shoulderMobility}">
+                                    {{ form.shoulder_mobility_score }}
+                                    {{ form.shoulder_mobility_score_manual_override }}
+                                    <div x-show="shoulderMobilityScore !== null && shoulderMobilityScore !== ''" class="absolute right-3 top-2">
+                                        <span class="text-xs font-medium px-2 py-1 rounded"
+                                              :class="{'bg-green-100 text-green-800': shoulderMobilityScore >= 4,
+                                                       'bg-yellow-100 text-yellow-800': shoulderMobilityScore >= 2 && shoulderMobilityScore < 4,
+                                                       'bg-red-100 text-red-800': shoulderMobilityScore < 2}">
+                                            <span x-text="shoulderMobilityScore"></span>/5
                                         </span>
-                                        <button type="button" @click="resetManualScore('shoulderMobility')"
-                                                class="text-xs text-blue-600 hover:text-blue-800 underline">
-                                            자동 계산으로 재설정
-                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -449,15 +492,36 @@
                             {{ form.harvard_step_test_duration }}
                         </div>
                     </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            점수
+                            <span x-show="!manualOverrides.harvard" class="text-xs text-gray-500">(자동 계산)</span>
+                            <span x-show="manualOverrides.harvard" class="text-xs text-blue-600">(수동 입력)</span>
+                        </label>
+                        <div class="relative manual-override-container" :class="{'ring-2 ring-blue-500': manualOverrides.harvard}">
+                            {{ form.harvard_step_test_score_manual }}
+                            {{ form.harvard_step_test_score_manual_override }}
+                            <div x-show="harvardScore !== null && harvardScore !== ''" class="absolute right-3 top-2">
+                                <span class="text-xs font-medium px-2 py-1 rounded"
+                                      :class="{'bg-green-100 text-green-800': harvardScore >= 4,
+                                               'bg-yellow-100 text-yellow-800': harvardScore >= 2 && harvardScore < 4,
+                                               'bg-red-100 text-red-800': harvardScore < 2}">
+                                    <span x-text="harvardScore"></span>/5
+                                </span>
+                            </div>
+                        </div>
+                        <div x-show="manualOverrides.harvard" x-transition
+                             class="mt-2 manual-override-indicator">
+                            <button type="button" @click="resetManualScore('harvard')"
+                                    class="text-xs text-blue-600 hover:text-blue-800 underline">
+                                자동 계산으로 재설정
+                            </button>
+                        </div>
+                    </div>
+                    
                     <div x-show="harvardPFI !== null" class="mt-4 p-4 bg-blue-50 rounded-lg">
                         <p class="text-sm text-gray-700">
                             Physical Fitness Index (PFI): <span class="font-bold" x-text="harvardPFI"></span>
-                            <span class="ml-2 text-xs font-medium px-2 py-1 rounded"
-                                  :class="{'bg-green-100 text-green-800': harvardScore >= 4,
-                                           'bg-yellow-100 text-yellow-800': harvardScore >= 2 && harvardScore < 4,
-                                           'bg-red-100 text-red-800': harvardScore < 2}">
-                                점수: <span x-text="harvardScore"></span>/5
-                            </span>
                         </p>
                     </div>
                     <div class="mt-4">
@@ -619,7 +683,12 @@ function assessmentForm() {
         // Manual override tracking
         manualOverrides: {
             overheadSquat: false,
-            shoulderMobility: false
+            shoulderMobility: false,
+            pushUp: false,
+            toeTouch: false,
+            farmerCarry: false,
+            balance: false,
+            harvard: false
         },
         
         selectClient(clientId) {
@@ -646,15 +715,43 @@ function assessmentForm() {
         },
         
         onManualScoreChange(test, value) {
+            // Handle automatic calculation option
+            if (value === '' || value === null) {
+                this.manualOverrides[test] = false;
+                // Trigger recalculation
+                if (test === 'pushUp') {
+                    this.calculatePushUpScore();
+                } else if (test === 'toeTouch') {
+                    this.calculateToeTouchScore();
+                } else if (test === 'farmerCarry') {
+                    this.calculateFarmerScore();
+                } else if (test === 'balance') {
+                    this.calculateBalanceScore();
+                } else if (test === 'harvard') {
+                    this.calculateHarvardScore();
+                }
+                return;
+            }
+            
             // Mark as manually overridden
             this.manualOverrides[test] = true;
             
             // Update the score
-            const score = value ? parseInt(value) : null;
+            const score = parseInt(value);
             if (test === 'overheadSquat') {
                 this.overheadSquatScore = score;
             } else if (test === 'shoulderMobility') {
                 this.shoulderMobilityScore = score;
+            } else if (test === 'pushUp') {
+                this.pushUpScore = score;
+            } else if (test === 'toeTouch') {
+                this.toeTouchScore = score;
+            } else if (test === 'farmerCarry') {
+                this.farmerScore = score;
+            } else if (test === 'balance') {
+                this.balanceScore = score;
+            } else if (test === 'harvard') {
+                this.harvardScore = score;
             }
             
             // Recalculate overall scores
@@ -684,6 +781,41 @@ function assessmentForm() {
                 }
                 // Note: Shoulder mobility doesn't have automatic calculation
                 // so just clearing is sufficient
+            } else if (test === 'pushUp') {
+                this.pushUpScore = null;
+                const selectElement = document.querySelector('[name="push_up_score"]');
+                if (selectElement) {
+                    selectElement.value = '';
+                }
+                this.calculatePushUpScore();
+            } else if (test === 'toeTouch') {
+                this.toeTouchScore = null;
+                const selectElement = document.querySelector('[name="toe_touch_score"]');
+                if (selectElement) {
+                    selectElement.value = '';
+                }
+                this.calculateToeTouchScore();
+            } else if (test === 'farmerCarry') {
+                this.farmerScore = null;
+                const selectElement = document.querySelector('[name="farmer_carry_score"]');
+                if (selectElement) {
+                    selectElement.value = '';
+                }
+                this.calculateFarmerScore();
+            } else if (test === 'balance') {
+                this.balanceScore = null;
+                const selectElement = document.querySelector('[name="single_leg_balance_score_manual"]');
+                if (selectElement) {
+                    selectElement.value = '';
+                }
+                this.calculateBalanceScore();
+            } else if (test === 'harvard') {
+                this.harvardScore = null;
+                const selectElement = document.querySelector('[name="harvard_step_test_score_manual"]');
+                if (selectElement) {
+                    selectElement.value = '';
+                }
+                this.calculateHarvardScore();
             }
             
             // Trigger overall recalculation
@@ -728,6 +860,9 @@ function assessmentForm() {
         },
         
         async calculatePushUpScore() {
+            // Skip if manually overridden
+            if (this.manualOverrides.pushUp) return;
+            
             if (!this.pushUpReps || !this.clientAge || !this.clientGender) return;
             
             try {
@@ -741,6 +876,9 @@ function assessmentForm() {
         },
         
         async calculateBalanceScore() {
+            // Skip if manually overridden
+            if (this.manualOverrides.balance) return;
+            
             const values = [
                 this.balanceRightOpen,
                 this.balanceLeftOpen,
@@ -753,6 +891,7 @@ function assessmentForm() {
             try {
                 const response = await fetch(`{% url 'assessments:calculate_balance_score' %}?right_open=${this.balanceRightOpen}&left_open=${this.balanceLeftOpen}&right_closed=${this.balanceRightClosed}&left_closed=${this.balanceLeftClosed}`);
                 const data = await response.json();
+                this.balanceScore = data.score;  // Use balanceScore for the manual field
                 this.singleLegBalanceScore = data.score;  // Store single leg balance score separately
                 this.calculateOverallScores();
             } catch (error) {
@@ -761,6 +900,9 @@ function assessmentForm() {
         },
         
         async calculateToeTouchScore() {
+            // Skip if manually overridden
+            if (this.manualOverrides.toeTouch) return;
+            
             if (this.toeTouchDistance === null || this.toeTouchDistance === '') return;
             
             try {
@@ -794,6 +936,9 @@ function assessmentForm() {
         },
         
         async calculateFarmerScore() {
+            // Skip if manually overridden
+            if (this.manualOverrides.farmerCarry) return;
+            
             if (!this.farmerWeight || !this.farmerDistance || !this.farmerTime || !this.clientGender) return;
             
             try {
@@ -807,6 +952,9 @@ function assessmentForm() {
         },
         
         async calculateHarvardScore() {
+            // Skip if manually overridden
+            if (this.manualOverrides.harvard) return;
+            
             if (!this.harvardHR1 || !this.harvardHR2 || !this.harvardHR3) return;
             
             try {
@@ -877,38 +1025,74 @@ function assessmentForm() {
         },
         
         initializeScoresFromForm() {
-            // Initialize overhead squat score
+            // Initialize overhead squat score and manual override
             const overheadSquatSelect = document.querySelector('[name="overhead_squat_score"]');
+            const overheadSquatOverride = document.querySelector('[name="overhead_squat_score_manual_override"]');
             if (overheadSquatSelect && overheadSquatSelect.value) {
                 this.overheadSquatScore = parseInt(overheadSquatSelect.value);
-                if (this.overheadSquatScore !== null) {
-                    this.manualOverrides.overheadSquat = true;
-                }
+            }
+            if (overheadSquatOverride && overheadSquatOverride.value === 'true') {
+                this.manualOverrides.overheadSquat = true;
             }
             
-            // Initialize shoulder mobility score
+            // Initialize shoulder mobility score and manual override
             const shoulderMobilitySelect = document.querySelector('[name="shoulder_mobility_score"]');
+            const shoulderMobilityOverride = document.querySelector('[name="shoulder_mobility_score_manual_override"]');
             if (shoulderMobilitySelect && shoulderMobilitySelect.value) {
                 this.shoulderMobilityScore = parseInt(shoulderMobilitySelect.value);
-                if (this.shoulderMobilityScore !== null) {
-                    this.manualOverrides.shoulderMobility = true;
-                }
+            }
+            if (shoulderMobilityOverride && shoulderMobilityOverride.value === 'true') {
+                this.manualOverrides.shoulderMobility = true;
             }
             
-            // Initialize other form fields that might have default values
-            const pushUpScoreInput = document.querySelector('[name="push_up_score"]');
-            if (pushUpScoreInput && pushUpScoreInput.value) {
-                this.pushUpScore = parseInt(pushUpScoreInput.value);
+            // Initialize push-up score and manual override
+            const pushUpScoreSelect = document.querySelector('[name="push_up_score"]');
+            const pushUpOverride = document.querySelector('[name="push_up_score_manual_override"]');
+            if (pushUpScoreSelect && pushUpScoreSelect.value && pushUpScoreSelect.value !== '') {
+                this.pushUpScore = parseInt(pushUpScoreSelect.value);
+            }
+            if (pushUpOverride && pushUpOverride.value === 'true') {
+                this.manualOverrides.pushUp = true;
             }
             
-            const toeTouchScoreInput = document.querySelector('[name="toe_touch_score"]');
-            if (toeTouchScoreInput && toeTouchScoreInput.value) {
-                this.toeTouchScore = parseInt(toeTouchScoreInput.value);
+            // Initialize toe touch score and manual override
+            const toeTouchScoreSelect = document.querySelector('[name="toe_touch_score"]');
+            const toeTouchOverride = document.querySelector('[name="toe_touch_score_manual_override"]');
+            if (toeTouchScoreSelect && toeTouchScoreSelect.value && toeTouchScoreSelect.value !== '') {
+                this.toeTouchScore = parseInt(toeTouchScoreSelect.value);
+            }
+            if (toeTouchOverride && toeTouchOverride.value === 'true') {
+                this.manualOverrides.toeTouch = true;
             }
             
-            const farmerScoreInput = document.querySelector('[name="farmer_carry_score"]');
-            if (farmerScoreInput && farmerScoreInput.value) {
-                this.farmerScore = parseInt(farmerScoreInput.value);
+            // Initialize farmer carry score and manual override
+            const farmerScoreSelect = document.querySelector('[name="farmer_carry_score"]');
+            const farmerOverride = document.querySelector('[name="farmer_carry_score_manual_override"]');
+            if (farmerScoreSelect && farmerScoreSelect.value && farmerScoreSelect.value !== '') {
+                this.farmerScore = parseInt(farmerScoreSelect.value);
+            }
+            if (farmerOverride && farmerOverride.value === 'true') {
+                this.manualOverrides.farmerCarry = true;
+            }
+            
+            // Initialize balance score and manual override
+            const balanceScoreSelect = document.querySelector('[name="single_leg_balance_score_manual"]');
+            const balanceOverride = document.querySelector('[name="single_leg_balance_score_manual_override"]');
+            if (balanceScoreSelect && balanceScoreSelect.value && balanceScoreSelect.value !== '') {
+                this.balanceScore = parseInt(balanceScoreSelect.value);
+            }
+            if (balanceOverride && balanceOverride.value === 'true') {
+                this.manualOverrides.balance = true;
+            }
+            
+            // Initialize harvard score and manual override
+            const harvardScoreSelect = document.querySelector('[name="harvard_step_test_score_manual"]');
+            const harvardOverride = document.querySelector('[name="harvard_step_test_score_manual_override"]');
+            if (harvardScoreSelect && harvardScoreSelect.value && harvardScoreSelect.value !== '') {
+                this.harvardScore = parseInt(harvardScoreSelect.value);
+            }
+            if (harvardOverride && harvardOverride.value === 'true') {
+                this.manualOverrides.harvard = true;
             }
             
             // Initialize movement quality checkboxes

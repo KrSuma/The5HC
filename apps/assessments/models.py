@@ -227,7 +227,7 @@ class Assessment(models.Model):
         max_length=10,
         choices=[
             ('standard', '표준'),
-            ('modified', '수정된'),
+            ('modified', '보정됨'),
             ('wall', '벽'),
         ],
         default='standard',
@@ -268,6 +268,70 @@ class Assessment(models.Model):
     mobility_score = models.FloatField(null=True, blank=True)
     balance_score = models.FloatField(null=True, blank=True)
     cardio_score = models.FloatField(null=True, blank=True)
+    
+    # Manual override tracking fields for individual test scores
+    overhead_squat_score_manual_override = models.BooleanField(
+        default=False,
+        help_text="Indicates if overhead squat score was manually entered"
+    )
+    push_up_score_manual_override = models.BooleanField(
+        default=False,
+        help_text="Indicates if push-up score was manually entered"
+    )
+    toe_touch_score_manual_override = models.BooleanField(
+        default=False,
+        help_text="Indicates if toe touch score was manually entered"
+    )
+    shoulder_mobility_score_manual_override = models.BooleanField(
+        default=False,
+        help_text="Indicates if shoulder mobility score was manually entered"
+    )
+    farmer_carry_score_manual_override = models.BooleanField(
+        default=False,
+        help_text="Indicates if farmer carry score was manually entered"
+    )
+    
+    # Manual score fields for tests without dedicated score fields
+    single_leg_balance_score_manual = models.IntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(5)],
+        help_text="Manual score for single leg balance test"
+    )
+    single_leg_balance_score_manual_override = models.BooleanField(
+        default=False,
+        help_text="Indicates if single leg balance score was manually entered"
+    )
+    harvard_step_test_score_manual = models.IntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(5)],
+        help_text="Manual score for Harvard step test"
+    )
+    harvard_step_test_score_manual_override = models.BooleanField(
+        default=False,
+        help_text="Indicates if Harvard step test score was manually entered"
+    )
+    
+    # Manual override tracking fields for category scores
+    overall_score_manual_override = models.BooleanField(
+        default=False,
+        help_text="Indicates if overall score was manually entered"
+    )
+    strength_score_manual_override = models.BooleanField(
+        default=False,
+        help_text="Indicates if strength score was manually entered"
+    )
+    mobility_score_manual_override = models.BooleanField(
+        default=False,
+        help_text="Indicates if mobility score was manually entered"
+    )
+    balance_score_manual_override = models.BooleanField(
+        default=False,
+        help_text="Indicates if balance score was manually entered"
+    )
+    cardio_score_manual_override = models.BooleanField(
+        default=False,
+        help_text="Indicates if cardio score was manually entered"
+    )
     
     # Risk Assessment Fields
     injury_risk_score = models.FloatField(
@@ -320,8 +384,8 @@ class Assessment(models.Model):
         try:
             # Calculate individual test scores if not already set
             
-            # 1. Overhead Squat - calculate based on movement quality if score not set
-            if self.overhead_squat_score is None:
+            # 1. Overhead Squat - calculate based on movement quality if score not set and not manually overridden
+            if self.overhead_squat_score is None and not self.overhead_squat_score_manual_override:
                 self.overhead_squat_score = calculate_overhead_squat_score(
                     knee_valgus=self.overhead_squat_knee_valgus,
                     forward_lean=self.overhead_squat_forward_lean,
@@ -329,8 +393,8 @@ class Assessment(models.Model):
                     pain=False  # Could add pain field if needed
                 )
             
-            # 2. Push-up Test
-            if self.push_up_score is None and self.push_up_reps is not None:
+            # 2. Push-up Test - only calculate if not manually overridden
+            if not self.push_up_score_manual_override and self.push_up_reps is not None:
                 # Get client's gender and age
                 client_gender = self.client.gender
                 client_age = self._calculate_client_age()
@@ -345,8 +409,8 @@ class Assessment(models.Model):
                         push_up_type=self.push_up_type or 'standard'
                     )
             
-            # 3. Single Leg Balance - calculate if we have the times
-            if all([
+            # 3. Single Leg Balance - calculate if we have the times and not manually overridden
+            if not self.single_leg_balance_score_manual_override and all([
                 self.single_leg_balance_right_eyes_open is not None,
                 self.single_leg_balance_left_eyes_open is not None,
                 self.single_leg_balance_right_eyes_closed is not None,
@@ -358,13 +422,14 @@ class Assessment(models.Model):
                     right_closed=self.single_leg_balance_right_eyes_closed,
                     left_closed=self.single_leg_balance_left_eyes_closed
                 )
-                # Store as a property or in notes since we don't have a dedicated field
-                self._single_leg_balance_score = balance_score
-            else:
-                self._single_leg_balance_score = None
+                # Store the calculated score in the manual field if not overridden
+                self.single_leg_balance_score_manual = balance_score
             
-            # 4. Toe Touch Test
-            if self.toe_touch_score is None and self.toe_touch_distance is not None:
+            # Use manual score if available
+            self._single_leg_balance_score = self.single_leg_balance_score_manual
+            
+            # 4. Toe Touch Test - only calculate if not manually overridden
+            if not self.toe_touch_score_manual_override and self.toe_touch_distance is not None:
                 self.toe_touch_score = calculate_toe_touch_score(
                     distance=self.toe_touch_distance
                 )
@@ -372,8 +437,8 @@ class Assessment(models.Model):
             # 5. Shoulder Mobility - already has score field
             # Keep the manually entered score
             
-            # 6. Farmer's Carry
-            if self.farmer_carry_score is None and all([
+            # 6. Farmer's Carry - only calculate if not manually overridden
+            if not self.farmer_carry_score_manual_override and all([
                 self.farmer_carry_weight is not None,
                 self.farmer_carry_distance is not None,
                 self.farmer_carry_time is not None
@@ -390,8 +455,8 @@ class Assessment(models.Model):
                         body_weight_percentage=self.farmer_carry_percentage
                     )
             
-            # 7. Harvard Step Test
-            if all([
+            # 7. Harvard Step Test - only calculate if not manually overridden
+            if not self.harvard_step_test_score_manual_override and all([
                 self.harvard_step_test_hr1 is not None,
                 self.harvard_step_test_hr2 is not None,
                 self.harvard_step_test_hr3 is not None
@@ -401,12 +466,13 @@ class Assessment(models.Model):
                     hr2=self.harvard_step_test_hr2,
                     hr3=self.harvard_step_test_hr3
                 )
-                # Store as properties since we don't have dedicated fields
-                self._harvard_step_test_score = step_score
+                # Store the calculated score in the manual field if not overridden
+                self.harvard_step_test_score_manual = step_score
                 self._harvard_step_test_pfi = pfi
-            else:
-                self._harvard_step_test_score = None
-                self._harvard_step_test_pfi = None
+            
+            # Use manual score if available
+            self._harvard_step_test_score = self.harvard_step_test_score_manual
+            self._harvard_step_test_pfi = getattr(self, '_harvard_step_test_pfi', None)
             
             # Prepare data for category score calculation
             assessment_data = {
@@ -416,12 +482,14 @@ class Assessment(models.Model):
                 'single_leg_balance_left_open': self.single_leg_balance_left_eyes_open or 0,
                 'single_leg_balance_right_closed': self.single_leg_balance_right_eyes_closed or 0,
                 'single_leg_balance_left_closed': self.single_leg_balance_left_eyes_closed or 0,
+                'single_leg_balance_score': self._single_leg_balance_score,  # Use manual score if available
                 'toe_touch_score': self.toe_touch_score or 1,
                 'shoulder_mobility_score': self.shoulder_mobility_score or 1,
                 'farmers_carry_score': self.farmer_carry_score or 1,
                 'step_test_hr1': self.harvard_step_test_hr1 or 90,
                 'step_test_hr2': self.harvard_step_test_hr2 or 80,
-                'step_test_hr3': self.harvard_step_test_hr3 or 70
+                'step_test_hr3': self.harvard_step_test_hr3 or 70,
+                'harvard_step_test_score': self._harvard_step_test_score  # Use manual score if available
             }
             
             client_details = {
@@ -429,27 +497,36 @@ class Assessment(models.Model):
                 'age': self._calculate_client_age() or 30
             }
             
-            # Calculate category scores
+            # Calculate category scores only if not manually overridden
             scores = calculate_category_scores(assessment_data, client_details)
             
-            # Update model fields with temperature adjustment if applicable
-            self.overall_score = apply_temperature_adjustment(
-                scores['overall_score'], 
-                self.temperature, 
-                self.test_environment or 'indoor'
-            )
-            self.strength_score = apply_temperature_adjustment(
-                scores['strength_score'],
-                self.temperature,
-                self.test_environment or 'indoor'
-            )
-            self.mobility_score = scores['mobility_score']  # No adjustment for indoor tests
-            self.balance_score = scores['balance_score']    # No adjustment for indoor tests
-            self.cardio_score = apply_temperature_adjustment(
-                scores['cardio_score'],
-                self.temperature,
-                self.test_environment or 'indoor'
-            )
+            # Update model fields with temperature adjustment if applicable, respecting manual overrides
+            if not self.overall_score_manual_override:
+                self.overall_score = apply_temperature_adjustment(
+                    scores['overall_score'], 
+                    self.temperature, 
+                    self.test_environment or 'indoor'
+                )
+            
+            if not self.strength_score_manual_override:
+                self.strength_score = apply_temperature_adjustment(
+                    scores['strength_score'],
+                    self.temperature,
+                    self.test_environment or 'indoor'
+                )
+            
+            if not self.mobility_score_manual_override:
+                self.mobility_score = scores['mobility_score']  # No adjustment for indoor tests
+            
+            if not self.balance_score_manual_override:
+                self.balance_score = scores['balance_score']    # No adjustment for indoor tests
+            
+            if not self.cardio_score_manual_override:
+                self.cardio_score = apply_temperature_adjustment(
+                    scores['cardio_score'],
+                    self.temperature,
+                    self.test_environment or 'indoor'
+                )
             
             # Store PFI as a property
             self._pfi = scores.get('pfi')
