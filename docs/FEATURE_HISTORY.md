@@ -34,6 +34,22 @@ This document contains the complete history of feature implementations for The5H
 - Created comprehensive test suite and user documentation
 - See `logs/maintenance/MANUAL_SCORE_FIELD_FIXES_2025_06_25.md`
 
+### Manual Score Override Feature (Database Implementation)
+- Implemented comprehensive manual score override system with database support
+- Added 15 new fields to Assessment model for tracking overrides
+- Created migration 0012_add_manual_score_overrides.py
+- Updated UI to convert readonly fields to editable dropdowns
+- Modified backend logic to respect manual overrides
+- Successfully deployed to Heroku production
+- Git commit: cffe114
+- See `logs/feature/MANUAL_SCORE_OVERRIDE_IMPLEMENTATION_LOG.md`
+
+### Delete Button HTMX Attributes Display Fix
+- Fixed HTMX attributes displaying as text on assessment detail delete button
+- Moved hx-delete, hx-confirm, and hx-target inside button tag
+- Git commit: 9a69286
+- See `logs/maintenance/DELETE_BUTTON_HTMX_FIX_2025_06_25.md`
+
 ## 2025-06-24 (Session 17)
 
 ### Assessment Filtering and Comparison Feature

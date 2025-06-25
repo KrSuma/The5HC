@@ -71,6 +71,8 @@ python manage.py load_mcq_questions [--file FILE]
 - ✅ Dashboard score display fix (floatformat:2 for decimal precision)
 - ✅ Physical assessment category reorganization
 - ✅ Manual score field fixes (all 7 phases complete with visual feedback)
+- ✅ Manual score override feature (5 phases complete, deployed to production)
+- ✅ Delete button HTMX attributes display fix
 
 ### Active Work
 - MCQ System: 8/10 phases complete (Phase 9: PDF reports pending)

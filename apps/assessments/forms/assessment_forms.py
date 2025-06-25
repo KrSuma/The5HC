@@ -74,7 +74,7 @@ class AssessmentForm(forms.ModelForm):
             
             # Overhead Squat
             'overhead_squat_score': forms.Select(
-                choices=[(None, '선택'), (0, '0 - 통증'), (1, '1 - 불가'), (2, '2 - 보상동작'), (3, '3 - 완벽'), (4, '4 - 우수'), (5, '5 - 탁월')],
+                choices=[(None, '선택'), (0, '0 - 통증'), (1, '1 - 불가'), (2, '2 - 보상동작'), (3, '3 - 완벽')],
                 attrs={
                     'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'x-model': 'overheadSquatScore',
@@ -148,7 +148,7 @@ class AssessmentForm(forms.ModelForm):
                 }
             ),
             'push_up_score': forms.Select(
-                choices=[(None, '자동 계산'), (0, '0'), (1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')],
+                choices=[(None, '자동 계산'), (1, '1 - 개선 필요'), (2, '2 - 평균'), (3, '3 - 양호'), (4, '4 - 우수')],
                 attrs={
                     'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'x-model': 'pushUpScore',
@@ -218,7 +218,7 @@ class AssessmentForm(forms.ModelForm):
                 }
             ),
             'single_leg_balance_score_manual': forms.Select(
-                choices=[(None, '자동 계산'), (0, '0'), (1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')],
+                choices=[(None, '자동 계산'), (1, '1 - 개선 필요'), (2, '2 - 평균'), (3, '3 - 양호'), (4, '4 - 우수')],
                 attrs={
                     'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'x-model': 'balanceScore',
@@ -243,7 +243,7 @@ class AssessmentForm(forms.ModelForm):
                 }
             ),
             'toe_touch_score': forms.Select(
-                choices=[(None, '자동 계산'), (0, '0'), (1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')],
+                choices=[(None, '자동 계산'), (1, '1 - 개선 필요'), (2, '2 - 평균'), (3, '3 - 양호'), (4, '4 - 우수')],
                 attrs={
                     'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'x-model': 'toeTouchScore',
@@ -289,7 +289,7 @@ class AssessmentForm(forms.ModelForm):
                 }
             ),
             'shoulder_mobility_score': forms.Select(
-                choices=[(None, '선택'), (0, '0 - 통증'), (1, '1 - 2주먹 이상'), (2, '2 - 1.5주먹'), (3, '3 - 1주먹 이내'), (4, '4 - 0.5주먹'), (5, '5 - 손 겹침')],
+                choices=[(None, '선택'), (0, '0 - 통증'), (1, '1 - 2주먹 이상'), (2, '2 - 1.5주먹'), (3, '3 - 1주먹 이내')],
                 attrs={
                     'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'x-model': 'shoulderMobilityScore',
@@ -371,7 +371,7 @@ class AssessmentForm(forms.ModelForm):
                 }
             ),
             'farmer_carry_score': forms.Select(
-                choices=[(None, '자동 계산'), (0, '0'), (1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')],
+                choices=[(None, '자동 계산'), (1, '1 - 개선 필요'), (2, '2 - 평균'), (3, '3 - 양호'), (4, '4 - 우수')],
                 attrs={
                     'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'x-model': 'farmerScore',
@@ -439,7 +439,7 @@ class AssessmentForm(forms.ModelForm):
                 }
             ),
             'harvard_step_test_score_manual': forms.Select(
-                choices=[(None, '자동 계산'), (0, '0'), (1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')],
+                choices=[(None, '자동 계산'), (1, '1 - 개선 필요'), (2, '2 - 평균'), (3, '3 - 양호'), (4, '4 - 우수')],
                 attrs={
                     'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
                     'x-model': 'harvardScore',

@@ -48,7 +48,7 @@ class Assessment(models.Model):
     # Overhead Squat Test
     overhead_squat_score = models.IntegerField(
         null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(5)]
+        validators=[MinValueValidator(0), MaxValueValidator(3)]
     )
     overhead_squat_notes = models.TextField(blank=True, null=True)
     
@@ -92,7 +92,7 @@ class Assessment(models.Model):
     )
     push_up_score = models.IntegerField(
         null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(5)]
+        validators=[MinValueValidator(1), MaxValueValidator(4)]
     )
     push_up_notes = models.TextField(blank=True, null=True)
     
@@ -122,7 +122,7 @@ class Assessment(models.Model):
     )
     toe_touch_score = models.IntegerField(
         null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(5)]
+        validators=[MinValueValidator(1), MaxValueValidator(4)]
     )
     toe_touch_notes = models.TextField(blank=True, null=True)
     
@@ -150,7 +150,7 @@ class Assessment(models.Model):
     )
     shoulder_mobility_score = models.IntegerField(
         null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(5)]
+        validators=[MinValueValidator(0), MaxValueValidator(3)]
     )
     shoulder_mobility_notes = models.TextField(blank=True, null=True)
     
@@ -195,7 +195,7 @@ class Assessment(models.Model):
     )
     farmer_carry_score = models.IntegerField(
         null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(5)]
+        validators=[MinValueValidator(1), MaxValueValidator(4)]
     )
     farmer_carry_notes = models.TextField(blank=True, null=True)
     
@@ -294,7 +294,7 @@ class Assessment(models.Model):
     # Manual score fields for tests without dedicated score fields
     single_leg_balance_score_manual = models.IntegerField(
         null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(5)],
+        validators=[MinValueValidator(1), MaxValueValidator(4)],
         help_text="Manual score for single leg balance test"
     )
     single_leg_balance_score_manual_override = models.BooleanField(
@@ -303,7 +303,7 @@ class Assessment(models.Model):
     )
     harvard_step_test_score_manual = models.IntegerField(
         null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(5)],
+        validators=[MinValueValidator(1), MaxValueValidator(4)],
         help_text="Manual score for Harvard step test"
     )
     harvard_step_test_score_manual_override = models.BooleanField(

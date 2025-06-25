@@ -622,13 +622,12 @@ def calculate_category_scores(assessment_data: Dict[str, Any], client_details: D
     toe_touch_score = float(assessment_data.get('toe_touch_score', 1))
     shoulder_mobility_score = float(assessment_data.get('shoulder_mobility_score', 1))
 
-    # Convert shoulder_mobility_score from 0-5 scale to 1-4 scale for consistency
-    # Note: Score 0 maps to 1, Score 5 maps to 4
+    # Shoulder mobility is already 0-3 scale, normalize to 1-4 for calculation
     if shoulder_mobility_score == 0:
         shoulder_mobility_normalized = 1
     else:
-        # Map 1-5 to 1.6-4 range
-        shoulder_mobility_normalized = 1 + (shoulder_mobility_score - 1) * 0.6
+        # Map 1-3 to 2-4 range
+        shoulder_mobility_normalized = 1 + shoulder_mobility_score
 
     mobility_score = (toe_touch_score + shoulder_mobility_normalized) / 2 * 25
 
@@ -641,13 +640,12 @@ def calculate_category_scores(assessment_data: Dict[str, Any], client_details: D
     )
     
     overhead_squat_score = float(assessment_data.get('overhead_squat_score', 1))
-    # Convert overhead_squat_score from 0-5 scale to 1-4 scale for consistency
-    # Note: Score 0 maps to 1, Score 5 maps to 4
+    # Overhead squat is already 0-3 scale, normalize to 1-4 for calculation
     if overhead_squat_score == 0:
         overhead_squat_normalized = 1
     else:
-        # Map 1-5 to 1.6-4 range
-        overhead_squat_normalized = 1 + (overhead_squat_score - 1) * 0.6
+        # Map 1-3 to 2-4 range
+        overhead_squat_normalized = 1 + overhead_squat_score
 
     balance_score = (single_leg_balance_score + overhead_squat_normalized) / 2 * 25
 

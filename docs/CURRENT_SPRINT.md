@@ -48,11 +48,30 @@ This document tracks the most recent development sessions. For complete history,
   - Main: `logs/maintenance/MANUAL_SCORE_FIELD_FIXES_2025_06_25.md`
   - Phase-specific: `MANUAL_SCORE_PHASE*_2025_06_25.md`
 
+#### 5. Manual Score Override Feature (Database Implementation) ✅
+- **Phase 1**: Database schema - Added 15 fields for manual overrides
+- **Phase 2**: UI Enhancement - Converted score fields to dropdowns
+- **Phase 3**: Backend Logic - Updated calculate_scores() method
+- **Phase 4**: Visual Feedback - Blue ring and badges
+- **Phase 5**: Testing - Created comprehensive test suite
+- **Deployment**: Successfully deployed to Heroku production
+- **Migration**: `0012_add_manual_score_overrides.py`
+- **Commit**: cffe114
+- **Log**: `logs/feature/MANUAL_SCORE_OVERRIDE_IMPLEMENTATION_LOG.md`
+
+#### 6. Delete Button HTMX Attributes Fix ✅
+- **Issue**: HTMX attributes showing as text on delete button
+- **Fix**: Moved attributes inside button tag
+- **File**: `templates/assessments/assessment_detail_content.html`
+- **Commit**: 9a69286
+- **Log**: `logs/maintenance/DELETE_BUTTON_HTMX_FIX_2025_06_25.md`
+
 ### Session Summary
 - **Focus**: Bug fixes and UI improvements
-- **Total Fixes**: 4 major issues resolved
-- **Documentation**: Created 8 new log files
-- **Ready for Production**: Manual score feature deployment-ready
+- **Total Fixes**: 6 major issues resolved
+- **Documentation**: Created 10+ new log files
+- **Production Deployments**: Manual score override feature successfully deployed
+- **Ready for Production**: All fixes tested and stable
 
 ---
 
