@@ -829,19 +829,27 @@ function assessmentForm() {
         initializeScoresFromForm() {
             // Initialize overhead squat score
             const overheadSquatSelect = document.querySelector('[name="overhead_squat_score"]');
-            if (overheadSquatSelect && overheadSquatSelect.value) {
-                this.overheadSquatScore = parseInt(overheadSquatSelect.value);
-                if (this.overheadSquatScore !== null) {
+            if (overheadSquatSelect && overheadSquatSelect.value && overheadSquatSelect.value !== '') {
+                const value = parseInt(overheadSquatSelect.value);
+                if (!isNaN(value)) {
+                    this.overheadSquatScore = value;
+                    // Only mark as manually overridden if it's an edit form (has assessment ID)
+                    {% if form.instance.pk %}
                     this.manualOverrides.overheadSquat = true;
+                    {% endif %}
                 }
             }
             
             // Initialize shoulder mobility score
             const shoulderMobilitySelect = document.querySelector('[name="shoulder_mobility_score"]');
-            if (shoulderMobilitySelect && shoulderMobilitySelect.value) {
-                this.shoulderMobilityScore = parseInt(shoulderMobilitySelect.value);
-                if (this.shoulderMobilityScore !== null) {
+            if (shoulderMobilitySelect && shoulderMobilitySelect.value && shoulderMobilitySelect.value !== '') {
+                const value = parseInt(shoulderMobilitySelect.value);
+                if (!isNaN(value)) {
+                    this.shoulderMobilityScore = value;
+                    // Only mark as manually overridden if it's an edit form (has assessment ID)
+                    {% if form.instance.pk %}
                     this.manualOverrides.shoulderMobility = true;
+                    {% endif %}
                 }
             }
             

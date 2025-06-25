@@ -282,11 +282,11 @@ class Command(BaseCommand):
         for standard in push_up_male_standards + push_up_female_standards:
             modified_standard = standard.copy()
             modified_standard['variation_type'] = 'modified'
-            modified_standard['name'] = modified_standard['name'].replace('푸시업', '수정된 푸시업')
+            modified_standard['name'] = modified_standard['name'].replace('푸시업', '보정된 푸시업')
             modified_standard['excellent_threshold'] = round(standard['excellent_threshold'] * 0.7)
             modified_standard['good_threshold'] = round(standard['good_threshold'] * 0.7)
             modified_standard['average_threshold'] = round(standard['average_threshold'] * 0.7)
-            modified_standard['description'] = modified_standard['description'].replace('푸시업', '수정된 푸시업 (무릎)')
+            modified_standard['description'] = modified_standard['description'].replace('푸시업', '보정된 푸시업 (무릎)')
             modified_push_up_standards.append(modified_standard)
         
         # Wall push-up standards (40% of standard)

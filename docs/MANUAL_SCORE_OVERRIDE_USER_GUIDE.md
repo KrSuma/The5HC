@@ -78,7 +78,7 @@ Consider using manual score override when:
 
 2. **Special circumstances / 특수한 상황**
    - Previous injury affecting performance / 이전 부상이 성능에 영향
-   - Modified test protocol used / 수정된 테스트 프로토콜 사용
+   - Modified test protocol used / 보정된 테스트 프로토콜 사용
    - Environmental factors affecting test / 환경 요인이 테스트에 영향
 
 3. **Progressive assessment / 점진적 평가**
