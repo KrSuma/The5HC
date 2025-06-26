@@ -36,8 +36,8 @@ class BaseService:
     @property
     def organization(self):
         """Get organization from user's trainer profile."""
-        if self.user and hasattr(self.user, 'trainer'):
-            return self.user.trainer.organization
+        if self.user and hasattr(self.user, 'trainer_profile'):
+            return self.user.trainer_profile.organization
         return None
     
     def get_queryset(self) -> QuerySet:
@@ -56,7 +56,7 @@ class BaseService:
             queryset = queryset.filter(organization=self.organization)
         elif self.organization and hasattr(self.model, 'trainer'):
             # Filter by trainer's organization
-            queryset = queryset.filter(trainer__trainer__organization=self.organization)
+            queryset = queryset.filter(trainer__organization=self.organization)
         
         return queryset
     
