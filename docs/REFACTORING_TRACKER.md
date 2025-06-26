@@ -20,7 +20,7 @@
 | Original URL | Refactored URL (FBV) | Mixin URL (CBV) | Status |
 |-------------|---------------------|-----------------|---------|
 | `/clients/` | `/clients-test/refactored/` | `/clients-test/mixins/` | ✅ Tested |
-| `/clients/add/` | `/clients-test/refactored/add/` | `/clients-test/mixins/add/` | 🔄 Not tested |
+| `/clients/add/` | `/clients-test/refactored/add/` | `/clients-test/mixins/add/` | 🔄 Testing in progress |
 | `/clients/<id>/` | `/clients-test/refactored/<id>/` | `/clients-test/mixins/<id>/` | 🔄 Not tested |
 | `/clients/<id>/edit/` | `/clients-test/refactored/<id>/edit/` | `/clients-test/mixins/<id>/edit/` | 🔄 Not tested |
 | `/clients/<id>/delete/` | `/clients-test/refactored/<id>/delete/` | `/clients-test/mixins/<id>/delete/` | 🔄 Not tested |
@@ -114,6 +114,9 @@
 | Wrong filter path | BaseService | ✅ Fixed | trainer__trainer__ → trainer__ |
 | Missing method | ClientListViewWithMixins | ✅ Fixed | Removed get_search_form() |
 | Permission denied | View mixins | ✅ Fixed | Added permission_check_mode |
+| Wrong form parameter | views_refactored.py | ✅ Fixed | Changed user= to trainer= |
+| Wrong form parameter | views_with_mixins.py | ✅ Fixed | Changed user= to trainer= |
+| Missing permission check | Mixin views | ✅ Fixed | Added has_permission() method |
 
 ## Testing Results
 

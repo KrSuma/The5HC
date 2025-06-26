@@ -136,7 +136,7 @@ def client_add_view_refactored(request):
     service = ClientService(user=request.user)
     
     if request.method == 'POST':
-        form = ClientForm(request.POST, user=request.user)
+        form = ClientForm(request.POST, trainer=request.trainer)
         if form.is_valid():
             # Use service to create client
             client_data = form.cleaned_data
@@ -155,7 +155,7 @@ def client_add_view_refactored(request):
                 for error in service.errors:
                     form.add_error(None, error)
     else:
-        form = ClientForm(user=request.user)
+        form = ClientForm(trainer=request.trainer)
     
     context = {
         'form': form,
@@ -185,7 +185,7 @@ def client_edit_view_refactored(request, pk):
         return redirect('clients:client_list')
     
     if request.method == 'POST':
-        form = ClientForm(request.POST, instance=client, user=request.user)
+        form = ClientForm(request.POST, instance=client, trainer=request.trainer)
         if form.is_valid():
             # Use service to update client
             success = service.update_client(client, form.cleaned_data)
@@ -203,7 +203,7 @@ def client_edit_view_refactored(request, pk):
                 for error in service.errors:
                     form.add_error(None, error)
     else:
-        form = ClientForm(instance=client, user=request.user)
+        form = ClientForm(instance=client, trainer=request.trainer)
     
     context = {
         'form': form,

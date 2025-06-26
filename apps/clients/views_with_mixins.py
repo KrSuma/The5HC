@@ -122,6 +122,11 @@ class ClientDetailViewWithMixins(
     
     # Permission settings
     permission_required = 'clients.view_client'
+    permission_check_mode = 'any'  # Allow if user has trainer role
+    
+    def has_permission(self):
+        """Check if user has trainer role."""
+        return hasattr(self.request, 'trainer') and self.request.trainer is not None
     
     # Organization filter settings
     organization_field = 'trainer__organization'
@@ -165,6 +170,11 @@ class ClientCreateViewWithMixins(
     
     # Permission settings
     permission_required = 'clients.add_client'
+    permission_check_mode = 'any'  # Allow if user has trainer role
+    
+    def has_permission(self):
+        """Check if user has trainer role."""
+        return hasattr(self.request, 'trainer') and self.request.trainer is not None
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -176,9 +186,9 @@ class ClientCreateViewWithMixins(
         self.service = ClientService(user=request.user)
     
     def get_form_kwargs(self):
-        """Pass user to form."""
+        """Pass trainer to form."""
         kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
+        kwargs['trainer'] = self.request.trainer
         return kwargs
     
     def form_valid(self, form):
@@ -236,6 +246,11 @@ class ClientUpdateViewWithMixins(
     
     # Permission settings
     permission_required = 'clients.change_client'
+    permission_check_mode = 'any'  # Allow if user has trainer role
+    
+    def has_permission(self):
+        """Check if user has trainer role."""
+        return hasattr(self.request, 'trainer') and self.request.trainer is not None
     
     # Organization filter settings
     organization_field = 'trainer__organization'
@@ -250,9 +265,9 @@ class ClientUpdateViewWithMixins(
         self.service = ClientService(user=request.user)
     
     def get_form_kwargs(self):
-        """Pass user to form."""
+        """Pass trainer to form."""
         kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
+        kwargs['trainer'] = self.request.trainer
         return kwargs
     
     def form_valid(self, form):
@@ -304,6 +319,11 @@ class ClientDeleteViewWithMixins(
     
     # Permission settings
     permission_required = 'clients.delete_client'
+    permission_check_mode = 'any'  # Allow if user has trainer role
+    
+    def has_permission(self):
+        """Check if user has trainer role."""
+        return hasattr(self.request, 'trainer') and self.request.trainer is not None
     
     # Organization filter settings
     organization_field = 'trainer__organization'
