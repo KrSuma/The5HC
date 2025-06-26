@@ -2,6 +2,9 @@
 {% load static %}
 {% load form_helpers %}
 
+<!-- Include timer CSS -->
+<link rel="stylesheet" href="{% static 'css/timers.css' %}">
+
 <style>
     /* Step indicator styles */
     .step-indicator {
@@ -72,6 +75,11 @@
 
 <div class="container mx-auto px-4 py-8" x-data="assessmentForm()">
     <h1 class="text-3xl font-bold text-gray-800 mb-8">체력 평가 등록</h1>
+    
+    <!-- Debug: Show current step -->
+    <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+        <strong>Debug:</strong> Current Step = <span x-text="currentStep"></span>
+    </div>
     
     <!-- Client Selection (if not pre-selected) -->
     {% if not client %}
