@@ -10,7 +10,9 @@ from django.template.loader import render_to_string
 import json
 
 from .models import Assessment, QuestionCategory, MultipleChoiceQuestion, QuestionResponse
-from .forms import AssessmentForm, AssessmentSearchForm
+# Deploy refactored forms - using the new modular form structure
+from .forms.refactored_forms import AssessmentWithTestsForm as AssessmentForm
+from .forms import AssessmentSearchForm
 from .forms.mcq_forms import MCQResponseForm, CategoryMCQFormSet
 from apps.clients.models import Client
 from apps.trainers.decorators import requires_trainer, organization_member_required
