@@ -319,10 +319,17 @@ def assessment_add_view(request):
                    ) if not client else None
     }
     
+    # Check if we should use the refactored template (for testing)
+    use_refactored = request.GET.get('refactored') == 'true'
+    
     # Check for HTMX navigation request
     if request.headers.get('HX-Request') and request.headers.get('HX-Target') == 'main-content':
+        if use_refactored:
+            return render(request, 'assessments/assessment_form_refactored_content.html', context)
         return render(request, 'assessments/assessment_form_content.html', context)
     
+    if use_refactored:
+        return render(request, 'assessments/assessment_form_refactored.html', context)
     return render(request, 'assessments/assessment_form.html', context)
 
 
