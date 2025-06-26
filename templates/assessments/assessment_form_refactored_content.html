@@ -330,7 +330,7 @@
                             <h4 class="font-medium text-gray-600 mb-3">눈 뜨고</h4>
                             <div class="space-y-6">
                                 <!-- Right Leg Timer -->
-                                <div x-data="balanceTimer('right_open', 'single_leg_balance_right_eyes_open')">
+                                <div x-data="balanceTimer('right_open', 'single_leg_balance_right_eyes_open')" x-init="console.log('Balance timer initialized:', $data)">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">오른발 (초)</label>
                                     <div class="timer-section">
                                         <div class="timer-display">
@@ -538,4 +538,16 @@
 </div>
 
 <!-- Include the Alpine.js component -->
+<script>
+    // Wait for Alpine to be ready
+    document.addEventListener('alpine:init', () => {
+        console.log('Alpine is initializing...');
+        // The assessment-timers.js should have already registered components
+        if (window._assessmentTimersLoaded) {
+            console.log('Timer components are loaded');
+        } else {
+            console.error('Timer components not loaded!');
+        }
+    });
+</script>
 <script src="{% static 'js/assessment-form-refactored.js' %}"></script>

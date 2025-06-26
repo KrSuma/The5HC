@@ -70,7 +70,7 @@ def render_select_field(field, alpine_model=None, alpine_change=None, alpine_cla
     
     # Add standard attributes
     attr_list.append(f'name="{field.html_name}"')
-    attr_list.append(f'id="id_{field.html_name}"')
+    attr_list.append(f'id="{field.id_for_label}"')
     
     # Add CSS classes
     css_classes = attrs.get('class', 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500')
@@ -128,7 +128,7 @@ def render_input_field(field, alpine_model=None, alpine_input=None, **attrs):
     attr_list = []
     attr_list.append(f'type="{input_type}"')
     attr_list.append(f'name="{field.html_name}"')
-    attr_list.append(f'id="id_{field.html_name}"')
+    attr_list.append(f'id="{field.id_for_label}"')
     
     # Add value
     value = field.value() or ''
@@ -177,7 +177,7 @@ def render_checkbox_field(field, alpine_model=None, alpine_change=None, **attrs)
     attr_list = []
     attr_list.append('type="checkbox"')
     attr_list.append(f'name="{field.html_name}"')
-    attr_list.append(f'id="id_{field.html_name}"')
+    attr_list.append(f'id="{field.id_for_label}"')
     
     # Add checked state
     if field.value():
