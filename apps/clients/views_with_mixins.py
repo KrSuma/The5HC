@@ -65,7 +65,7 @@ class ClientListViewWithMixins(
     def get_queryset(self):
         """Use service layer for getting queryset with filters."""
         # Get form data
-        form = self.get_search_form()
+        form = ClientSearchForm(self.request.GET)
         filters = {}
         
         if form.is_valid():
@@ -79,6 +79,7 @@ class ClientListViewWithMixins(
         context = super().get_context_data(**kwargs)
         context['metrics'] = self.service.get_dashboard_metrics()
         context['page_title'] = '고객 관리'
+        context['form'] = ClientSearchForm(self.request.GET)
         return context
     
     def render_to_response(self, context, **response_kwargs):
