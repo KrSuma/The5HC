@@ -1,1 +1,1 @@
-"""Tests for core app services."""
+# Core app tests
