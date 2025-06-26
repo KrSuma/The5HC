@@ -507,11 +507,19 @@ class Assessment(models.Model):
     
     def save(self, *args, **kwargs):
         """Override save to calculate scores before saving."""
-        # Calculate scores if test data is present
-        if any([self.overhead_squat_score, self.push_up_score, 
+        # Skip score calculation if update_fields is specified (to avoid recursion)
+        if 'update_fields' not in kwargs:
+            # Calculate scores if test data is present and not already calculating
+            if not getattr(self, '_calculating_scores', False) and any([
+                self.overhead_squat_score, self.push_up_score, 
                 self.toe_touch_score, self.shoulder_mobility_score,
-                self.farmer_carry_score]):
-            self.calculate_scores()
+                self.farmer_carry_score
+            ]):
+                self._calculating_scores = True
+                try:
+                    self.calculate_scores()
+                finally:
+                    self._calculating_scores = False
         super().save(*args, **kwargs)
     
     @property

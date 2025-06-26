@@ -53,9 +53,22 @@ class AssessmentService(BaseService):
         try:
             with transaction.atomic():
                 # Create core assessment
+                # Get trainer from data or user
+                trainer = data.get('trainer')
+                if not trainer and hasattr(self.user, 'trainer'):
+                    trainer = self.user.trainer
+                # If still no trainer, try to get from client
+                if not trainer and 'client_id' in data:
+                    try:
+                        from apps.clients.models import Client
+                        client = Client.objects.get(id=data['client_id'])
+                        trainer = client.trainer
+                    except Client.DoesNotExist:
+                        pass
+                
                 assessment = Assessment(
                     client_id=data['client_id'],
-                    trainer=self.user.trainer if hasattr(self.user, 'trainer') else None,
+                    trainer=trainer,
                     date=data['date'],
                     test_environment=data.get('test_environment', 'indoor'),
                     temperature=data.get('temperature')
@@ -144,12 +157,27 @@ class AssessmentService(BaseService):
                 assessment.comprehensive_score = mcq_scores.get('comprehensive_score')
             
             # Save the updated assessment without triggering calculate_scores again
-            assessment.save(update_fields=[
-                'overall_score', 'strength_score', 'mobility_score', 
-                'balance_score', 'cardio_score', 'injury_risk_score', 
-                'risk_factors', 'knowledge_score', 'lifestyle_score', 
-                'readiness_score', 'comprehensive_score'
-            ])
+            # Use update() to avoid triggering the save() override which causes recursion
+            update_fields = {
+                'overall_score': assessment.overall_score,
+                'strength_score': assessment.strength_score,
+                'mobility_score': assessment.mobility_score,
+                'balance_score': assessment.balance_score,
+                'cardio_score': assessment.cardio_score,
+                'injury_risk_score': assessment.injury_risk_score,
+                'risk_factors': assessment.risk_factors
+            }
+            
+            # Add MCQ fields if they exist
+            if hasattr(assessment, 'knowledge_score') and assessment.knowledge_score is not None:
+                update_fields.update({
+                    'knowledge_score': assessment.knowledge_score,
+                    'lifestyle_score': assessment.lifestyle_score,
+                    'readiness_score': assessment.readiness_score,
+                    'comprehensive_score': assessment.comprehensive_score
+                })
+            
+            Assessment.objects.filter(pk=assessment.pk).update(**update_fields)
             
         except Exception as e:
             # Log error but don't fail - provide default scores

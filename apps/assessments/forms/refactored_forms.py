@@ -562,6 +562,13 @@ class AssessmentWithTestsForm:
             # Prepare data for the service
             assessment_data = self.assessment_form.cleaned_data.copy()
             
+            # Convert client object to client_id for service
+            if 'client' in assessment_data and assessment_data['client']:
+                assessment_data['client_id'] = assessment_data['client'].id
+                # Also set trainer from client if not already set
+                if not assessment_data.get('trainer') and hasattr(assessment_data['client'], 'trainer'):
+                    assessment_data['trainer'] = assessment_data['client'].trainer
+            
             # Add test data from individual forms
             for test_type, form in self.test_forms.items():
                 if form.cleaned_data:
