@@ -12,9 +12,11 @@ between views and models. This promotes:
 from .base import BaseService
 from .client_service import ClientService
 from .payment_service import PaymentService
+from .report_service import ReportService
 
 __all__ = [
     'BaseService',
     'ClientService', 
     'PaymentService',
+    'ReportService',
 ]
