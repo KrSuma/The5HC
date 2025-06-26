@@ -44,6 +44,7 @@ class ClientListViewWithMixins(
     
     # Permission mixin settings
     permission_required = 'clients.view_client'
+    permission_check_mode = 'any'  # Allow if user has trainer role
     
     # Organization filter mixin settings
     organization_field = 'trainer__organization'
