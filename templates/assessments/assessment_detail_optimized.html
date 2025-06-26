@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load assessment_tags %}
+{% load assessment_refactored_tags %}
+
+{% block title %}평가 상세 (최적화) - {{ assessment.client.name }} - The5HC{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-start">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">평가 결과 (최적화된 뷰)</h1>
+            <p class="text-gray-600 mt-2">
+                <a href="{% url 'clients:detail' assessment.client.pk %}" 
+                   class="text-blue-600 hover:text-blue-800">
+                    {{ assessment.client.name }}
+                </a> 
+                | {{ assessment.date|date:"Y년 m월 d일" }}
+            </p>
+        </div>
+        <div class="flex space-x-2">
+            <a href="{% url 'reports:generate' assessment.pk %}" 
+               class="px-6 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200">
+                PDF 리포트
+            </a>
+            <button class="px-6 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200"
+                    hx-delete="{% url 'assessments:delete' assessment.pk %}"
+                    hx-confirm="정말로 이 평가를 삭제하시겠습니까?"
+                    hx-target="body">
+                삭제
+            </button>
+        </div>
+    </div>
+
+    <!-- Query Optimization Notice -->
+    <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div class="flex items-start">
+            <svg class="h-5 w-5 text-green-400 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            <div>
+                <h3 class="text-sm font-medium text-green-800">최적화된 쿼리 사용</h3>
+                <p class="mt-1 text-sm text-green-700">
+                    이 뷰는 select_related를 사용하여 모든 테스트 데이터를 단일 쿼리로 로드합니다.
+                    N+1 쿼리 문제가 해결되어 성능이 크게 향상되었습니다.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Overall Score Card -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">종합 평가</h2>
+                <div class="text-center">
+                    <div class="relative inline-block">
+                        <div class="text-6xl font-bold 
+                            {% if assessment.overall_score >= 90 %}text-green-600
+                            {% elif assessment.overall_score >= 80 %}text-blue-600
+                            {% elif assessment.overall_score >= 70 %}text-yellow-600
+                            {% elif assessment.overall_score >= 60 %}text-orange-600
+                            {% else %}text-red-600{% endif %}">
+                            {{ assessment.overall_score|floatformat:1|default:"0.0" }}
+                        </div>
+                        <div class="text-sm text-gray-600 mt-2">
+                            {{ score_descriptions.overall }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Category Scores -->
+                <div class="mt-6 space-y-4">
+                    <div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">근력</span>
+                            <span class="font-medium">{{ assessment.strength_score|floatformat:0|default:"0" }}%</span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: {{ assessment.strength_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">유연성</span>
+                            <span class="font-medium">{{ assessment.mobility_score|floatformat:0|default:"0" }}%</span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ assessment.mobility_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">균형</span>
+                            <span class="font-medium">{{ assessment.balance_score|floatformat:0|default:"0" }}%</span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-purple-600 h-2 rounded-full" style="width: {{ assessment.balance_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">심폐지구력</span>
+                            <span class="font-medium">{{ assessment.cardio_score|floatformat:0|default:"0" }}%</span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-red-600 h-2 rounded-full" style="width: {{ assessment.cardio_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Results -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-6">세부 테스트 결과</h2>
+                
+                <div class="space-y-6">
+                    <!-- Overhead Squat Test (New Structure) -->
+                    {% if assessment|has_test_data:"overhead_squat" %}
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-3">오버헤드 스쿼트</h3>
+                        <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded">
+                            <div>
+                                <span class="text-sm text-gray-600">점수:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_score:"overhead_squat" }}/4</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">품질:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_field:"overhead_squat_test.quality"|default:"-" }}</span>
+                            </div>
+                            <div class="col-span-2">
+                                <span class="text-sm text-gray-600">보상 움직임:</span>
+                                <ul class="mt-1 text-sm">
+                                    {% if assessment|get_test_field:"overhead_squat_test.knee_valgus" %}
+                                        <li class="inline-block mr-3">• 무릎 내측 붕괴</li>
+                                    {% endif %}
+                                    {% if assessment|get_test_field:"overhead_squat_test.forward_lean" %}
+                                        <li class="inline-block mr-3">• 전방 기울임</li>
+                                    {% endif %}
+                                    {% if assessment|get_test_field:"overhead_squat_test.heel_lift" %}
+                                        <li class="inline-block mr-3">• 발뒤꿈치 들림</li>
+                                    {% endif %}
+                                    {% if assessment|get_test_field:"overhead_squat_test.arm_drop" %}
+                                        <li class="inline-block mr-3">• 팔 전방 하강</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Push-up Test (New Structure) -->
+                    {% if assessment|has_test_data:"push_up" %}
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-3">푸시업</h3>
+                        <div class="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded">
+                            <div>
+                                <span class="text-sm text-gray-600">완료 개수:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_field:"push_up_test.reps" }}개</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">타입:</span>
+                                <span class="font-medium ml-2">
+                                    {% if assessment|get_test_field:"push_up_test.push_up_type" == "standard" %}표준
+                                    {% elif assessment|get_test_field:"push_up_test.push_up_type" == "modified" %}변형
+                                    {% else %}{{ assessment|get_test_field:"push_up_test.push_up_type" }}{% endif %}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">점수:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_score:"push_up" }}/4</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Balance Test (New Structure) -->
+                    {% if assessment|has_test_data:"balance" %}
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-3">외발 균형</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded">
+                            <div>
+                                <span class="text-sm text-gray-600 block">우측 눈뜬</span>
+                                <span class="font-medium">{{ assessment|get_test_field:"single_leg_balance_test.right_eyes_open" }}초</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600 block">좌측 눈뜬</span>
+                                <span class="font-medium">{{ assessment|get_test_field:"single_leg_balance_test.left_eyes_open" }}초</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600 block">우측 눈감은</span>
+                                <span class="font-medium">{{ assessment|get_test_field:"single_leg_balance_test.right_eyes_closed" }}초</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600 block">좌측 눈감은</span>
+                                <span class="font-medium">{{ assessment|get_test_field:"single_leg_balance_test.left_eyes_closed" }}초</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Toe Touch Test (New Structure) -->
+                    {% if assessment|has_test_data:"toe_touch" %}
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-3">발가락 닿기</h3>
+                        <div class="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded">
+                            <div>
+                                <span class="text-sm text-gray-600">거리:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_field:"toe_touch_test.distance" }}cm</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">유연성:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_field:"toe_touch_test.flexibility"|default:"-" }}</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">점수:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_score:"toe_touch" }}/4</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Shoulder Mobility Test (New Structure) -->
+                    {% if assessment|has_test_data:"shoulder_mobility" %}
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-3">어깨 가동성</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded">
+                            <div>
+                                <span class="text-sm text-gray-600">우측:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_field:"shoulder_mobility_test.right" }}cm</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">좌측:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_field:"shoulder_mobility_test.left" }}cm</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">비대칭:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_field:"shoulder_mobility_test.asymmetry" }}cm</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">점수:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_score:"shoulder_mobility" }}/4</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Farmers Carry Test (New Structure) -->
+                    {% if assessment|has_test_data:"farmers_carry" %}
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-3">파머스 캐리</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded">
+                            <div>
+                                <span class="text-sm text-gray-600">무게:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_field:"farmers_carry_test.weight" }}kg</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">거리:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_field:"farmers_carry_test.distance" }}m</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">시간:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_field:"farmers_carry_test.time" }}초</span>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">점수:</span>
+                                <span class="font-medium ml-2">{{ assessment|get_test_score:"farmers_carry" }}/4</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Harvard Step Test (New Structure) -->
+                    {% if assessment|has_test_data:"harvard_step" %}
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-3">하버드 스텝 테스트</h3>
+                        <div class="p-4 bg-gray-50 rounded">
+                            <div class="grid grid-cols-3 gap-4 mb-3">
+                                <div>
+                                    <span class="text-sm text-gray-600">1분 후:</span>
+                                    <span class="font-medium ml-2">{{ assessment|get_test_field:"harvard_step_test.hr1" }}bpm</span>
+                                </div>
+                                <div>
+                                    <span class="text-sm text-gray-600">2분 후:</span>
+                                    <span class="font-medium ml-2">{{ assessment|get_test_field:"harvard_step_test.hr2" }}bpm</span>
+                                </div>
+                                <div>
+                                    <span class="text-sm text-gray-600">3분 후:</span>
+                                    <span class="font-medium ml-2">{{ assessment|get_test_field:"harvard_step_test.hr3" }}bpm</span>
+                                </div>
+                            </div>
+                            <div class="flex justify-between">
+                                <div>
+                                    <span class="text-sm text-gray-600">지속시간:</span>
+                                    <span class="font-medium ml-2">{{ assessment|get_test_field:"harvard_step_test.duration" }}초</span>
+                                </div>
+                                <div>
+                                    <span class="text-sm text-gray-600">점수:</span>
+                                    <span class="font-medium ml-2">{{ assessment|get_test_score:"harvard_step" }}/4</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Template Improvements Summary -->
+    <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 class="text-lg font-medium text-blue-800 mb-3">템플릿 개선 사항</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-blue-700">
+            <div>
+                <h4 class="font-medium mb-2">쿼리 최적화</h4>
+                <ul class="space-y-1">
+                    <li>• select_related로 모든 테스트 데이터 사전 로드</li>
+                    <li>• N+1 쿼리 문제 해결</li>
+                    <li>• 단일 쿼리로 모든 관련 데이터 페치</li>
+                    <li>• 템플릿 내 추가 쿼리 발생 없음</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-medium mb-2">새로운 템플릿 태그</h4>
+                <ul class="space-y-1">
+                    <li>• get_test_score: 테스트별 점수 조회</li>
+                    <li>• get_test_field: 특정 필드 값 조회</li>
+                    <li>• has_test_data: 테스트 데이터 존재 확인</li>
+                    <li>• get_test_data: 전체 테스트 데이터 딕셔너리</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

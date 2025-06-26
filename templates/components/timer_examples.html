@@ -1,0 +1,202 @@
+<!-- Timer Component Examples for The5HC -->
+<!-- This file shows how to use the refactored timer components -->
+
+<!-- Example 1: Single Leg Balance Timer -->
+<div class="timer-section" x-data="balanceTimer('balance_right_open', 'id_single_leg_balance_right_eyes_open', 60)">
+    <h4 class="text-md font-medium text-gray-700 mb-3">오른쪽 다리 - 눈 뜬 상태</h4>
+    <div class="timer-display">
+        <span class="timer-value" x-text="formatTime(timer)">0.0</span>
+        <span class="timer-label">초</span>
+    </div>
+    <div class="timer-controls">
+        <button type="button" 
+                @click="isRunning ? stop() : start()" 
+                class="timer-btn"
+                :class="isRunning ? 'timer-btn-stop' : 'timer-btn-start'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path x-show="!isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                <path x-show="isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M6 4h4v16H6zM14 4h4v16h-4z"></path>
+            </svg>
+            <span x-text="isRunning ? '정지' : '시작'"></span>
+        </button>
+        <button type="button" @click="reset()" class="timer-btn timer-btn-reset">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            초기화
+        </button>
+    </div>
+    <div class="timer-progress mt-3">
+        <div class="timer-progress-bar" 
+             :class="progressColor" 
+             :style="`width: ${progressPercentage}%`"></div>
+    </div>
+    <!-- Hidden form field that gets updated automatically -->
+    <input type="hidden" id="id_single_leg_balance_right_eyes_open" name="single_leg_balance_right_eyes_open" :value="timer.toFixed(1)">
+</div>
+
+<!-- Example 2: Harvard Step Test Timer -->
+<div class="harvard-timer-container" x-data="harvardStepTimer()">
+    <!-- Phase Indicator -->
+    <div class="phase-indicator">
+        <span class="phase-badge" :class="phase === 'ready' ? 'phase-badge-active' : 'phase-badge-complete'">준비</span>
+        <span class="phase-badge" :class="phase === 'exercise' ? 'phase-badge-active' : (phase !== 'ready' ? 'phase-badge-complete' : 'phase-badge-pending')">운동</span>
+        <span class="phase-badge" :class="['recovery', 'hr1', 'hr2', 'hr3'].includes(phase) ? 'phase-badge-active' : (phase === 'complete' ? 'phase-badge-complete' : 'phase-badge-pending')">회복</span>
+        <span class="phase-badge" :class="phase === 'complete' ? 'phase-badge-complete' : 'phase-badge-pending'">완료</span>
+    </div>
+    
+    <!-- Timer Display -->
+    <div class="timer-display" x-show="phase !== 'complete'">
+        <span class="timer-value" x-text="phase === 'exercise' ? formatTime(exerciseTimer) : formatTime(recoveryTimer)">3:00</span>
+        <span class="timer-label" x-text="phase === 'exercise' ? '운동 시간' : '회복 시간'"></span>
+    </div>
+    
+    <!-- Metronome Beat Indicator -->
+    <div x-show="phase === 'exercise'" class="text-center mb-4">
+        <div class="inline-block w-4 h-4 rounded-full transition-all duration-100"
+             :class="metronomeBeat ? 'bg-red-600 scale-125' : 'bg-gray-400'"></div>
+        <p class="text-sm text-gray-600 mt-2">96 BPM (분당 24걸음)</p>
+    </div>
+    
+    <!-- Control Buttons -->
+    <div class="timer-controls">
+        <button type="button" 
+                @click="startTest()" 
+                x-show="phase === 'ready'"
+                class="timer-btn timer-btn-start">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+            </svg>
+            테스트 시작
+        </button>
+        
+        <button type="button" 
+                @click="earlyStop()" 
+                x-show="phase === 'exercise'"
+                class="timer-btn timer-btn-stop">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            조기 종료
+        </button>
+        
+        <button type="button" 
+                @click="reset()" 
+                x-show="phase === 'complete'"
+                class="timer-btn timer-btn-reset">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            다시 시작
+        </button>
+    </div>
+    
+    <!-- HR Input Windows -->
+    <div x-show="phase === 'hr1'" x-transition class="hr-window hr-window-active mt-4">
+        <p class="text-sm font-medium mb-2">1분-1분30초 심박수 측정</p>
+        <input type="number" 
+               id="id_harvard_step_test_hr1" 
+               name="harvard_step_test_hr1"
+               class="hr-input form-input"
+               placeholder="심박수"
+               @input="calculatePFI()">
+    </div>
+    
+    <div x-show="phase === 'hr2'" x-transition class="hr-window hr-window-active mt-4">
+        <p class="text-sm font-medium mb-2">2분-2분30초 심박수 측정</p>
+        <input type="number" 
+               id="id_harvard_step_test_hr2" 
+               name="harvard_step_test_hr2"
+               class="hr-input form-input"
+               placeholder="심박수"
+               @input="calculatePFI()">
+    </div>
+    
+    <div x-show="phase === 'hr3'" x-transition class="hr-window hr-window-active mt-4">
+        <p class="text-sm font-medium mb-2">3분-3분30초 심박수 측정</p>
+        <input type="number" 
+               id="id_harvard_step_test_hr3" 
+               name="harvard_step_test_hr3"
+               class="hr-input form-input"
+               placeholder="심박수"
+               @input="calculatePFI()">
+    </div>
+    
+    <!-- Hidden fields -->
+    <input type="hidden" id="id_harvard_step_test_duration" name="harvard_step_test_duration">
+    <input type="hidden" id="id_harvard_step_test_pfi" name="harvard_step_test_pfi">
+</div>
+
+<!-- Example 3: Farmers Carry Timer -->
+<div class="farmers-timer-container" x-data="farmersCarryTimer()" data-body-weight="{{ client.weight }}">
+    <h4 class="text-md font-medium text-gray-700 mb-3">파머스 캐리 (20m)</h4>
+    
+    <!-- Weight Input -->
+    <div class="weight-input-group">
+        <label class="text-sm font-medium text-gray-700">무게 (kg):</label>
+        <input type="number" 
+               x-model.number="weight"
+               @input="onWeightChange()"
+               id="id_farmers_carry_weight"
+               name="farmers_carry_weight"
+               class="form-input w-24"
+               step="0.5"
+               min="0">
+        <span class="weight-percentage" x-show="bodyWeight > 0">
+            (<span x-text="weightPercentage"></span>% 체중)
+        </span>
+    </div>
+    
+    <!-- Timer Display -->
+    <div class="timer-display">
+        <span class="timer-value" x-text="formatTime(timer)">0.0</span>
+        <span class="timer-label">초</span>
+    </div>
+    
+    <!-- Controls -->
+    <div class="timer-controls">
+        <button type="button" 
+                @click="isRunning ? stop() : start()" 
+                class="timer-btn"
+                :class="isRunning ? 'timer-btn-stop' : 'timer-btn-start'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path x-show="!isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                <path x-show="isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h4v16H6zM14 4h4v16h-4z"></path>
+            </svg>
+            <span x-text="isRunning ? '정지' : '시작'"></span>
+        </button>
+        <button type="button" @click="reset()" class="timer-btn timer-btn-reset">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            초기화
+        </button>
+    </div>
+    
+    <!-- Hidden fields -->
+    <input type="hidden" id="id_farmers_carry_time" name="farmers_carry_time">
+    <input type="hidden" id="id_farmers_carry_weight_percentage" name="farmers_carry_weight_percentage">
+</div>
+
+<!-- Integration Notes -->
+<!--
+Usage in templates:
+1. Include timer-components.js and timer-components.css
+2. Use x-data with the appropriate timer component
+3. Ensure form fields have correct IDs for automatic updates
+4. Timer states are preserved during HTMX navigation
+
+Timer Types:
+- balanceTimer(id, fieldId, maxTime): For single measurements up to maxTime
+- harvardStepTimer(): Complex multi-phase timer with HR measurements
+- farmersCarryTimer(): Simple timer with weight tracking
+
+All timers:
+- Update form fields automatically
+- Show visual feedback
+- Handle HTMX content swapping
+- Preserve state during navigation
+-->

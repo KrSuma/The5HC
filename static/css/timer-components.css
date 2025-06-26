@@ -1,0 +1,198 @@
+/**
+ * Timer Components Styles
+ * Styles for fitness assessment timer components
+ */
+
+/* Base Timer Styles */
+.timer-section {
+    @apply bg-gray-50 rounded-lg p-6 text-center;
+}
+
+.timer-display {
+    @apply mb-4;
+}
+
+.timer-value {
+    @apply text-5xl font-bold text-gray-800 tabular-nums;
+}
+
+.timer-label {
+    @apply text-lg text-gray-600 ml-2;
+}
+
+/* Timer Control Buttons */
+.timer-controls {
+    @apply flex justify-center gap-3;
+}
+
+.timer-btn {
+    @apply px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200;
+}
+
+.timer-btn-start {
+    @apply bg-green-600 text-white hover:bg-green-700;
+}
+
+.timer-btn-stop {
+    @apply bg-red-600 text-white hover:bg-red-700;
+}
+
+.timer-btn-reset {
+    @apply bg-gray-600 text-white hover:bg-gray-700;
+}
+
+/* Progress Bar */
+.timer-progress {
+    @apply w-full bg-gray-200 rounded-full h-2 overflow-hidden;
+}
+
+.timer-progress-bar {
+    @apply h-full transition-all duration-100 ease-linear;
+}
+
+/* Harvard Step Timer Specific */
+.harvard-timer-container {
+    @apply bg-white rounded-lg shadow-lg p-6;
+}
+
+/* Phase Indicators */
+.phase-indicator {
+    @apply flex justify-center gap-2 mb-6;
+}
+
+.phase-badge {
+    @apply px-3 py-1 rounded-full text-sm font-medium transition-colors duration-300;
+}
+
+.phase-badge-pending {
+    @apply bg-gray-200 text-gray-600;
+}
+
+.phase-badge-active {
+    @apply bg-blue-600 text-white animate-pulse;
+}
+
+.phase-badge-complete {
+    @apply bg-green-600 text-white;
+}
+
+/* Metronome Beat Animation */
+.metronome-beat {
+    animation: beat 0.1s ease-in-out;
+}
+
+@keyframes beat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* HR Measurement Window */
+.hr-window {
+    @apply bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-4;
+}
+
+.hr-window-active {
+    @apply bg-yellow-100 border-yellow-400 animate-pulse;
+}
+
+.hr-input {
+    @apply w-24 text-center text-2xl font-bold;
+}
+
+/* Farmers Carry Timer */
+.farmers-timer-container {
+    @apply bg-gray-50 rounded-lg p-6;
+}
+
+.weight-input-group {
+    @apply flex items-center gap-4 justify-center mb-4;
+}
+
+.weight-percentage {
+    @apply text-lg font-medium text-gray-700;
+}
+
+/* Manual Override Indicator */
+.manual-override-container {
+    @apply relative transition-all duration-200;
+}
+
+.manual-override-container.ring-2 {
+    @apply rounded-lg;
+}
+
+.manual-override-indicator {
+    @apply flex items-center gap-2 text-sm;
+}
+
+.manual-override-badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .timer-value {
+        @apply text-4xl;
+    }
+    
+    .timer-btn {
+        @apply px-3 py-1.5 text-sm;
+    }
+    
+    .phase-badge {
+        @apply px-2 text-xs;
+    }
+}
+
+/* Accessibility */
+.timer-btn:focus {
+    @apply outline-none ring-2 ring-offset-2;
+}
+
+.timer-btn-start:focus {
+    @apply ring-green-500;
+}
+
+.timer-btn-stop:focus {
+    @apply ring-red-500;
+}
+
+.timer-btn-reset:focus {
+    @apply ring-gray-500;
+}
+
+/* Dark mode support (if implemented) */
+@media (prefers-color-scheme: dark) {
+    .timer-section {
+        @apply bg-gray-800;
+    }
+    
+    .timer-value {
+        @apply text-gray-100;
+    }
+    
+    .timer-label {
+        @apply text-gray-400;
+    }
+}
+
+/* Animation for timer state changes */
+.timer-state-transition {
+    @apply transition-all duration-300 ease-in-out;
+}
+
+/* Loading state */
+.timer-loading {
+    @apply opacity-50 pointer-events-none;
+}
+
+/* Error state */
+.timer-error {
+    @apply border-2 border-red-500 bg-red-50;
+}
+
+/* Success state */
+.timer-success {
+    @apply border-2 border-green-500 bg-green-50;
+}

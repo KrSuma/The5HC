@@ -39,6 +39,7 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    'apps.core',  # Core utilities and mixins - must be first
     'apps.accounts',
     'apps.trainers',
     'apps.clients',

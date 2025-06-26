@@ -1,0 +1,161 @@
+{% load humanize %}
+{% load assessment_tags %}
+{% load assessment_refactored_tags %}
+
+<!-- Content-only version for HTMX navigation -->
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-start">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">평가 결과 (최적화된 뷰)</h1>
+            <p class="text-gray-600 mt-2">
+                <a href="{% url 'clients:detail' assessment.client.pk %}" 
+                   class="text-blue-600 hover:text-blue-800"
+                   hx-get="{% url 'clients:detail' assessment.client.pk %}"
+                   hx-target="body"
+                   hx-push-url="true">
+                    {{ assessment.client.name }}
+                </a> 
+                | {{ assessment.date|date:"Y년 m월 d일" }}
+            </p>
+        </div>
+        <div class="flex space-x-2">
+            <a href="{% url 'reports:generate' assessment.pk %}" 
+               class="px-6 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200">
+                PDF 리포트
+            </a>
+            <button class="px-6 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200"
+                    hx-delete="{% url 'assessments:delete' assessment.pk %}"
+                    hx-confirm="정말로 이 평가를 삭제하시겠습니까?"
+                    hx-target="body">
+                삭제
+            </button>
+        </div>
+    </div>
+
+    <!-- Query Optimization Notice -->
+    <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div class="flex items-start">
+            <svg class="h-5 w-5 text-green-400 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            <div>
+                <h3 class="text-sm font-medium text-green-800">최적화된 쿼리 사용</h3>
+                <p class="mt-1 text-sm text-green-700">
+                    이 뷰는 select_related를 사용하여 모든 테스트 데이터를 단일 쿼리로 로드합니다.
+                    N+1 쿼리 문제가 해결되어 성능이 크게 향상되었습니다.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Overall Score Card -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">종합 평가</h2>
+                <div class="text-center">
+                    <div class="relative inline-block">
+                        <div class="text-6xl font-bold 
+                            {% if assessment.overall_score >= 90 %}text-green-600
+                            {% elif assessment.overall_score >= 80 %}text-blue-600
+                            {% elif assessment.overall_score >= 70 %}text-yellow-600
+                            {% elif assessment.overall_score >= 60 %}text-orange-600
+                            {% else %}text-red-600{% endif %}">
+                            {{ assessment.overall_score|floatformat:1|default:"0.0" }}
+                        </div>
+                        <div class="text-sm text-gray-600 mt-2">
+                            {{ score_descriptions.overall }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Category Scores -->
+                <div class="mt-6 space-y-4">
+                    <div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">근력</span>
+                            <span class="font-medium">{{ assessment.strength_score|floatformat:0|default:"0" }}%</span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: {{ assessment.strength_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">유연성</span>
+                            <span class="font-medium">{{ assessment.mobility_score|floatformat:0|default:"0" }}%</span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ assessment.mobility_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">균형</span>
+                            <span class="font-medium">{{ assessment.balance_score|floatformat:0|default:"0" }}%</span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-purple-600 h-2 rounded-full" style="width: {{ assessment.balance_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">심폐지구력</span>
+                            <span class="font-medium">{{ assessment.cardio_score|floatformat:0|default:"0" }}%</span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-red-600 h-2 rounded-full" style="width: {{ assessment.cardio_score|default:0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Results -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-6">세부 테스트 결과</h2>
+                
+                <div class="space-y-6">
+                    <!-- Using new template tags to display test results -->
+                    {% display_test_results assessment "overhead_squat" %}
+                    {% display_test_results assessment "push_up" %}
+                    {% display_test_results assessment "balance" %}
+                    {% display_test_results assessment "toe_touch" %}
+                    {% display_test_results assessment "shoulder_mobility" %}
+                    {% display_test_results assessment "farmers_carry" %}
+                    {% display_test_results assessment "harvard_step" %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Template Improvements Summary -->
+    <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 class="text-lg font-medium text-blue-800 mb-3">템플릿 개선 사항</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-blue-700">
+            <div>
+                <h4 class="font-medium mb-2">쿼리 최적화</h4>
+                <ul class="space-y-1">
+                    <li>• select_related로 모든 테스트 데이터 사전 로드</li>
+                    <li>• N+1 쿼리 문제 해결</li>
+                    <li>• 단일 쿼리로 모든 관련 데이터 페치</li>
+                    <li>• 템플릿 내 추가 쿼리 발생 없음</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-medium mb-2">새로운 템플릿 태그</h4>
+                <ul class="space-y-1">
+                    <li>• get_test_score: 테스트별 점수 조회</li>
+                    <li>• get_test_field: 특정 필드 값 조회</li>
+                    <li>• has_test_data: 테스트 데이터 존재 확인</li>
+                    <li>• display_test_results: 테스트 결과 컴포넌트</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

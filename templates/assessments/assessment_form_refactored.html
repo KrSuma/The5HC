@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}
+    {% if is_edit %}평가 수정{% else %}새 평가 작성{% endif %} | The5HC
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">
+                    {% if is_edit %}평가 수정{% else %}새 평가 작성{% endif %}
+                </h1>
+                {% if client %}
+                    <p class="text-gray-600 mt-2">
+                        회원: <span class="font-semibold">{{ client.name }}</span>
+                    </p>
+                {% endif %}
+            </div>
+            <div class="flex space-x-4">
+                <a href="{% url 'assessments:list' %}" 
+                   class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                    취소
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refactored Form Demo Notice -->
+    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">리팩토링된 폼 구조</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                    <p>이 페이지는 새로운 모듈식 폼 구조를 시연합니다:</p>
+                    <ul class="list-disc list-inside mt-1 space-y-1">
+                        <li><strong>개별 테스트 폼:</strong> 각 테스트마다 별도의 폼 클래스</li>
+                        <li><strong>AssessmentService 통합:</strong> 비즈니스 로직을 서비스 레이어에서 처리</li>
+                        <li><strong>새로운 모델 구조:</strong> OverheadSquatTest, PushUpTest 등 개별 모델 활용</li>
+                        <li><strong>향상된 검증:</strong> 개별 테스트별 맞춤형 검증 로직</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Form -->
+    <div class="bg-white shadow-lg rounded-lg">
+        <form method="post" hx-post="{% if is_edit %}{% url 'assessments:edit_refactored' assessment.pk %}{% else %}{% url 'assessments:add_refactored' %}{% if client %}?client={{ client.pk }}{% endif %}{% endif %}"
+              hx-target="body" hx-swap="innerHTML" class="p-6">
+            {% csrf_token %}
+            
+            <!-- Step 1: Basic Information -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">1. 기본 정보</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Assessment Form Fields -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">평가 날짜</label>
+                        {{ form.assessment_form.date }}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">테스트 환경</label>
+                        {{ form.assessment_form.test_environment }}
+                    </div>
+                    
+                    <div x-show="testEnvironment === 'outdoor'" x-transition>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">온도 (°C)</label>
+                        {{ form.assessment_form.temperature }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Individual Tests -->
+            <div class="space-y-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">2. 개별 테스트</h2>
+                
+                <!-- Overhead Squat Test -->
+                <div class="border border-gray-200 rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">오버헤드 스쿼트</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% with test_form=form.test_forms.overhead_squat %}
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">점수</label>
+                                {{ test_form.score }}
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                {{ test_form.knee_valgus }}
+                                <label class="text-sm text-gray-700">무릎 내측 붕괴</label>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                {{ test_form.forward_lean }}
+                                <label class="text-sm text-gray-700">전방 기울임</label>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                {{ test_form.heel_lift }}
+                                <label class="text-sm text-gray-700">발뒤꿈치 들림</label>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                {{ test_form.arm_drop }}
+                                <label class="text-sm text-gray-700">팔 전방 하강</label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">수행 품질</label>
+                                {{ test_form.quality }}
+                            </div>
+                            <div class="md:col-span-2 lg:col-span-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                                {{ test_form.notes }}
+                            </div>
+                        {% endwith %}
+                    </div>
+                </div>
+
+                <!-- Push-up Test -->
+                <div class="border border-gray-200 rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">푸시업</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% with test_form=form.test_forms.push_up %}
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">완료 개수</label>
+                                {{ test_form.reps }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">푸시업 타입</label>
+                                {{ test_form.push_up_type }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">점수</label>
+                                {{ test_form.score }}
+                            </div>
+                            <div class="md:col-span-2 lg:col-span-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                                {{ test_form.notes }}
+                            </div>
+                        {% endwith %}
+                    </div>
+                </div>
+
+                <!-- Balance Test -->
+                <div class="border border-gray-200 rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">외발 균형</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {% with test_form=form.test_forms.balance %}
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">우측 눈 뜬 상태 (초)</label>
+                                {{ test_form.right_eyes_open }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">좌측 눈 뜬 상태 (초)</label>
+                                {{ test_form.left_eyes_open }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">우측 눈 감은 상태 (초)</label>
+                                {{ test_form.right_eyes_closed }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">좌측 눈 감은 상태 (초)</label>
+                                {{ test_form.left_eyes_closed }}
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">수동 점수</label>
+                                {{ test_form.score_manual }}
+                            </div>
+                            <div class="md:col-span-2 lg:col-span-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                                {{ test_form.notes }}
+                            </div>
+                        {% endwith %}
+                    </div>
+                </div>
+
+                <!-- Additional tests would follow the same pattern -->
+                <!-- For brevity, showing just key tests -->
+            </div>
+
+            <!-- Form Actions -->
+            <div class="mt-8 flex justify-end space-x-4">
+                <button type="button" 
+                        onclick="history.back()"
+                        class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                    취소
+                </button>
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    {% if is_edit %}수정 완료{% else %}평가 저장{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Form Benefits Explanation -->
+    <div class="mt-8 bg-green-50 border border-green-200 rounded-lg p-6">
+        <h3 class="text-lg font-medium text-green-800 mb-3">리팩토링된 폼의 장점</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-green-700">
+            <div>
+                <h4 class="font-medium mb-2">개발자 경험</h4>
+                <ul class="space-y-1">
+                    <li>• 개별 테스트별 독립적인 폼 클래스</li>
+                    <li>• 각 테스트에 특화된 검증 로직</li>
+                    <li>• 재사용 가능한 모듈식 구조</li>
+                    <li>• 더 나은 코드 조직화</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-medium mb-2">유지보수성</h4>
+                <ul class="space-y-1">
+                    <li>• 새로운 테스트 추가 시 기존 코드 영향 최소화</li>
+                    <li>• 개별 테스트 로직 수정 시 다른 테스트에 영향 없음</li>
+                    <li>• AssessmentService를 통한 중앙화된 비즈니스 로직</li>
+                    <li>• 테스트별 독립적인 단위 테스트 가능</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alpine.js state management for form interactions -->
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('refactoredAssessmentForm', () => ({
+        testEnvironment: 'indoor',
+        manualOverrides: {},
+        
+        init() {
+            console.log('Refactored assessment form initialized');
+        },
+        
+        updateTemperatureVisibility() {
+            console.log('Test environment changed to:', this.testEnvironment);
+        },
+        
+        onManualScoreChange(testType, value) {
+            this.manualOverrides[testType] = value !== '' && value !== null;
+            console.log('Manual override for', testType, ':', this.manualOverrides[testType]);
+        }
+    }));
+});
+</script>
+{% endblock %}

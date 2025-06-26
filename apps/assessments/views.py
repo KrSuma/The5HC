@@ -45,12 +45,12 @@ def assessment_list_view(request):
     
     # For superusers, show all assessments
     if request.user.is_superuser:
-        assessments = Assessment.objects.all().select_related('client', 'trainer')
+        assessments = Assessment.objects.with_all_tests()
     else:
         # Filter assessments by organization
-        assessments = Assessment.objects.filter(
+        assessments = Assessment.objects.with_all_tests().filter(
             trainer__organization=request.organization
-        ).select_related('client', 'trainer')
+        )
     
     # Apply filters
     if form.is_valid():
@@ -196,13 +196,13 @@ def assessment_detail_view(request, pk):
     # For superusers, allow viewing any assessment
     if request.user.is_superuser:
         assessment = get_object_or_404(
-            Assessment.objects.select_related('client', 'trainer'),
+            Assessment.objects.with_all_tests(),
             pk=pk
         )
     else:
         # Ensure assessment belongs to the same organization
         assessment = get_object_or_404(
-            Assessment.objects.select_related('client', 'trainer'),
+            Assessment.objects.with_all_tests(),
             pk=pk,
             trainer__organization=request.organization
         )
@@ -752,14 +752,14 @@ def assessment_compare_view(request):
         
         # Fetch assessments
         if request.user.is_superuser:
-            assessments = Assessment.objects.filter(
+            assessments = Assessment.objects.with_all_tests().filter(
                 id__in=assessment_ids
-            ).select_related('client', 'trainer').order_by('-date')
+            ).order_by('-date')
         else:
-            assessments = Assessment.objects.filter(
+            assessments = Assessment.objects.with_all_tests().filter(
                 id__in=assessment_ids,
                 trainer__organization=request.organization
-            ).select_related('client', 'trainer').order_by('-date')
+            ).order_by('-date')
         
         # Ensure we got all requested assessments
         if assessments.count() != len(assessment_ids):
@@ -847,3 +847,157 @@ def timer_debug_view(request):
 def timer_inline_test_view(request):
     """Timer inline test page."""
     return render(request, 'assessments/timer_inline_test.html')
+
+
+@login_required
+@requires_trainer
+@organization_member_required
+def assessment_add_refactored_view(request):
+    """
+    Add new assessment using the refactored forms structure.
+    This demonstrates the new modular approach with individual test forms.
+    """
+    client_id = request.GET.get('client')
+    client = None
+    
+    if client_id:
+        # For superusers, allow accessing any client
+        if request.user.is_superuser:
+            client = get_object_or_404(Client, pk=client_id)
+        else:
+            # Ensure client belongs to the same organization
+            client = get_object_or_404(
+                Client, 
+                pk=client_id, 
+                trainer__organization=request.organization
+            )
+    
+    if request.method == 'POST':
+        # Use the new AssessmentWithTestsForm
+        from .forms import AssessmentWithTestsForm
+        
+        form = AssessmentWithTestsForm(
+            data=request.POST,
+            user=request.user
+        )
+        
+        if form.is_valid():
+            try:
+                assessment = form.save()
+                messages.success(request, '평가가 성공적으로 저장되었습니다.')
+                
+                if request.headers.get('HX-Request'):
+                    return HttpResponse(
+                        status=204,
+                        headers={'HX-Redirect': f'/assessments/{assessment.pk}/'}
+                    )
+                return redirect('assessments:detail', pk=assessment.pk)
+                
+            except Exception as e:
+                messages.error(request, f'평가 저장 중 오류가 발생했습니다: {str(e)}')
+        else:
+            # Show form errors
+            errors = form.errors
+            if errors:
+                for form_name, form_errors in errors.items():
+                    for field, field_errors in form_errors.items():
+                        for error in field_errors:
+                            messages.error(request, f'{form_name} - {field}: {error}')
+    else:
+        # Initialize form for GET request
+        from .forms import AssessmentWithTestsForm
+        
+        # Create initial assessment instance if client is provided
+        initial_assessment = Assessment(client=client) if client else None
+        
+        form = AssessmentWithTestsForm(
+            instance=initial_assessment,
+            user=request.user
+        )
+    
+    context = {
+        'form': form,
+        'client': client,
+        'step': request.GET.get('step', '1'),
+    }
+    
+    # Check if this is an HTMX request
+    if request.headers.get('HX-Request'):
+        return render(request, 'assessments/assessment_form_refactored_content.html', context)
+    else:
+        return render(request, 'assessments/assessment_form_refactored.html', context)
+
+
+@login_required
+@requires_trainer
+@organization_member_required
+def assessment_edit_refactored_view(request, pk):
+    """
+    Edit existing assessment using the refactored forms structure.
+    Demonstrates editing with individual test models.
+    """
+    # Get the assessment
+    if request.user.is_superuser:
+        assessment = get_object_or_404(
+            Assessment.objects.select_related('client', 'trainer'),
+            pk=pk
+        )
+    else:
+        assessment = get_object_or_404(
+            Assessment.objects.select_related('client', 'trainer'),
+            pk=pk,
+            trainer__organization=request.organization
+        )
+    
+    if request.method == 'POST':
+        from .forms import AssessmentWithTestsForm
+        
+        form = AssessmentWithTestsForm(
+            data=request.POST,
+            instance=assessment,
+            user=request.user
+        )
+        
+        if form.is_valid():
+            try:
+                updated_assessment = form.save()
+                messages.success(request, '평가가 성공적으로 수정되었습니다.')
+                
+                if request.headers.get('HX-Request'):
+                    return HttpResponse(
+                        status=204,
+                        headers={'HX-Redirect': f'/assessments/{updated_assessment.pk}/'}
+                    )
+                return redirect('assessments:detail', pk=updated_assessment.pk)
+                
+            except Exception as e:
+                messages.error(request, f'평가 수정 중 오류가 발생했습니다: {str(e)}')
+        else:
+            # Show form errors
+            errors = form.errors
+            if errors:
+                for form_name, form_errors in errors.items():
+                    for field, field_errors in form_errors.items():
+                        for error in field_errors:
+                            messages.error(request, f'{form_name} - {field}: {error}')
+    else:
+        # Initialize form for GET request
+        from .forms import AssessmentWithTestsForm
+        
+        form = AssessmentWithTestsForm(
+            instance=assessment,
+            user=request.user
+        )
+    
+    context = {
+        'form': form,
+        'assessment': assessment,
+        'client': assessment.client,
+        'is_edit': True,
+    }
+    
+    # Check if this is an HTMX request
+    if request.headers.get('HX-Request'):
+        return render(request, 'assessments/assessment_form_refactored_content.html', context)
+    else:
+        return render(request, 'assessments/assessment_form_refactored.html', context)

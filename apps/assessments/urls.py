@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import views_optimized
 
 app_name = 'assessments'
 
@@ -11,6 +12,10 @@ urlpatterns = [
     path('add/', views.assessment_add_view, name='add'),
     path('<int:pk>/', views.assessment_detail_view, name='detail'),
     path('<int:pk>/delete/', views.assessment_delete_view, name='delete'),
+    
+    # Refactored forms (demonstration)
+    path('add-refactored/', views.assessment_add_refactored_view, name='add_refactored'),
+    path('<int:pk>/edit-refactored/', views.assessment_edit_refactored_view, name='edit_refactored'),
     
     # Comparison
     path('compare/', views.assessment_compare_view, name='compare'),
@@ -32,4 +37,9 @@ urlpatterns = [
     path('timer-test/', views.timer_test_view, name='timer_test'),
     path('timer-debug/', views.timer_debug_view, name='timer_debug'),
     path('timer-inline-test/', views.timer_inline_test_view, name='timer_inline_test'),
+    
+    # Optimized views with new model relationships
+    path('optimized/', views_optimized.assessment_list_optimized_view, name='list_optimized'),
+    path('optimized/<int:pk>/', views_optimized.assessment_detail_optimized_view, name='detail_optimized'),
+    path('optimized/compare/', views_optimized.assessment_comparison_optimized_view, name='compare_optimized'),
 ]
