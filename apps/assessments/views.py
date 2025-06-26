@@ -266,23 +266,27 @@ def assessment_add_view(request):
             )
     
     if request.method == 'POST':
-        form = AssessmentForm(data=request.POST, user=request.user)
+        form = AssessmentForm(data=request.POST)
         if form.is_valid():
-            try:
-                # The refactored form handles all saving logic including:
-                # - Trainer assignment
-                # - Score calculation
-                # - Date conversion
-                assessment = form.save(commit=True)
-                
-                # Additional trainer assignment for superusers if needed
-                if assessment and request.user.is_superuser and not hasattr(request, 'trainer'):
-                    if not assessment.trainer and assessment.client:
-                        assessment.trainer = assessment.client.trainer
-                        assessment.save()
-            except Exception as e:
-                messages.error(request, f'평가 저장 중 오류가 발생했습니다: {str(e)}')
-                return redirect('assessments:add')
+            assessment = form.save(commit=False)
+            
+            # Assign trainer
+            if hasattr(request.user, 'trainer'):
+                assessment.trainer = request.user.trainer
+            elif client and client.trainer:
+                assessment.trainer = client.trainer
+            elif request.user.is_superuser:
+                # For superuser, try to get trainer from client
+                if assessment.client and assessment.client.trainer:
+                    assessment.trainer = assessment.client.trainer
+                else:
+                    messages.error(request, '트레이너를 지정할 수 없습니다.')
+                    return redirect('assessments:add')
+            
+            assessment.save()
+            
+            # Calculate scores
+            assessment.calculate_scores()
             
             messages.success(request, '평가가 성공적으로 저장되었습니다.')
             
@@ -304,7 +308,7 @@ def assessment_add_view(request):
         temp_assessment = Assessment(date=timezone.now().date())
         if client:
             temp_assessment.client = client
-        form = AssessmentForm(instance=temp_assessment, user=request.user)
+        form = AssessmentForm(instance=temp_assessment)
     
     context = {
         'form': form,
