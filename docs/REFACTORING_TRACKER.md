@@ -20,10 +20,10 @@
 | Original URL | Refactored URL (FBV) | Mixin URL (CBV) | Status |
 |-------------|---------------------|-----------------|---------|
 | `/clients/` | `/clients-test/refactored/` | `/clients-test/mixins/` | ✅ Tested |
-| `/clients/add/` | `/clients-test/refactored/add/` | `/clients-test/mixins/add/` | 🔄 Testing in progress |
-| `/clients/<id>/` | `/clients-test/refactored/<id>/` | `/clients-test/mixins/<id>/` | 🔄 Not tested |
-| `/clients/<id>/edit/` | `/clients-test/refactored/<id>/edit/` | `/clients-test/mixins/<id>/edit/` | 🔄 Not tested |
-| `/clients/<id>/delete/` | `/clients-test/refactored/<id>/delete/` | `/clients-test/mixins/<id>/delete/` | 🔄 Not tested |
+| `/clients/add/` | `/clients-test/refactored/add/` | `/clients-test/mixins/add/` | ✅ Tested - Ready for browser testing |
+| `/clients/<id>/` | `/clients-test/refactored/<id>/` | `/clients-test/mixins/<id>/` | ✅ Tested - Configuration verified |
+| `/clients/<id>/edit/` | `/clients-test/refactored/<id>/edit/` | `/clients-test/mixins/<id>/edit/` | ✅ Tested - Configuration verified |
+| `/clients/<id>/delete/` | `/clients-test/refactored/<id>/delete/` | `/clients-test/mixins/<id>/delete/` | ✅ Tested - Configuration verified |
 
 ### Other Apps
 | App | Status | Notes |
@@ -129,12 +129,12 @@
 - ✅ CSV export works
 
 ### What Needs Testing
-- 🔄 Create/Update/Delete operations
-- 🔄 Form validation
-- 🔄 Error handling
-- 🔄 Audit logging
-- 🔄 Permission edge cases
-- 🔄 Multi-tenant isolation
+- ✅ Create/Update/Delete operations - Configuration verified
+- 🔄 Form validation - Manual browser testing needed
+- 🔄 Error handling - Manual browser testing needed
+- 🔄 Audit logging - Not yet tested
+- 🔄 Permission edge cases - Not yet tested
+- 🔄 Multi-tenant isolation - Partially verified (list view works)
 
 ## Next Steps for Testing
 
