@@ -267,29 +267,23 @@ def assessment_add_view(request):
             )
     
     if request.method == 'POST':
-        form = AssessmentForm(request.POST)
+        form = AssessmentForm(data=request.POST, user=request.user)
         if form.is_valid():
-            assessment = form.save(commit=False)
-            # For superusers, we need to get the trainer from the client
-            if request.user.is_superuser and not hasattr(request, 'trainer'):
-                # Use the client's trainer
-                assessment.trainer = assessment.client.trainer
-            else:
-                assessment.trainer = request.trainer
-            
-            # Convert date to datetime if needed
-            if assessment.date and not hasattr(assessment.date, 'hour'):
-                from datetime import datetime, time
-                assessment.date = datetime.combine(assessment.date, time.min)
-            
-            # Save the assessment first to ensure all fields are set
-            assessment.save()
-            
-            # Calculate scores using the model method which respects manual overrides
-            assessment.calculate_scores()
-            
-            # Save again to persist the calculated scores
-            assessment.save()
+            try:
+                # The refactored form handles all saving logic including:
+                # - Trainer assignment
+                # - Score calculation
+                # - Date conversion
+                assessment = form.save(commit=True)
+                
+                # Additional trainer assignment for superusers if needed
+                if assessment and request.user.is_superuser and not hasattr(request, 'trainer'):
+                    if not assessment.trainer and assessment.client:
+                        assessment.trainer = assessment.client.trainer
+                        assessment.save()
+            except Exception as e:
+                messages.error(request, f'평가 저장 중 오류가 발생했습니다: {str(e)}')
+                return redirect('assessments:add')
             
             messages.success(request, '평가가 성공적으로 저장되었습니다.')
             
@@ -307,10 +301,11 @@ def assessment_add_view(request):
                 )
                 return HttpResponse(html)
     else:
-        initial = {'date': timezone.now().date()}
+        # Create a temporary assessment instance with initial values
+        temp_assessment = Assessment(date=timezone.now().date())
         if client:
-            initial['client'] = client.pk
-        form = AssessmentForm(initial=initial)
+            temp_assessment.client = client
+        form = AssessmentForm(instance=temp_assessment, user=request.user)
     
     context = {
         'form': form,
