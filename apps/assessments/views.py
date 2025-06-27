@@ -356,10 +356,10 @@ def calculate_push_up_score_ajax(request):
 def calculate_balance_score_ajax(request):
     """AJAX endpoint to calculate balance score"""
     try:
-        right_open = int(request.GET.get('right_open', 0))
-        left_open = int(request.GET.get('left_open', 0))
-        right_closed = int(request.GET.get('right_closed', 0))
-        left_closed = int(request.GET.get('left_closed', 0))
+        right_open = float(request.GET.get('right_open', 0))
+        left_open = float(request.GET.get('left_open', 0))
+        right_closed = float(request.GET.get('right_closed', 0))
+        left_closed = float(request.GET.get('left_closed', 0))
         
         score = calculate_single_leg_balance_score(
             right_open, left_open, right_closed, left_closed

@@ -347,7 +347,7 @@ def calculate_pushup_score(gender: str, age: int, reps: int, push_up_type: str =
         return _fallback_pushup_score(db_gender, age, reps, push_up_type)
 
 
-def calculate_single_leg_balance_score(right_open: int, left_open: int, right_closed: int, left_closed: int) -> float:
+def calculate_single_leg_balance_score(right_open: float, left_open: float, right_closed: float, left_closed: float) -> float:
     """
     Calculate single leg balance score based on time in seconds.
     Uses database standards with fallback to hardcoded values.
