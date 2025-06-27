@@ -30,9 +30,6 @@ urlpatterns = [
     path('reports/', include('apps.reports.urls', namespace='reports')),
     path('trainers/', include('apps.trainers.urls', namespace='trainers')),
     
-    # Test URLs for refactored views
-    path('clients-test/', include('apps.clients.urls_test', namespace='clients_test')),
-    
     # API URLs
     path('api/v1/', include('apps.api.urls', namespace='api')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

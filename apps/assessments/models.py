@@ -369,9 +369,8 @@ class Assessment(models.Model):
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     
-    # Custom manager for optimized queries
-    from .managers import AssessmentManager
-    objects = AssessmentManager()
+    # Using default manager
+    # objects = models.Manager()  # This is implicit, no need to declare
     
     class Meta:
         db_table = 'assessments'
