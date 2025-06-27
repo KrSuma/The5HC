@@ -110,6 +110,7 @@ cython_debug/
 # Application specific
 *.db
 *.sqlite3
+the5hc_dev
 !django_migration/the5hc_dev  # Keep the development database
 
 # Temporary files
