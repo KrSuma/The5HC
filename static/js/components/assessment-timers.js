@@ -153,6 +153,9 @@
             weight: null,
             bodyWeight: null,
             
+            // Reference to parent Alpine component
+            parentComponent: null,
+            
             // Start timer
             start() {
                 if (this.isRunning) return;
@@ -176,12 +179,34 @@
                 clearInterval(this.interval);
                 this.isRunning = false;
                 
-                // Update form field
-                const field = document.getElementById('id_farmers_carry_time');
-                if (field) {
-                    field.value = this.timer.toFixed(1);
-                    field.dispatchEvent(new Event('input', { bubbles: true }));
-                }
+                const timerValue = this.timer.toFixed(1);
+                console.log('Farmers Carry Timer - Stopping with value:', timerValue);
+                
+                // Update the form field
+                setTimeout(() => {
+                    const field = document.getElementById('id_farmer_carry_time');
+                    if (field) {
+                        console.log('Farmers Carry Timer - Found field, setting value to:', timerValue);
+                        // Set the value directly
+                        field.value = timerValue;
+                        
+                        // Force Alpine to recognize the change by triggering native events
+                        const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                        const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+                        
+                        field.dispatchEvent(inputEvent);
+                        field.dispatchEvent(changeEvent);
+                        
+                        // Also try to trigger any Alpine.js handlers directly
+                        if (field._x_model && field._x_model.set) {
+                            field._x_model.set(timerValue);
+                        }
+                        
+                        console.log('Farmers Carry Timer - Field value is now:', field.value);
+                    } else {
+                        console.error('Farmers Carry Timer - Field not found! Looking for id_farmer_carry_time');
+                    }
+                }, 10); // Small delay to ensure DOM is ready
                 
                 if (navigator.vibrate) {
                     navigator.vibrate([50, 50, 50]);
@@ -190,14 +215,30 @@
             
             // Reset timer
             reset() {
-                this.stop();
+                if (this.isRunning) {
+                    clearInterval(this.interval);
+                    this.isRunning = false;
+                }
                 this.timer = 0;
                 
-                const field = document.getElementById('id_farmers_carry_time');
-                if (field) {
-                    field.value = '';
-                    field.dispatchEvent(new Event('input', { bubbles: true }));
-                }
+                // Clear the form field with a small delay
+                setTimeout(() => {
+                    const field = document.getElementById('id_farmer_carry_time');
+                    if (field) {
+                        console.log('Farmers Carry Timer - Resetting field');
+                        field.value = '';
+                        
+                        const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                        const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+                        
+                        field.dispatchEvent(inputEvent);
+                        field.dispatchEvent(changeEvent);
+                        
+                        if (field._x_model && field._x_model.set) {
+                            field._x_model.set('');
+                        }
+                    }
+                }, 10);
             },
             
             // Format time display
@@ -217,15 +258,35 @@
             
             // Initialize from form
             init() {
-                const timeField = document.getElementById('id_farmers_carry_time');
+                console.log('Farmers Carry Timer - Initializing');
+                
+                // Try multiple ways to find the field
+                const timeField = document.getElementById('id_farmer_carry_time');
+                console.log('Farmers Carry Timer - Time field found by ID:', !!timeField);
+                
+                // Also try to find by name
+                const fieldByName = document.querySelector('input[name="farmer_carry_time"]');
+                console.log('Farmers Carry Timer - Time field found by name:', !!fieldByName);
+                
+                // Log all input fields in the component to debug
+                const allInputs = this.$el.querySelectorAll('input');
+                console.log('Farmers Carry Timer - All inputs in component:', allInputs.length);
+                allInputs.forEach((input, index) => {
+                    console.log(`  Input ${index}: id="${input.id}", name="${input.name}", type="${input.type}"`);
+                });
+                
                 if (timeField && timeField.value) {
                     this.timer = parseFloat(timeField.value) || 0;
+                    console.log('Farmers Carry Timer - Initial value:', this.timer);
                 }
                 
-                const weightField = document.getElementById('id_farmers_carry_weight');
+                const weightField = document.getElementById('id_farmer_carry_weight');
                 if (weightField && weightField.value) {
                     this.weight = parseFloat(weightField.value) || null;
                 }
+                
+                // Log the current element to help debug
+                console.log('Farmers Carry Timer - Component element:', this.$el);
             }
         }));
         

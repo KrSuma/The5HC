@@ -14,6 +14,85 @@
     }
 </style>
 
+<!-- Define Alpine component first to avoid initialization errors -->
+<script>
+if (typeof Alpine !== 'undefined') {
+    // Define the component immediately if Alpine is already loaded
+    if (!window.assessmentForm) {
+        window.assessmentForm = function() {
+            return {
+                currentStep: 1,
+                {% if client %}
+                selectedClient: {{ client.pk }},
+                clientAge: {{ client.age }},
+                clientGender: '{{ client.gender }}',
+                {% else %}
+                selectedClient: null,
+                clientAge: null,
+                clientGender: null,
+                {% endif %}
+                pushUpReps: null,
+                pushUpScore: null,
+                balanceRightOpen: null,
+                balanceLeftOpen: null,
+                balanceRightClosed: null,
+                balanceLeftClosed: null,
+                singleLegBalanceScore: null,
+                balanceScore: null,
+                toeTouchDistance: null,
+                toeTouchScore: null,
+                farmerWeight: null,
+                farmerDistance: null,
+                farmerTime: null,
+                farmerScore: null,
+                farmerPercentage: null,
+                harvardHR1: null,
+                harvardHR2: null,
+                harvardHR3: null,
+                harvardScore: null,
+                harvardPFI: null,
+                strengthScore: null,
+                mobilityScore: null,
+                cardioScore: null,
+                overallScore: null,
+                overheadSquatScore: null,
+                shoulderMobilityScore: null,
+                
+                // Movement quality fields
+                overheadSquatKneeValgus: false,
+                overheadSquatForwardLean: false,
+                overheadSquatHeelLift: false,
+                overheadSquatArmDrop: false,
+                overheadSquatQuality: '',
+                toeTouchFlexibility: '',
+                shoulderMobilityCategory: '',
+                
+                // Test variation fields
+                testEnvironment: 'indoor',
+                pushUpType: 'standard',
+                
+                // Manual override tracking
+                manualOverrides: {
+                    overheadSquat: false,
+                    shoulderMobility: false,
+                    pushUp: false,
+                    toeTouch: false,
+                    farmerCarry: false,
+                    balance: false,
+                    harvard: false
+                },
+                
+                // Farmer's Carry Timer
+                farmerTimer: 0,
+                farmerTimerRunning: false,
+                farmerTimerInterval: null,
+                farmerStartTime: null
+            };
+        };
+    }
+}
+</script>
+
 <div class="container mx-auto px-4 py-8" x-data="assessmentForm()">
     <h1 class="text-3xl font-bold text-gray-800 mb-8">체력 평가 등록</h1>
     
@@ -170,6 +249,38 @@
                     <!-- Farmer's Carry -->
                     <div>
                         <h3 class="text-lg font-medium text-gray-700 mb-4">파머스 캐리</h3>
+                        
+                        <!-- Timer Section (moved to top) -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">시간 측정</label>
+                            <div class="timer-section">
+                                <div class="timer-display">
+                                    <span class="timer-value" x-text="formatFarmerTime(farmerTimer)">0.0</span>
+                                    <span class="timer-label">초</span>
+                                </div>
+                                <div class="timer-controls">
+                                    <button type="button" 
+                                            @click="farmerTimerRunning ? stopFarmerTimer() : startFarmerTimer()" 
+                                            class="timer-btn"
+                                            :class="farmerTimerRunning ? 'timer-btn-stop' : 'timer-btn-start'">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path x-show="!farmerTimerRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                            <path x-show="farmerTimerRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h4v16H6zM14 4h4v16h-4z"></path>
+                                        </svg>
+                                        <span x-text="farmerTimerRunning ? '정지' : '시작'"></span>
+                                    </button>
+                                    <button type="button" @click="resetFarmerTimer()" class="timer-btn timer-btn-reset">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                        </svg>
+                                        초기화
+                                    </button>
+                                </div>
+                                {{ form.farmer_carry_time }}
+                            </div>
+                        </div>
+                        
+                        <!-- Weight and Percentage -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">무게 (kg)</label>
@@ -180,38 +291,12 @@
                                 {{ form.farmer_carry_percentage }}
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        
+                        <!-- Distance and Score -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">거리 (m)</label>
                                 {{ form.farmer_carry_distance }}
-                            </div>
-                            <div x-data="farmersCarryTimer()">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">시간 측정</label>
-                                <div class="timer-section">
-                                    <div class="timer-display">
-                                        <span class="timer-value" x-text="formatTime(timer)">0.0</span>
-                                        <span class="timer-label">초</span>
-                                    </div>
-                                    <div class="timer-controls">
-                                        <button type="button" 
-                                                @click="isRunning ? stop() : start()" 
-                                                class="timer-btn"
-                                                :class="isRunning ? 'timer-btn-stop' : 'timer-btn-start'">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path x-show="!isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                                                <path x-show="isRunning" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h4v16H6zM14 4h4v16h-4z"></path>
-                                            </svg>
-                                            <span x-text="isRunning ? '정지' : '시작'"></span>
-                                        </button>
-                                        <button type="button" @click="reset()" class="timer-btn timer-btn-reset">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                            </svg>
-                                            초기화
-                                        </button>
-                                    </div>
-                                    {{ form.farmer_carry_time }}
-                                </div>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -846,70 +931,15 @@
     }
 </style>
 
-<!-- Alpine.js component -->
+<!-- Alpine.js component methods -->
 <script>
-function assessmentForm() {
-    return {
-        currentStep: 1,
-        {% if client %}
-        selectedClient: {{ client.pk }},
-        clientAge: {{ client.age }},
-        clientGender: '{{ client.gender }}',
-        {% else %}
-        selectedClient: null,
-        clientAge: null,
-        clientGender: null,
-        {% endif %}
-        pushUpReps: null,
-        pushUpScore: null,
-        balanceRightOpen: null,
-        balanceLeftOpen: null,
-        balanceRightClosed: null,
-        balanceLeftClosed: null,
-        singleLegBalanceScore: null,  // Single leg balance test score
-        balanceScore: null,  // Category average score
-        toeTouchDistance: null,
-        toeTouchScore: null,
-        farmerWeight: null,
-        farmerDistance: null,
-        farmerTime: null,
-        farmerScore: null,
-        harvardHR1: null,
-        harvardHR2: null,
-        harvardHR3: null,
-        harvardScore: null,
-        harvardPFI: null,
-        strengthScore: null,
-        mobilityScore: null,
-        cardioScore: null,
-        overallScore: null,
-        overheadSquatScore: null,
-        shoulderMobilityScore: null,
-        
-        // Movement quality fields
-        overheadSquatKneeValgus: false,
-        overheadSquatForwardLean: false,
-        overheadSquatHeelLift: false,
-        overheadSquatArmDrop: false,
-        overheadSquatQuality: '',
-        toeTouchFlexibility: '',
-        shoulderMobilityCategory: '',
-        
-        // Test variation fields
-        testEnvironment: 'indoor',
-        pushUpType: 'standard',
-        farmerPercentage: null,
-        
-        // Manual override tracking
-        manualOverrides: {
-            overheadSquat: false,
-            shoulderMobility: false,
-            pushUp: false,
-            toeTouch: false,
-            farmerCarry: false,
-            balance: false,
-            harvard: false
-        },
+// Extend the assessmentForm component with methods
+if (window.assessmentForm) {
+    const originalAssessmentForm = window.assessmentForm;
+    window.assessmentForm = function() {
+        const data = originalAssessmentForm();
+        return {
+            ...data,
         
         selectClient(clientId) {
             if (!clientId) return;
@@ -1171,6 +1201,70 @@ function assessmentForm() {
             }
         },
         
+        // Farmer's Carry Timer Methods
+        startFarmerTimer() {
+            if (this.farmerTimerRunning) return;
+            
+            console.log('Starting Farmer Timer');
+            this.farmerTimerRunning = true;
+            this.farmerStartTime = performance.now() - (this.farmerTimer * 1000);
+            
+            this.farmerTimerInterval = setInterval(() => {
+                this.farmerTimer = (performance.now() - this.farmerStartTime) / 1000;
+            }, 100);
+        },
+        
+        stopFarmerTimer() {
+            if (!this.farmerTimerRunning) return;
+            
+            console.log('Stopping Farmer Timer with value:', this.farmerTimer.toFixed(1));
+            clearInterval(this.farmerTimerInterval);
+            this.farmerTimerRunning = false;
+            
+            // Update the farmer time field value
+            this.farmerTime = parseFloat(this.farmerTimer.toFixed(1));
+            console.log('Setting farmerTime to:', this.farmerTime);
+            
+            // Update the form field directly
+            const field = document.getElementById('id_farmer_carry_time');
+            if (field) {
+                field.value = this.farmerTime;
+                // Trigger input event to update any bindings
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+                field.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log('Updated field value to:', field.value);
+            } else {
+                console.error('Could not find farmer_carry_time field!');
+            }
+            
+            // Trigger score calculation
+            this.calculateFarmerScore();
+        },
+        
+        resetFarmerTimer() {
+            console.log('Resetting Farmer Timer');
+            if (this.farmerTimerRunning) {
+                clearInterval(this.farmerTimerInterval);
+                this.farmerTimerRunning = false;
+            }
+            this.farmerTimer = 0;
+            this.farmerTime = null;
+            
+            // Clear the form field
+            const field = document.getElementById('id_farmer_carry_time');
+            if (field) {
+                field.value = '';
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+                field.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        },
+        
+        formatFarmerTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = (seconds % 60).toFixed(1);
+            return mins > 0 ? `${mins}:${secs.padStart(4, '0')}` : `${secs}초`;
+        },
+        
         async calculateHarvardScore() {
             // Skip if manually overridden
             if (this.manualOverrides.harvard) return;
@@ -1346,7 +1440,8 @@ function assessmentForm() {
                 this.shoulderMobilityCategory = mobilityCategory.value;
             }
         }
-    }
+        };
+    };
 }
 </script>
 
