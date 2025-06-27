@@ -45,7 +45,6 @@ LOCAL_APPS = [
     'apps.clients',
     'apps.assessments',
     'apps.sessions',
-    'apps.analytics',
     'apps.reports',
     'apps.api',
 ]
