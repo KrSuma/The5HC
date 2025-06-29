@@ -312,10 +312,21 @@
 
 <!-- Chart initialization -->
 <script>
+// Store chart instances globally to allow cleanup
+window.dashboardCharts = window.dashboardCharts || {};
+
 function initializeDashboardCharts() {
+    // Destroy existing charts before creating new ones
+    if (window.dashboardCharts.weeklyChart) {
+        window.dashboardCharts.weeklyChart.destroy();
+    }
+    if (window.dashboardCharts.revenueChart) {
+        window.dashboardCharts.revenueChart.destroy();
+    }
+    
     // Weekly Sessions Chart
     const weeklyCtx = document.getElementById('weekly-sessions-chart').getContext('2d');
-    new Chart(weeklyCtx, {
+    window.dashboardCharts.weeklyChart = new Chart(weeklyCtx, {
         type: 'line',
         data: {
             labels: [{% for week in weekly_sessions %}'{{ week.week }}'{% if not forloop.last %},{% endif %}{% endfor %}],
@@ -378,7 +389,7 @@ function initializeDashboardCharts() {
         stepSize = 1000000;
     }
     
-    new Chart(revenueCtx, {
+    window.dashboardCharts.revenueChart = new Chart(revenueCtx, {
         type: 'bar',
         data: {
             labels: monthLabels,
@@ -440,16 +451,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Also initialize charts when content is loaded via HTMX
 document.body.addEventListener('htmx:afterSwap', function(event) {
-    // Check if the dashboard content was loaded
-    if (document.getElementById('weekly-sessions-chart') && document.getElementById('monthly-revenue-chart')) {
-        // Small delay to ensure DOM is ready
-        setTimeout(function() {
-            try {
-                initializeDashboardCharts();
-            } catch (error) {
-                console.error('Error initializing dashboard charts after HTMX swap:', error);
-            }
-        }, 100);
+    // Only reinitialize if the main content area was updated (not notification badge)
+    if (event.detail.target.id === 'main-content') {
+        // Check if the dashboard content was loaded
+        if (document.getElementById('weekly-sessions-chart') && document.getElementById('monthly-revenue-chart')) {
+            // Small delay to ensure DOM is ready
+            setTimeout(function() {
+                try {
+                    initializeDashboardCharts();
+                } catch (error) {
+                    console.error('Error initializing dashboard charts after HTMX swap:', error);
+                }
+            }, 100);
+        }
     }
 });
 </script>
